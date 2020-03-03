@@ -20,7 +20,7 @@ PHP_ARG_ENABLE([pkcs11],
 
 if test "$PHP_PKCS11" != "no"; then
 
-  PHP_ADD_INCLUDE(include)
+  PHP_ADD_INCLUDE(oasis)
 
   dnl Write more examples of tests here...
 
