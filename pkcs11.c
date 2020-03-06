@@ -113,8 +113,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, getInfo) {
-    char *var;
-    size_t var_len;
     zend_string *retval;
     CK_RV rv;
     CK_INFO info;
@@ -144,8 +142,8 @@ PHP_METHOD(Module, getInfo) {
 
     array_init(return_value);
     add_assoc_zval(return_value, "version", &cryptokiversion);
-    add_assoc_string(return_value, "manufacturer_id", info.manufacturerID);
-    add_assoc_string(return_value, "lib_description", info.libraryDescription);
+    add_assoc_stringl(return_value, "manufacturer_id", info.manufacturerID, 32);
+    add_assoc_stringl(return_value, "lib_description", info.libraryDescription, 32);
     add_assoc_zval(return_value, "lib_version", &libversion);
 }
 
@@ -193,7 +191,7 @@ PHP_METHOD(Module, getSlots) {
 
         array_init(&slotObj);
         add_assoc_long(&slotObj, "id", pSlotList[i]);
-        add_assoc_string(&slotObj, "description", slotInfo.slotDescription);
+        add_assoc_stringl(&slotObj, "description", slotInfo.slotDescription, 64);
         add_index_zval(return_value, pSlotList[i], &slotObj);
     }
 }
