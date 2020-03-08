@@ -151,9 +151,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlots, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, getSlots) {
-    char *var;
-    size_t var_len;
-    zend_string *retval;
     CK_RV rv;
     CK_ULONG ulSlotCount;
     CK_SLOT_ID_PTR pSlotList;
@@ -194,6 +191,135 @@ PHP_METHOD(Module, getSlots) {
         add_assoc_stringl(&slotObj, "description", slotInfo.slotDescription, 64);
         add_index_zval(return_value, pSlotList[i], &slotObj);
     }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotList, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, getSlotList) {
+    CK_RV rv;
+    CK_ULONG ulSlotCount;
+    CK_SLOT_ID_PTR pSlotList;
+    CK_SLOT_INFO slotInfo;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = objval->functionList->C_GetSlotList(CK_FALSE, NULL_PTR, &ulSlotCount);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get slot list from token");
+        return;
+    }
+
+    pSlotList = (CK_SLOT_ID_PTR) malloc(ulSlotCount * sizeof(CK_SLOT_ID));
+    rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get slot list from token");
+        return;
+    }
+
+    uint i;
+    array_init(return_value);
+    for (i=0; i<ulSlotCount; i++) {
+        add_next_index_long(return_value, pSlotList[i]);
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotInfo, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, module_path, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, getSlotInfo) {
+
+    zend_long slotId;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(slotId)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_RV rv;
+    CK_SLOT_INFO slotInfo;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = objval->functionList->C_GetSlotInfo(slotId, &slotInfo);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get slot info from token");
+        return;
+    }
+
+    array_init(return_value);
+    add_assoc_long(return_value, "id", slotId);
+    add_assoc_stringl(return_value, "description", slotInfo.slotDescription, 64);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getTokenInfo, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, module_path, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, getTokenInfo) {
+
+    zend_long slotId;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(slotId)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_RV rv;
+    CK_TOKEN_INFO tokenInfo;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = objval->functionList->C_GetTokenInfo(slotId, &tokenInfo);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get slot info from token");
+        return;
+    }
+
+    array_init(return_value);
+    add_assoc_stringl(return_value, "label", tokenInfo.label, 32);
+    add_assoc_stringl(return_value, "manufacturerID", tokenInfo.manufacturerID, 32);
+    add_assoc_stringl(return_value, "model", tokenInfo.model, 16);
+    add_assoc_stringl(return_value, "serialNumber", tokenInfo.serialNumber, 16);
+
+    add_assoc_long(return_value, "ulMaxSessionCount", tokenInfo.ulMaxSessionCount);
+    add_assoc_long(return_value, "ulSessionCount", tokenInfo.ulSessionCount);
+    add_assoc_long(return_value, "ulMaxRwSessionCount", tokenInfo.ulMaxRwSessionCount);
+    add_assoc_long(return_value, "ulRwSessionCount", tokenInfo.ulRwSessionCount);
+    add_assoc_long(return_value, "ulMaxPinLen", tokenInfo.ulMaxPinLen);
+    add_assoc_long(return_value, "ulMinPinLen", tokenInfo.ulMinPinLen);
+    add_assoc_long(return_value, "ulTotalPublicMemory", tokenInfo.ulTotalPublicMemory);
+    add_assoc_long(return_value, "ulFreePublicMemory", tokenInfo.ulFreePublicMemory);
+    add_assoc_long(return_value, "ulTotalPrivateMemory", tokenInfo.ulTotalPrivateMemory);
+    add_assoc_long(return_value, "ulFreePrivateMemory", tokenInfo.ulFreePrivateMemory);
+
+    zval hardwareVersion;
+    array_init(&hardwareVersion);
+    add_assoc_long(&hardwareVersion, "major", tokenInfo.hardwareVersion.major);
+    add_assoc_long(&hardwareVersion, "minor", tokenInfo.hardwareVersion.minor);
+    add_assoc_zval(return_value, "hardwareVersion", &hardwareVersion);
+
+    zval firmwareVersion;
+    array_init(&firmwareVersion);
+    add_assoc_long(&firmwareVersion, "major", tokenInfo.firmwareVersion.major);
+    add_assoc_long(&firmwareVersion, "minor", tokenInfo.firmwareVersion.minor);
+    add_assoc_zval(return_value, "firmwareVersion", &firmwareVersion);
+
+    add_assoc_stringl(return_value, "utcTime", tokenInfo.utcTime, 16);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_initToken, 0, 0, 3)
@@ -242,6 +368,9 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, __construct, arginfo_pkcs11_module___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
     PHP_ME(Module, getInfo, arginfo_pkcs11_module_getInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlots, arginfo_pkcs11_module_getSlots, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getSlotList, arginfo_pkcs11_module_getSlotList, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getSlotInfo, arginfo_pkcs11_module_getSlotInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getTokenInfo, arginfo_pkcs11_module_getTokenInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, initToken, arginfo_pkcs11_module_initToken, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
