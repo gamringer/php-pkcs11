@@ -10,10 +10,10 @@ Currently supports:
 * C_GetSlotInfo
 * C_GetTokenInfo
 * C_InitToken
-
-Coming up in (probable) order:
 * C_GetMechanismList
 * C_GetMechanismInfo
+
+Coming up in (probable) order:
 * C_OpenSession
 * C_Login
 * C_Logout

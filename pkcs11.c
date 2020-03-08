@@ -57,7 +57,7 @@ void pkcs11_error(char* generic, char* specific) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module___construct, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, module_path, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, modulePath, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, __construct) {
@@ -230,7 +230,7 @@ PHP_METHOD(Module, getSlotList) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotInfo, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, module_path, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, getSlotInfo) {
@@ -263,7 +263,7 @@ PHP_METHOD(Module, getSlotInfo) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getTokenInfo, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, module_path, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, getTokenInfo) {
@@ -322,6 +322,85 @@ PHP_METHOD(Module, getTokenInfo) {
     add_assoc_stringl(return_value, "utcTime", tokenInfo.utcTime, 16);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getMechanismList, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, getMechanismList) {
+
+    zend_long slotId;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(slotId)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_RV rv;
+    CK_ULONG ulMechanismCount;
+    CK_MECHANISM_TYPE_PTR pMechanismList;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = objval->functionList->C_GetMechanismList(slotId, NULL_PTR, &ulMechanismCount);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get mechanism list from token 1");
+        return;
+    }
+
+    pMechanismList = (CK_MECHANISM_TYPE_PTR) malloc(ulMechanismCount * sizeof(CK_MECHANISM_TYPE));
+    rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get mechanism list from token 2");
+        return;
+    }
+
+    uint i;
+    array_init(return_value);
+    for (i=0; i<ulMechanismCount; i++) {
+        add_next_index_long(return_value, pMechanismList[i]);
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getMechanismInfo, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, getMechanismInfo) {
+
+    zend_long slotId;
+    zend_long mechanismId;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(slotId)
+        Z_PARAM_LONG(mechanismId)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_RV rv;
+    CK_MECHANISM_INFO mechanismInfo;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = objval->functionList->C_GetMechanismInfo(slotId, mechanismId, &mechanismInfo);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get slot info from token");
+        return;
+    }
+
+    array_init(return_value);
+    add_assoc_long(return_value, "min_key_size", mechanismInfo.ulMinKeySize);
+    add_assoc_long(return_value, "max_key_size", mechanismInfo.ulMaxKeySize);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_initToken, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, slotid, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, label, IS_STRING, 0)
@@ -371,6 +450,8 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, getSlotList, arginfo_pkcs11_module_getSlotList, ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlotInfo, arginfo_pkcs11_module_getSlotInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, getTokenInfo, arginfo_pkcs11_module_getTokenInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getMechanismList, arginfo_pkcs11_module_getMechanismList, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getMechanismInfo, arginfo_pkcs11_module_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, initToken, arginfo_pkcs11_module_initToken, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };

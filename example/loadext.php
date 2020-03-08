@@ -4,6 +4,17 @@ declare(strict_types=1);
 
 $module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
 
+
+$slotList = $module->getSlotList();
+var_dump($slotList);
+
+$mechanismList = $module->getMechanismList($slotList[0]);
+var_dump($mechanismList);
+
+$mechanismInfo = $module->getMechanismInfo($slotList[0], $mechanismList[48]);
+var_dump($mechanismInfo);
+
+/*
 $info = $module->getInfo();
 var_dump($info);
 
