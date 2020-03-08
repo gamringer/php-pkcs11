@@ -13,6 +13,7 @@ var_dump($mechanismList);
 
 $mechanismInfo = $module->getMechanismInfo($slotList[0], $mechanismList[48]);
 var_dump($mechanismInfo);
+var_dump(PKCS11\CKM_SHA1_RSA_PKCS);
 
 /*
 $info = $module->getInfo();
