@@ -22,6 +22,7 @@
 
 #include "php.h"
 #include "zend_exceptions.h"
+#include "zend_interfaces.h"
 #include "ext/standard/info.h"
 #include "php_pkcs11.h"
 
@@ -43,12 +44,32 @@ typedef struct _pkcs11_object {
     zend_object std;
 } pkcs11_object;
 
+typedef struct _pkcs11_session_object {
+    pkcs11_object *pkcs11;
+    CK_SESSION_HANDLE_PTR session;
+    CK_SLOT_ID slotID;
+    zend_object std;
+} pkcs11_session_object;
+
 
 #define Z_PKCS11_P(zv)  pkcs11_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_SESSION_P(zv)  pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
 
 static inline pkcs11_object* pkcs11_from_zend_object(zend_object *obj) {
-    return ((pkcs11_object*)(obj + 1)) - 1;
+    //return ((pkcs11_object*)(obj + 1)) - 1;
+    return (pkcs11_object*)((char*)(obj) - XtOffsetOf(pkcs11_object, std));
 }
+
+static inline pkcs11_session_object* pkcs11_session_from_zend_object(zend_object *obj) {
+    //return ((pkcs11_session_object*)(obj + 1)) - 1;
+    return (pkcs11_session_object*)((char*)(obj) - XtOffsetOf(pkcs11_session_object, std));
+}
+
+static zend_class_entry *ce_Pkcs11_Module;
+static zend_object_handlers pkcs11_handlers;
+
+static zend_class_entry *ce_Pkcs11_Session;
+static zend_object_handlers pkcs11_session_handlers;
 
 void pkcs11_error(char* generic, char* specific) {
     char buf[256];
@@ -172,6 +193,7 @@ PHP_METHOD(Module, getSlots) {
     pSlotList = (CK_SLOT_ID_PTR) malloc(ulSlotCount * sizeof(CK_SLOT_ID));
     rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
     if (rv != CKR_OK) {
+        free(pSlotList);
         pkcs11_error("PKCS11 module error", "Unable to get slot list from token");
         return;
     }
@@ -191,6 +213,7 @@ PHP_METHOD(Module, getSlots) {
         add_assoc_stringl(&slotObj, "description", slotInfo.slotDescription, 64);
         add_index_zval(return_value, pSlotList[i], &slotObj);
     }
+    free(pSlotList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotList, 0, 0, 0)
@@ -354,6 +377,7 @@ PHP_METHOD(Module, getMechanismList) {
     pMechanismList = (CK_MECHANISM_TYPE_PTR) malloc(ulMechanismCount * sizeof(CK_MECHANISM_TYPE));
     rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
     if (rv != CKR_OK) {
+        free(pMechanismList);
         pkcs11_error("PKCS11 module error", "Unable to get mechanism list from token 2");
         return;
     }
@@ -363,6 +387,7 @@ PHP_METHOD(Module, getMechanismList) {
     for (i=0; i<ulMechanismCount; i++) {
         add_next_index_long(return_value, pMechanismList[i]);
     }
+    free(pMechanismList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getMechanismInfo, 0, 0, 2)
@@ -440,8 +465,64 @@ PHP_METHOD(Module, initToken) {
     }
 }
 
-static zend_class_entry *ce_Pkcs11_Module;
-static zend_object_handlers pkcs11_handlers;
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_openSession, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, slotid, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, openSession) {
+    CK_RV rv;
+
+    zend_long      slotid;
+    zend_long      flags;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_LONG(slotid)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(flags)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    pkcs11_session_object* session_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_Session);
+    session_obj = Z_PKCS11_SESSION_P(return_value);
+    session_obj->pkcs11 = objval;
+
+    CK_SESSION_HANDLE phSession;
+    rv = objval->functionList->C_OpenSession(slotid, CKF_SERIAL_SESSION | flags, NULL_PTR, NULL_PTR, &phSession);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to open session");
+        return;
+    }
+    session_obj->session = &phSession;
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_login, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, login) {
+    /*
+    zend_long loginType;
+    zend_string *pin;
+
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_LONG(loginType)
+        Z_PARAM_STR(pin)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    */
+    printf("login\n");
+}
 
 static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, __construct, arginfo_pkcs11_module___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
@@ -453,6 +534,12 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, getMechanismList, arginfo_pkcs11_module_getMechanismList, ZEND_ACC_PUBLIC)
     PHP_ME(Module, getMechanismInfo, arginfo_pkcs11_module_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, initToken, arginfo_pkcs11_module_initToken, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, openSession, arginfo_pkcs11_module_openSession, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
+static zend_function_entry session_class_functions[] = {
+    PHP_ME(Session, login, arginfo_pkcs11_session_login, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -478,20 +565,54 @@ static void pkcs11_dtor(zend_object *zobj) {
         dlclose(objval->pkcs11module);
     }
 
-    zend_object_std_dtor(zobj);
+    zend_object_std_dtor(&objval->std);
+}
+
+static zend_object* pkcs11_session_ctor(zend_class_entry *ce) {
+    pkcs11_session_object *objval = zend_object_alloc(sizeof(pkcs11_session_object), ce);
+
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_session_handlers;
+
+    return &objval->std;
+}
+
+static void pkcs11_session_dtor(zend_object *zobj) {
+
+    pkcs11_session_object *objval = pkcs11_session_from_zend_object(zobj);
+
+    if (objval->pkcs11->functionList != NULL) {
+        objval->pkcs11->functionList->C_CloseSession(*objval->session);
+    }
+
+    zend_object_std_dtor(&objval->std);
 }
 
 PHP_MINIT_FUNCTION(pkcs11)
 {
     zend_class_entry ce;
 
-    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Module", module_class_functions);
-    ce_Pkcs11_Module = zend_register_internal_class(&ce);
-    ce_Pkcs11_Module->create_object = pkcs11_ctor;
+    memcpy(&pkcs11_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    memcpy(&pkcs11_session_handlers, &std_object_handlers, sizeof(zend_object_handlers));
 
-    memcpy(&pkcs11_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Module", module_class_functions);
+    ce.create_object = pkcs11_ctor;
     pkcs11_handlers.offset = XtOffsetOf(pkcs11_object, std);
+    pkcs11_handlers.clone_obj = NULL;
     pkcs11_handlers.free_obj = pkcs11_dtor;
+    ce_Pkcs11_Module = zend_register_internal_class(&ce);
+    ce_Pkcs11_Module->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_Module->unserialize = zend_class_unserialize_deny;
+
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Session", session_class_functions);
+    ce.create_object = pkcs11_session_ctor;
+    pkcs11_session_handlers.offset = XtOffsetOf(pkcs11_session_object, std);
+    pkcs11_session_handlers.clone_obj = NULL;
+    pkcs11_session_handlers.free_obj = pkcs11_session_dtor;
+    ce_Pkcs11_Session = zend_register_internal_class(&ce);
+    ce_Pkcs11_Session->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_Session->unserialize = zend_class_unserialize_deny;
 
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);
@@ -881,6 +1002,9 @@ PHP_MINIT_FUNCTION(pkcs11)
 
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS_TPM_1_1",           0x00004001UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS_OAEP_TPM_1_1",      0x00004002UL, CONST_CS | CONST_PERSISTENT);
+
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKF_RW_SESSION",                 0x00000002UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKF_SERIAL_SESSION",             0x00000004UL, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }
