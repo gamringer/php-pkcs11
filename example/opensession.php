@@ -9,8 +9,14 @@ $slotList = $module->getSlotList();
 
 var_dump($slotList);
 $session = $module->openSession($slotList[0], PKCS11\CKF_RW_SESSION);
-echo 'lala';
 var_dump($module);
 var_dump($session);
-$session->login(1,'123456');
-echo 'lolo';
+var_dump($session->getInfo()['state']);
+$session->login(PKCS11\CKU_SO,'12345678');
+var_dump($session->getInfo()['state']);
+$session->logout();
+var_dump($session->getInfo()['state']);
+$session->login(PKCS11\CKU_USER,'123456');
+var_dump($session->getInfo()['state']);
+$session->logout();
+var_dump($session->getInfo()['state']);

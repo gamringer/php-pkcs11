@@ -46,7 +46,7 @@ typedef struct _pkcs11_object {
 
 typedef struct _pkcs11_session_object {
     pkcs11_object *pkcs11;
-    CK_SESSION_HANDLE_PTR session;
+    CK_SESSION_HANDLE session;
     CK_SLOT_ID slotID;
     zend_object std;
 } pkcs11_session_object;
@@ -501,8 +501,31 @@ PHP_METHOD(Module, openSession) {
         pkcs11_error("PKCS11 module error", "Unable to open session");
         return;
     }
-    session_obj->session = &phSession;
+    session_obj->session = phSession;
 }
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_getInfo, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, getInfo) {
+    
+    CK_RV rv;
+    CK_SESSION_INFO sessionInfo;
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to get session info");
+        return;
+    }
+
+    array_init(return_value);
+    add_assoc_long(return_value, "state", sessionInfo.state);
+    add_assoc_long(return_value, "flags", sessionInfo.flags);
+    add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
+}
+
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_login, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
@@ -510,18 +533,38 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_login, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, login) {
-    /*
-    zend_long loginType;
+    
+    CK_RV rv;
+    zend_long userType;
     zend_string *pin;
 
     ZEND_PARSE_PARAMETERS_START(2,2)
-        Z_PARAM_LONG(loginType)
+        Z_PARAM_LONG(userType)
         Z_PARAM_STR(pin)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    */
-    printf("login\n");
+    rv = objval->pkcs11->functionList->C_Login(objval->session, userType, ZSTR_VAL(pin), ZSTR_LEN(pin));
+    
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to login");
+        return;
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_logout, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, logout) {
+    
+    CK_RV rv;
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_Logout(objval->session);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to logout");
+        return;
+    }
 }
 
 static zend_function_entry module_class_functions[] = {
@@ -540,6 +583,8 @@ static zend_function_entry module_class_functions[] = {
 
 static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, login, arginfo_pkcs11_session_login, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, getInfo, arginfo_pkcs11_session_getInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, logout, arginfo_pkcs11_session_logout, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -583,7 +628,7 @@ static void pkcs11_session_dtor(zend_object *zobj) {
     pkcs11_session_object *objval = pkcs11_session_from_zend_object(zobj);
 
     if (objval->pkcs11->functionList != NULL) {
-        objval->pkcs11->functionList->C_CloseSession(*objval->session);
+        objval->pkcs11->functionList->C_CloseSession(objval->session);
     }
 
     zend_object_std_dtor(&objval->std);
@@ -1009,6 +1054,12 @@ PHP_MINIT_FUNCTION(pkcs11)
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKU_SO",                         0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKU_USER",                       0x00000001UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKU_CONTEXT_SPECIFIC",           0x00000002UL, CONST_CS | CONST_PERSISTENT);
+
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKS_RO_PUBLIC_SESSION",          0x00000000UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKS_RO_USER_FUNCTIONS",          0x00000001UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKS_RW_PUBLIC_SESSION",          0x00000002UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKS_RW_USER_FUNCTIONS",          0x00000003UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("PKCS11", "CKS_RW_SO_FUNCTIONS",            0x00000004UL, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }
