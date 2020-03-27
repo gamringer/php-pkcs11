@@ -567,6 +567,59 @@ PHP_METHOD(Session, logout) {
     }
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_initPin, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, initPin) {
+    
+    CK_RV rv;
+    zend_string *newPin;
+
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_STR(newPin)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_InitPIN(objval->session, ZSTR_VAL(newPin), ZSTR_LEN(newPin));
+    
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to set pin");
+        return;
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_setPin, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, oldPin, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, newPin, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, setPin) {
+    
+    CK_RV rv;
+    zend_string *oldPin;
+    zend_string *newPin;
+
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_STR(oldPin)
+        Z_PARAM_STR(newPin)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_SetPIN(
+        objval->session,
+        ZSTR_VAL(oldPin),
+        ZSTR_LEN(oldPin),
+        ZSTR_VAL(newPin),
+        ZSTR_LEN(newPin)
+    );
+    
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to set pin");
+        return;
+    }
+}
+
 static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, __construct, arginfo_pkcs11_module___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
     PHP_ME(Module, getInfo, arginfo_pkcs11_module_getInfo, ZEND_ACC_PUBLIC)
@@ -585,6 +638,8 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, login, arginfo_pkcs11_session_login, ZEND_ACC_PUBLIC)
     PHP_ME(Session, getInfo, arginfo_pkcs11_session_getInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Session, logout, arginfo_pkcs11_session_logout, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, initPin, arginfo_pkcs11_session_initPin, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
