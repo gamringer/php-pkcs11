@@ -52,17 +52,27 @@ typedef struct _pkcs11_session_object {
 } pkcs11_session_object;
 
 
+typedef struct _pkcs11_key_object {
+    pkcs11_session_object *session;
+    CK_OBJECT_HANDLE key;
+    zend_object std;
+} pkcs11_key_object;
+
+
 #define Z_PKCS11_P(zv)  pkcs11_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SESSION_P(zv)  pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_KEY_P(zv)  pkcs11_key_from_zend_object(Z_OBJ_P((zv)))
 
 static inline pkcs11_object* pkcs11_from_zend_object(zend_object *obj) {
-    //return ((pkcs11_object*)(obj + 1)) - 1;
     return (pkcs11_object*)((char*)(obj) - XtOffsetOf(pkcs11_object, std));
 }
 
 static inline pkcs11_session_object* pkcs11_session_from_zend_object(zend_object *obj) {
-    //return ((pkcs11_session_object*)(obj + 1)) - 1;
     return (pkcs11_session_object*)((char*)(obj) - XtOffsetOf(pkcs11_session_object, std));
+}
+
+static inline pkcs11_key_object* pkcs11_key_from_zend_object(zend_object *obj) {
+    return (pkcs11_key_object*)((char*)(obj) - XtOffsetOf(pkcs11_key_object, std));
 }
 
 static zend_class_entry *ce_Pkcs11_Module;
@@ -70,6 +80,9 @@ static zend_object_handlers pkcs11_handlers;
 
 static zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
+
+static zend_class_entry *ce_Pkcs11_Key;
+static zend_object_handlers pkcs11_key_handlers;
 
 void pkcs11_error(char* generic, char* specific) {
     char buf[256];
@@ -678,6 +691,156 @@ PHP_METHOD(Session, generateKey) {
         pkcs11_error("PKCS11 module error", "Unable to generate key");
         return;
     }
+
+
+    pkcs11_key_object* key_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_Key);
+    key_obj = Z_PKCS11_KEY_P(return_value);
+    key_obj->session = objval;
+    key_obj->key = hKey;
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, plaintext, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, iv, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, encrypt) {
+    
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_string *plaintext;
+    zend_string *iv;
+
+    ZEND_PARSE_PARAMETERS_START(2,3)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_STR(plaintext)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(iv)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, ZSTR_VAL(iv), ZSTR_LEN(iv)};
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_EncryptInit(
+        objval->session->session,
+        &mechanism,
+        objval->key
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to encrypt 1");
+        return;
+    }
+
+    CK_ULONG ciphertextLen;
+    rv = objval->session->pkcs11->functionList->C_Encrypt(
+        objval->session->session,
+        ZSTR_VAL(plaintext),
+        ZSTR_LEN(plaintext),
+        NULL_PTR ,
+        &ciphertextLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to encrypt 2");
+        return;
+    }
+
+    CK_BYTE_PTR ciphertext = calloc(ciphertextLen, sizeof(CK_BYTE));
+    rv = objval->session->pkcs11->functionList->C_Encrypt(
+        objval->session->session,
+        ZSTR_VAL(plaintext),
+        ZSTR_LEN(plaintext),
+        ciphertext,
+        &ciphertextLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to encrypt 3");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(ciphertextLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        ciphertext,
+        ciphertextLen
+    );
+    RETURN_STR(returnval);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_decrypt, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, ciphertext, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, iv, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, decrypt) {
+    
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_string *ciphertext;
+    zend_string *iv;
+
+    ZEND_PARSE_PARAMETERS_START(2,3)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_STR(ciphertext)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(iv)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, ZSTR_VAL(iv), ZSTR_LEN(iv)};
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_DecryptInit(
+        objval->session->session,
+        &mechanism,
+        objval->key
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to decrypt 1");
+        return;
+    }
+
+    CK_ULONG plaintextLen;
+    rv = objval->session->pkcs11->functionList->C_Decrypt(
+        objval->session->session,
+        ZSTR_VAL(ciphertext),
+        ZSTR_LEN(ciphertext),
+        NULL_PTR,
+        &plaintextLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to decrypt 2");
+        return;
+    }
+
+    CK_BYTE_PTR plaintext = calloc(plaintextLen, sizeof(CK_BYTE));
+    rv = objval->session->pkcs11->functionList->C_Decrypt(
+        objval->session->session,
+        ZSTR_VAL(ciphertext),
+        ZSTR_LEN(ciphertext),
+        plaintext,
+        &plaintextLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to decrypt");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(plaintextLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        plaintext,
+        plaintextLen
+    );
+    RETURN_STR(returnval);
 }
 
 static zend_function_entry module_class_functions[] = {
@@ -701,6 +864,12 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initPin, arginfo_pkcs11_session_initPin, ZEND_ACC_PUBLIC)
     PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey, arginfo_pkcs11_session_generateKey, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
+static zend_function_entry key_class_functions[] = {
+    PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -750,12 +919,31 @@ static void pkcs11_session_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+
+static zend_object* pkcs11_key_ctor(zend_class_entry *ce) {
+    pkcs11_key_object *objval = zend_object_alloc(sizeof(pkcs11_key_object), ce);
+
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_key_handlers;
+
+    return &objval->std;
+}
+
+static void pkcs11_key_dtor(zend_object *zobj) {
+
+    pkcs11_session_object *objval = pkcs11_session_from_zend_object(zobj);
+
+    zend_object_std_dtor(&objval->std);
+}
+
 PHP_MINIT_FUNCTION(pkcs11)
 {
     zend_class_entry ce;
 
     memcpy(&pkcs11_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     memcpy(&pkcs11_session_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
 
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Module", module_class_functions);
     ce.create_object = pkcs11_ctor;
@@ -774,6 +962,15 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_Session = zend_register_internal_class(&ce);
     ce_Pkcs11_Session->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Session->unserialize = zend_class_unserialize_deny;
+
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Key", key_class_functions);
+    ce.create_object = pkcs11_key_ctor;
+    pkcs11_key_handlers.offset = XtOffsetOf(pkcs11_key_object, std);
+    pkcs11_key_handlers.clone_obj = NULL;
+    pkcs11_key_handlers.free_obj = pkcs11_key_dtor;
+    ce_Pkcs11_Key = zend_register_internal_class(&ce);
+    ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
 
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);
