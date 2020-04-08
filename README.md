@@ -12,19 +12,22 @@ Currently supports:
 * C_InitToken
 * C_GetMechanismList
 * C_GetMechanismInfo
-
-Coming up in (probable) order:
 * C_OpenSession
 * C_Login
 * C_Logout
 * C_InitPIN
 * C_SetPIN
 * C_GenerateKey
-* C_GenerateKeyPair
+* C_FindObjectsInit
+* C_FindObjects
+* C_FindObjectsFinal
 * C_EncryptInit
 * C_Encrypt
 * C_DecryptInit
 * C_Decrypt
+
+Coming up in (probable) order:
+* C_GenerateKeyPair
 * C_SignInit
 * C_Sign
 * C_WrapKey

@@ -521,13 +521,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, getInfo) {
-    
+
     CK_RV rv;
     CK_SESSION_INFO sessionInfo;
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
-    
+
     if (rv != CKR_OK) {
         pkcs11_error("PKCS11 module error", "Unable to get session info");
         return;
@@ -546,7 +546,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_login, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, login) {
-    
+
     CK_RV rv;
     zend_long userType;
     zend_string *pin;
@@ -558,7 +558,7 @@ PHP_METHOD(Session, login) {
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_Login(objval->session, userType, ZSTR_VAL(pin), ZSTR_LEN(pin));
-    
+
     if (rv != CKR_OK) {
         pkcs11_error("PKCS11 module error", "Unable to login");
         return;
@@ -569,7 +569,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_logout, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, logout) {
-    
+
     CK_RV rv;
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
@@ -585,7 +585,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_initPin, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, initPin) {
-    
+
     CK_RV rv;
     zend_string *newPin;
 
@@ -595,7 +595,7 @@ PHP_METHOD(Session, initPin) {
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_InitPIN(objval->session, ZSTR_VAL(newPin), ZSTR_LEN(newPin));
-    
+
     if (rv != CKR_OK) {
         pkcs11_error("PKCS11 module error", "Unable to set pin");
         return;
@@ -608,7 +608,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_setPin, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, setPin) {
-    
+
     CK_RV rv;
     zend_string *oldPin;
     zend_string *newPin;
@@ -626,7 +626,7 @@ PHP_METHOD(Session, setPin) {
         ZSTR_VAL(newPin),
         ZSTR_LEN(newPin)
     );
-    
+
     if (rv != CKR_OK) {
         pkcs11_error("PKCS11 module error", "Unable to set pin");
         return;
@@ -639,7 +639,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_generateKey, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, generateKey) {
-    
+
     CK_RV rv;
     zend_long mechanismId;
     HashTable *template;
@@ -671,13 +671,13 @@ PHP_METHOD(Session, generateKey) {
 
         } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
             templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
- 
+
         } else {
             pkcs11_error("Unable to generate key", "Unsupported template parameter type");
         }
         i++;
     ZEND_HASH_FOREACH_END();
-    
+
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_GenerateKey(
@@ -692,13 +692,80 @@ PHP_METHOD(Session, generateKey) {
         return;
     }
 
-
     pkcs11_key_object* key_obj;
 
     object_init_ex(return_value, ce_Pkcs11_Key);
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval;
     key_obj->key = hKey;
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_findObjects, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, findObjects) {
+
+    CK_RV rv;
+    HashTable *template;
+    zval *templateValue;
+    zend_ulong templateValueKey;
+
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_ARRAY_HT(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    int templateItemCount = zend_hash_num_elements(template);
+    CK_ATTRIBUTE *templateObj = calloc(templateItemCount, sizeof(CK_ATTRIBUTE));
+    unsigned int i = 0;
+    CK_BBOOL btrue = CK_TRUE;
+    CK_BBOOL bfalse = CK_FALSE;
+    ZEND_HASH_FOREACH_NUM_KEY_VAL(template, templateValueKey, templateValue)
+        if (Z_TYPE_P(templateValue) == IS_LONG) {
+            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &(Z_LVAL_P(templateValue)), sizeof(CK_ULONG)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_STRING) {
+            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, Z_STRVAL_P(templateValue), Z_STRLEN_P(templateValue)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_TRUE) {
+            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &btrue, sizeof(btrue)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
+            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
+
+        } else {
+            pkcs11_error("Unable to generate key", "Unsupported template parameter type");
+        }
+        i++;
+    ZEND_HASH_FOREACH_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_FindObjectsInit(objval->session, templateObj, templateItemCount);
+    if (rv != CKR_OK) {
+        pkcs11_error("PKCS11 module error", "Unable to find objects");
+        return;
+    }
+
+    array_init(return_value);
+    CK_OBJECT_HANDLE hObject;
+    CK_ULONG ulObjectCount;
+    while (1) {
+        rv = objval->pkcs11->functionList->C_FindObjects(objval->session, &hObject, 1, &ulObjectCount);
+        if (rv != CKR_OK || ulObjectCount == 0) {
+            break;
+        }
+
+        printf("found one\n");
+        zval zkeyobj;
+        pkcs11_key_object* key_obj;
+        object_init_ex(&zkeyobj, ce_Pkcs11_Key);
+        key_obj = Z_PKCS11_KEY_P(&zkeyobj);
+        key_obj->session = objval;
+        key_obj->key = hObject;
+        zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zkeyobj);
+    }
+
+    rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
@@ -708,7 +775,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Key, encrypt) {
-    
+
     CK_RV rv;
     zend_long mechanismId;
     zend_string *plaintext;
@@ -730,7 +797,7 @@ PHP_METHOD(Key, encrypt) {
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
-        pkcs11_error("PKCS11 module error", "Unable to encrypt 1");
+        pkcs11_error("PKCS11 module error", "Unable to encrypt");
         return;
     }
 
@@ -744,7 +811,7 @@ PHP_METHOD(Key, encrypt) {
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
-        pkcs11_error("PKCS11 module error", "Unable to encrypt 2");
+        pkcs11_error("PKCS11 module error", "Unable to encrypt");
         return;
     }
 
@@ -758,7 +825,7 @@ PHP_METHOD(Key, encrypt) {
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
-        pkcs11_error("PKCS11 module error", "Unable to encrypt 3");
+        pkcs11_error("PKCS11 module error", "Unable to encrypt");
         return;
     }
 
@@ -779,7 +846,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_decrypt, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Key, decrypt) {
-    
+
     CK_RV rv;
     zend_long mechanismId;
     zend_string *ciphertext;
@@ -801,7 +868,7 @@ PHP_METHOD(Key, decrypt) {
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
-        pkcs11_error("PKCS11 module error", "Unable to decrypt 1");
+        pkcs11_error("PKCS11 module error", "Unable to decrypt");
         return;
     }
 
@@ -815,7 +882,7 @@ PHP_METHOD(Key, decrypt) {
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
-        pkcs11_error("PKCS11 module error", "Unable to decrypt 2");
+        pkcs11_error("PKCS11 module error", "Unable to decrypt");
         return;
     }
 
@@ -863,6 +930,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, logout, arginfo_pkcs11_session_logout, ZEND_ACC_PUBLIC)
     PHP_ME(Session, initPin, arginfo_pkcs11_session_initPin, ZEND_ACC_PUBLIC)
     PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, findObjects, arginfo_pkcs11_session_findObjects, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey, arginfo_pkcs11_session_generateKey, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
@@ -918,7 +986,6 @@ static void pkcs11_session_dtor(zend_object *zobj) {
 
     zend_object_std_dtor(&objval->std);
 }
-
 
 static zend_object* pkcs11_key_ctor(zend_class_entry *ce) {
     pkcs11_key_object *objval = zend_object_alloc(sizeof(pkcs11_key_object), ce);
