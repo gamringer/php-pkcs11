@@ -51,17 +51,23 @@ typedef struct _pkcs11_session_object {
     zend_object std;
 } pkcs11_session_object;
 
-
 typedef struct _pkcs11_key_object {
     pkcs11_session_object *session;
     CK_OBJECT_HANDLE key;
     zend_object std;
 } pkcs11_key_object;
 
+typedef struct _pkcs11_keypair_object {
+    pkcs11_key_object *pkey;
+    pkcs11_key_object *skey;
+    zend_object std;
+} pkcs11_keypair_object;
+
 
 #define Z_PKCS11_P(zv)  pkcs11_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SESSION_P(zv)  pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEY_P(zv)  pkcs11_key_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_KEYPAIR_P(zv)  pkcs11_keypair_from_zend_object(Z_OBJ_P((zv)))
 
 static inline pkcs11_object* pkcs11_from_zend_object(zend_object *obj) {
     return (pkcs11_object*)((char*)(obj) - XtOffsetOf(pkcs11_object, std));
@@ -75,6 +81,10 @@ static inline pkcs11_key_object* pkcs11_key_from_zend_object(zend_object *obj) {
     return (pkcs11_key_object*)((char*)(obj) - XtOffsetOf(pkcs11_key_object, std));
 }
 
+static inline pkcs11_keypair_object* pkcs11_keypair_from_zend_object(zend_object *obj) {
+    return (pkcs11_keypair_object*)((char*)(obj) - XtOffsetOf(pkcs11_keypair_object, std));
+}
+
 static zend_class_entry *ce_Pkcs11_Module;
 static zend_object_handlers pkcs11_handlers;
 
@@ -84,10 +94,42 @@ static zend_object_handlers pkcs11_session_handlers;
 static zend_class_entry *ce_Pkcs11_Key;
 static zend_object_handlers pkcs11_key_handlers;
 
+static zend_class_entry *ce_Pkcs11_KeyPair;
+static zend_object_handlers pkcs11_keypair_handlers;
+
 void pkcs11_error(char* generic, char* specific) {
     char buf[256];
     sprintf(buf, "%s: %s", generic, specific);
     zend_throw_exception(zend_ce_exception, buf, 0);
+}
+
+void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *templateItemCount) {
+    zval *templateValue;
+    zend_ulong templateValueKey;
+    *templateItemCount = zend_hash_num_elements(*template);
+    *templateObj = calloc(*templateItemCount, sizeof(CK_ATTRIBUTE));
+    unsigned int i = 0;
+    CK_BBOOL btrue = CK_TRUE;
+    CK_BBOOL bfalse = CK_FALSE;
+    ZEND_HASH_FOREACH_NUM_KEY_VAL(*template, templateValueKey, templateValue)
+        if (Z_TYPE_P(templateValue) == IS_LONG) {
+            (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, &(Z_LVAL_P(templateValue)), sizeof(CK_ULONG)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_STRING) {
+            (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, Z_STRVAL_P(templateValue), Z_STRLEN_P(templateValue)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_TRUE) {
+            (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, &btrue, sizeof(btrue)};
+
+        } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
+            (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
+
+        } else {
+            pkcs11_error("Unable to parse template", "Unsupported parameter type");
+        }
+
+        i++;
+    ZEND_HASH_FOREACH_END();
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module___construct, 0, 0, 1)
@@ -643,8 +685,6 @@ PHP_METHOD(Session, generateKey) {
     CK_RV rv;
     zend_long mechanismId;
     HashTable *template;
-    zval *templateValue;
-    zend_ulong templateValueKey;
 
     ZEND_PARSE_PARAMETERS_START(2,2)
         Z_PARAM_LONG(mechanismId)
@@ -654,30 +694,9 @@ PHP_METHOD(Session, generateKey) {
     CK_OBJECT_HANDLE hKey;
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
 
-    int templateItemCount = zend_hash_num_elements(template);
-    CK_ATTRIBUTE *templateObj = calloc(templateItemCount, sizeof(CK_ATTRIBUTE));
-    unsigned int i = 0;
-    CK_BBOOL btrue = CK_TRUE;
-    CK_BBOOL bfalse = CK_FALSE;
-    ZEND_HASH_FOREACH_NUM_KEY_VAL(template, templateValueKey, templateValue)
-        if (Z_TYPE_P(templateValue) == IS_LONG) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &(Z_LVAL_P(templateValue)), sizeof(CK_ULONG)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_STRING) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, Z_STRVAL_P(templateValue), Z_STRLEN_P(templateValue)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_TRUE) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &btrue, sizeof(btrue)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
-
-        } else {
-            pkcs11_error("Unable to generate key", "Unsupported template parameter type");
-        }
-        i++;
-    ZEND_HASH_FOREACH_END();
-
+    int templateItemCount;
+    CK_ATTRIBUTE *templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_GenerateKey(
@@ -700,6 +719,77 @@ PHP_METHOD(Session, generateKey) {
     key_obj->key = hKey;
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_generateKeyPair, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, pkTemplate, IS_ARRAY, 0)
+    ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Session, generateKeyPair) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    HashTable *pkTemplate;
+    HashTable *skTemplate;
+
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_ARRAY_HT(pkTemplate)
+        Z_PARAM_ARRAY_HT(skTemplate)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+
+    CK_OBJECT_HANDLE pKey, sKey;
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    int skTemplateItemCount;
+    CK_ATTRIBUTE *skTemplateObj;
+    parseTemplate(&skTemplate, &skTemplateObj, &skTemplateItemCount);
+
+    int pkTemplateItemCount;
+    CK_ATTRIBUTE *pkTemplateObj;
+    parseTemplate(&pkTemplate, &pkTemplateObj, &pkTemplateItemCount);
+
+    rv = objval->pkcs11->functionList->C_GenerateKeyPair(
+        objval->session,
+        &mechanism,
+        pkTemplateObj, pkTemplateItemCount,
+        skTemplateObj, skTemplateItemCount,
+        &pKey, &sKey
+    );
+
+    if (rv != CKR_OK) {
+        php_printf("Error code: %ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to generate key pair");
+        return;
+    }
+
+    zval zskeyobj;
+    pkcs11_key_object* skey_obj;
+    object_init_ex(&zskeyobj, ce_Pkcs11_Key);
+    skey_obj = Z_PKCS11_KEY_P(&zskeyobj);
+    skey_obj->session = objval;
+    skey_obj->key = sKey;
+
+    zval zpkeyobj;
+    pkcs11_key_object* pkey_obj;
+    object_init_ex(&zpkeyobj, ce_Pkcs11_Key);
+    pkey_obj = Z_PKCS11_KEY_P(&zpkeyobj);
+    pkey_obj->session = objval;
+    pkey_obj->key = sKey;
+
+    pkcs11_keypair_object* keypair_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_KeyPair);
+    add_property_zval(return_value, "skey", &zskeyobj);
+    add_property_zval(return_value, "pkey", &zpkeyobj);
+
+    keypair_obj = Z_PKCS11_KEYPAIR_P(return_value);
+    keypair_obj->pkey = pkey_obj;
+    keypair_obj->skey = skey_obj;
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_findObjects, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -715,29 +805,9 @@ PHP_METHOD(Session, findObjects) {
         Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
-    int templateItemCount = zend_hash_num_elements(template);
-    CK_ATTRIBUTE *templateObj = calloc(templateItemCount, sizeof(CK_ATTRIBUTE));
-    unsigned int i = 0;
-    CK_BBOOL btrue = CK_TRUE;
-    CK_BBOOL bfalse = CK_FALSE;
-    ZEND_HASH_FOREACH_NUM_KEY_VAL(template, templateValueKey, templateValue)
-        if (Z_TYPE_P(templateValue) == IS_LONG) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &(Z_LVAL_P(templateValue)), sizeof(CK_ULONG)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_STRING) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, Z_STRVAL_P(templateValue), Z_STRLEN_P(templateValue)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_TRUE) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &btrue, sizeof(btrue)};
-
-        } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
-            templateObj[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
-
-        } else {
-            pkcs11_error("Unable to generate key", "Unsupported template parameter type");
-        }
-        i++;
-    ZEND_HASH_FOREACH_END();
+    int templateItemCount;
+    CK_ATTRIBUTE *templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_FindObjectsInit(objval->session, templateObj, templateItemCount);
@@ -755,7 +825,6 @@ PHP_METHOD(Session, findObjects) {
             break;
         }
 
-        printf("found one\n");
         zval zkeyobj;
         pkcs11_key_object* key_obj;
         object_init_ex(&zkeyobj, ce_Pkcs11_Key);
@@ -932,12 +1001,17 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
     PHP_ME(Session, findObjects, arginfo_pkcs11_session_findObjects, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey, arginfo_pkcs11_session_generateKey, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, generateKeyPair, arginfo_pkcs11_session_generateKeyPair, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
 static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
+static zend_function_entry keypair_class_functions[] = {
     PHP_FE_END
 };
 
@@ -1004,6 +1078,23 @@ static void pkcs11_key_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+static zend_object* pkcs11_keypair_ctor(zend_class_entry *ce) {
+    pkcs11_keypair_object *objval = zend_object_alloc(sizeof(pkcs11_keypair_object), ce);
+
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_keypair_handlers;
+
+    return &objval->std;
+}
+
+static void pkcs11_keypair_dtor(zend_object *zobj) {
+
+    pkcs11_session_object *objval = pkcs11_session_from_zend_object(zobj);
+
+    zend_object_std_dtor(&objval->std);
+}
+
 PHP_MINIT_FUNCTION(pkcs11)
 {
     zend_class_entry ce;
@@ -1011,6 +1102,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     memcpy(&pkcs11_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     memcpy(&pkcs11_session_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    memcpy(&pkcs11_keypair_handlers, &std_object_handlers, sizeof(zend_object_handlers));
 
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Module", module_class_functions);
     ce.create_object = pkcs11_ctor;
@@ -1038,6 +1130,15 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_Key = zend_register_internal_class(&ce);
     ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
+
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "KeyPair", keypair_class_functions);
+    ce.create_object = pkcs11_keypair_ctor;
+    pkcs11_keypair_handlers.offset = XtOffsetOf(pkcs11_keypair_object, std);
+    pkcs11_keypair_handlers.clone_obj = NULL;
+    pkcs11_keypair_handlers.free_obj = pkcs11_keypair_dtor;
+    ce_Pkcs11_KeyPair = zend_register_internal_class(&ce);
+    ce_Pkcs11_KeyPair->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_KeyPair->unserialize = zend_class_unserialize_deny;
 
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("PKCS11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);

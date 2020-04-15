@@ -18,6 +18,7 @@ Currently supports:
 * C_InitPIN
 * C_SetPIN
 * C_GenerateKey
+* C_GenerateKeyPair
 * C_FindObjectsInit
 * C_FindObjects
 * C_FindObjectsFinal
@@ -27,7 +28,6 @@ Currently supports:
 * C_Decrypt
 
 Coming up in (probable) order:
-* C_GenerateKeyPair
 * C_SignInit
 * C_Sign
 * C_WrapKey
