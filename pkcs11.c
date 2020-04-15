@@ -837,6 +837,73 @@ PHP_METHOD(Session, findObjects) {
     rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_sign, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, sign) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_string *data;
+
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_STR(data)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_SignInit(
+        objval->session->session,
+        &mechanism,
+        objval->key
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to sign");
+        return;
+    }
+
+    CK_ULONG signatureLen;
+    rv = objval->session->pkcs11->functionList->C_Sign(
+        objval->session->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        NULL_PTR,
+        &signatureLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to sign");
+        return;
+    }
+
+    CK_BYTE_PTR signature = calloc(signatureLen, sizeof(CK_BYTE));
+    rv = objval->session->pkcs11->functionList->C_Sign(
+        objval->session->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        signature,
+        &signatureLen
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to sign");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(signatureLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        signature,
+        signatureLen
+    );
+    RETURN_STR(returnval);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, plaintext, IS_STRING, 0)
@@ -1008,6 +1075,7 @@ static zend_function_entry session_class_functions[] = {
 static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 

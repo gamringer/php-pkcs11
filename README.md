@@ -26,10 +26,14 @@ Currently supports:
 * C_Encrypt
 * C_DecryptInit
 * C_Decrypt
-
-Coming up in (probable) order:
 * C_SignInit
 * C_Sign
+
+Coming up in (probable) order:
+* Reading key from public key object
+* PSS Signature
+* ECDSA Signature
 * C_WrapKey
 * C_UnwrapKey
 * C_DeriveKey
+

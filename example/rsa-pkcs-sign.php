@@ -18,6 +18,9 @@ $keypair = $session->generateKeyPair(PKCS11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
 	PKCS11\CKA_SIGN => true,
 ]);
 
-var_dump($keypair);
+$data = "Hello World!";
+$signature = $keypair->pkey->sign(PKCS11\CKM_RSA_PKCS, $data);
+
+var_dump(bin2hex($signature));
 
 $session->logout();
