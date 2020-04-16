@@ -8,15 +8,15 @@ $module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
 $slotList = $module->getSlotList();
 
 var_dump($slotList);
-$session = $module->openSession($slotList[0], PKCS11\CKF_RW_SESSION);
+$session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 var_dump($module);
 var_dump($session);
 var_dump($session->getInfo()['state']);
-$session->login(PKCS11\CKU_SO,'12345678');
+$session->login(Pkcs11\CKU_SO,'12345678');
 var_dump($session->getInfo()['state']);
 $session->logout();
 var_dump($session->getInfo()['state']);
-$session->login(PKCS11\CKU_USER,'123456');
+$session->login(Pkcs11\CKU_USER,'123456');
 var_dump($session->getInfo()['state']);
 $session->logout();
 var_dump($session->getInfo()['state']);
