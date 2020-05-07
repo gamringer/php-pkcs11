@@ -596,7 +596,6 @@ PHP_METHOD(Session, getInfo) {
     add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
 
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_login, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
@@ -919,6 +918,80 @@ PHP_METHOD(Key, sign) {
     RETURN_STR(returnval);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_getAttributeValue, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, attributeIds, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, getAttributeValue) {
+
+    CK_RV rv;
+    zval *attributeIds;
+    zval *attributeId;
+    unsigned int i;
+
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_ARRAY(attributeIds)
+    ZEND_PARSE_PARAMETERS_END();
+
+    int attributeIdCount = zend_hash_num_elements(Z_ARRVAL_P(attributeIds));
+
+    CK_ATTRIBUTE *template = (CK_ATTRIBUTE *) malloc(sizeof(CK_ATTRIBUTE) * attributeIdCount);
+
+    i = 0;
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(attributeIds), attributeId) {
+        if (Z_TYPE_P(attributeId) != IS_LONG) {
+            pkcs11_error("PKCS11 module error", "Unable to get attribute value. Attribute ID must be an integer");
+            return;
+        }
+        template[i] = (CK_ATTRIBUTE) {zval_get_long(attributeId), NULL_PTR, 0};
+        i++;
+    } ZEND_HASH_FOREACH_END();
+
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
+        objval->session->session,
+        objval->key,
+        template,
+        attributeIdCount
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to get attribute value");
+        return;
+    }
+
+    for (i=0; i<attributeIdCount; i++) {
+        template[i].pValue = (uint8_t *) calloc(1, template[i].ulValueLen);
+    }
+
+    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
+        objval->session->session,
+        objval->key,
+        template,
+        attributeIdCount
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to get attribute value");
+        return;
+    }
+
+    array_init(return_value);
+    for (i=0; i<attributeIdCount; i++) {
+        zend_string *foo;
+        foo = zend_string_alloc(template[i].ulValueLen, 0);
+        memcpy(
+            ZSTR_VAL(foo),
+            template[i].pValue,
+            template[i].ulValueLen
+        );
+
+        add_index_str(return_value, template[i].type, foo);
+    }
+
+    free(template);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, plaintext, IS_STRING, 0)
@@ -1111,6 +1184,7 @@ static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, getAttributeValue, arginfo_pkcs11_key_getAttributeValue, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 

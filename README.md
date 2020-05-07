@@ -28,9 +28,9 @@ Currently supports:
 * C_Decrypt
 * C_SignInit
 * C_Sign
+* Reading object attributes, including public key attributes
 
 Coming up in (probable) order:
-* Reading key from public key object
 * PSS Signature
 * ECDSA Signature
 * C_WrapKey
