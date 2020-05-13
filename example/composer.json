@@ -1,0 +1,14 @@
+{
+    "name": "gamringer/php-pkcs11-examples",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Guillaume Amringer",
+            "email": "g.amringer@gmail.com"
+        }
+    ],
+    "require": {
+        "phpseclib/phpseclib": "^2.0"
+    }
+}

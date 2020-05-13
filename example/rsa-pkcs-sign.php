@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require 'helper.php';
 
+use phpseclib\Crypt\RSA;
+
 $module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
@@ -33,7 +35,12 @@ $attributes = $keypair->skey->getAttributeValue([
 $session->logout();
 
 $pem = rawToRsaPem($attributes[Pkcs11\CKA_MODULUS], $attributes[Pkcs11\CKA_PUBLIC_EXPONENT]);
-$r = openssl_verify($data, $signature, $pem, OPENSSL_ALGO_SHA256 );
+
+$rsa = new RSA();
+$rsa->setSignatureMode(RSA::SIGNATURE_PKCS1);
+$rsa->loadKey($pem);
+$rsa->setHash('sha256');
+$r = $rsa->verify($data, $signature);
 
 echo "Data:\n" . bin2hex($data), PHP_EOL, PHP_EOL;
 echo "Signature:\n" . bin2hex($signature), PHP_EOL, PHP_EOL;
@@ -41,3 +48,5 @@ echo "Public Exponent:\n" . bin2hex($attributes[Pkcs11\CKA_PUBLIC_EXPONENT]), PH
 echo "Modulus:\n" . bin2hex($attributes[Pkcs11\CKA_MODULUS]), PHP_EOL, PHP_EOL;
 echo 'Validates: ' . ($r ? 'Yes' : 'No'), PHP_EOL, PHP_EOL;
 
+echo "B64 Signature:\n" . base64url_encode($signature), PHP_EOL, PHP_EOL;
+echo $pem, PHP_EOL;

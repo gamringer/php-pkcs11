@@ -854,6 +854,7 @@ PHP_METHOD(Session, findObjects) {
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_sign, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Key, sign) {
@@ -861,13 +862,28 @@ PHP_METHOD(Key, sign) {
     CK_RV rv;
     zend_long mechanismId;
     zend_string *data;
+    zval *mechanismArgument = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(2,2)
+    ZEND_PARSE_PARAMETERS_START(2,3)
         Z_PARAM_LONG(mechanismId)
         Z_PARAM_STR(data)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(mechanismArgument)
     ZEND_PARSE_PARAMETERS_END();
 
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    CK_VOID_PTR pParams;
+
+    if (mechanismArgument) {
+        if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
+            mechanism.ulParameterLen = sizeof(CK_RSA_PKCS_PSS_PARAMS);
+            CK_RSA_PKCS_PSS_PARAMS params = {CKM_SHA256, CKG_MGF1_SHA256, (CK_ULONG)32};
+            pParams = calloc(1, mechanism.ulParameterLen);
+            memcpy(pParams, &params, mechanism.ulParameterLen);
+            mechanism.pParameter = pParams;
+        }
+    }
+
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
     rv = objval->session->pkcs11->functionList->C_SignInit(
         objval->session->session,
@@ -916,6 +932,8 @@ PHP_METHOD(Key, sign) {
         signatureLen
     );
     RETURN_STR(returnval);
+ 
+    free(pParams);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_getAttributeValue, 0, 0, 1)
@@ -1915,6 +1933,12 @@ PHP_MINIT_FUNCTION(pkcs11)
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKK_GOSTR3411",                  0x00000031UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKK_GOST28147",                  0x00000032UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKK_VENDOR_DEFINED",             0x80000000UL, CONST_CS | CONST_PERSISTENT);
+    
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA1",                  0x00000001UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA256",                0x00000002UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA384",                0x00000003UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA512",                0x00000004UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA224",                0x00000005UL, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }

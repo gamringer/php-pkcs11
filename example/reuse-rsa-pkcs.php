@@ -18,7 +18,6 @@ $attributes = $keys[0]->getAttributeValue([
 	Pkcs11\CKA_MODULUS,
 ]);
 
-
 $data = "Hello World!";
 $signature = $keys[0]->sign(Pkcs11\CKM_SHA256_RSA_PKCS, $data);
 
