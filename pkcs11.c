@@ -64,11 +64,16 @@ typedef struct _pkcs11_keypair_object {
 } pkcs11_keypair_object;
 
 typedef struct _pkcs11_rsapssparams_object {
-    CK_MECHANISM_TYPE *hashAlg;
-    CK_RSA_PKCS_MGF_TYPE *mgf;
-    CK_ULONG sLen;
+    CK_RSA_PKCS_PSS_PARAMS params;
     zend_object std;
 } pkcs11_rsapssparams_object;
+
+typedef struct _pkcs11_gcmparams_object {
+    CK_BYTE_PTR pIV;
+    CK_BYTE_PTR pAAD;
+    CK_ULONG ulTagLen;
+    zend_object std;
+} pkcs11_gcmparams_object;
 
 
 #define Z_PKCS11_P(zv)  pkcs11_from_zend_object(Z_OBJ_P((zv)))
@@ -76,6 +81,7 @@ typedef struct _pkcs11_rsapssparams_object {
 #define Z_PKCS11_KEY_P(zv)  pkcs11_key_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEYPAIR_P(zv)  pkcs11_keypair_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAPSSPARAMS_P(zv)  pkcs11_rsapssparams_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_GCMPARAMS_P(zv)  pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
 
 static inline pkcs11_object* pkcs11_from_zend_object(zend_object *obj) {
     return (pkcs11_object*)((char*)(obj) - XtOffsetOf(pkcs11_object, std));
@@ -97,6 +103,10 @@ static inline pkcs11_rsapssparams_object* pkcs11_rsapssparams_from_zend_object(z
     return (pkcs11_rsapssparams_object*)((char*)(obj) - XtOffsetOf(pkcs11_rsapssparams_object, std));
 }
 
+static inline pkcs11_gcmparams_object* pkcs11_gcmparams_from_zend_object(zend_object *obj) {
+    return (pkcs11_gcmparams_object*)((char*)(obj) - XtOffsetOf(pkcs11_gcmparams_object, std));
+}
+
 static zend_class_entry *ce_Pkcs11_Module;
 static zend_object_handlers pkcs11_handlers;
 
@@ -111,6 +121,9 @@ static zend_object_handlers pkcs11_keypair_handlers;
 
 static zend_class_entry *ce_Pkcs11_RsaPssParams;
 static zend_object_handlers pkcs11_rsapssparams_handlers;
+
+static zend_class_entry *ce_Pkcs11_GcmParams;
+static zend_object_handlers pkcs11_gcmparams_handlers;
 
 void pkcs11_error(char* generic, char* specific) {
     char buf[256];
@@ -320,6 +333,8 @@ PHP_METHOD(Module, getSlotList) {
     for (i=0; i<ulSlotCount; i++) {
         add_next_index_long(return_value, pSlotList[i]);
     }
+
+    free(pSlotList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotInfo, 0, 0, 1)
@@ -876,11 +891,9 @@ PHP_METHOD(Key, sign) {
 
     if (mechanismArgument) {
         if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
-            mechanism.ulParameterLen = sizeof(CK_RSA_PKCS_PSS_PARAMS);
-            CK_RSA_PKCS_PSS_PARAMS params = {CKM_SHA256, CKG_MGF1_SHA256, (CK_ULONG)32};
-            pParams = calloc(1, mechanism.ulParameterLen);
-            memcpy(pParams, &params, mechanism.ulParameterLen);
-            mechanism.pParameter = pParams;
+            pkcs11_rsapssparams_object *mechanismObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
+            mechanism.pParameter = &mechanismObj->params;
+            mechanism.ulParameterLen = sizeof(mechanismObj->params);
         }
     }
 
@@ -934,6 +947,7 @@ PHP_METHOD(Key, sign) {
     RETURN_STR(returnval);
  
     free(pParams);
+    free(signature);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_getAttributeValue, 0, 0, 1)
@@ -1170,50 +1184,32 @@ PHP_METHOD(RsaPssParams, __construct) {
         Z_PARAM_LONG(mgfId)
         Z_PARAM_LONG(sLen)
     ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_rsapssparams_object *objval = Z_PKCS11_RSAPSSPARAMS_P(ZEND_THIS);
+    objval->params.hashAlg = mechanismId;
+    objval->params.mgf = mgfId;
+    objval->params.sLen = sLen;
 }
 
-static zend_function_entry module_class_functions[] = {
-    PHP_ME(Module, __construct, arginfo_pkcs11_module___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-    PHP_ME(Module, getInfo, arginfo_pkcs11_module_getInfo, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getSlots, arginfo_pkcs11_module_getSlots, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getSlotList, arginfo_pkcs11_module_getSlotList, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getSlotInfo, arginfo_pkcs11_module_getSlotInfo, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getTokenInfo, arginfo_pkcs11_module_getTokenInfo, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getMechanismList, arginfo_pkcs11_module_getMechanismList, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, getMechanismInfo, arginfo_pkcs11_module_getMechanismInfo, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, initToken, arginfo_pkcs11_module_initToken, ZEND_ACC_PUBLIC)
-    PHP_ME(Module, openSession, arginfo_pkcs11_module_openSession, ZEND_ACC_PUBLIC)
-    PHP_FE_END
-};
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_gcmparams___construct, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, iv, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, aad, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, sTagLen, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
-static zend_function_entry session_class_functions[] = {
-    PHP_ME(Session, login, arginfo_pkcs11_session_login, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, getInfo, arginfo_pkcs11_session_getInfo, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, logout, arginfo_pkcs11_session_logout, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, initPin, arginfo_pkcs11_session_initPin, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, findObjects, arginfo_pkcs11_session_findObjects, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, generateKey, arginfo_pkcs11_session_generateKey, ZEND_ACC_PUBLIC)
-    PHP_ME(Session, generateKeyPair, arginfo_pkcs11_session_generateKeyPair, ZEND_ACC_PUBLIC)
-    PHP_FE_END
-};
+PHP_METHOD(GcmParams, __construct) {
 
-static zend_function_entry key_class_functions[] = {
-    PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
-    PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
-    PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
-    PHP_ME(Key, getAttributeValue, arginfo_pkcs11_key_getAttributeValue, ZEND_ACC_PUBLIC)
-    PHP_FE_END
-};
+    CK_RV rv;
+    zend_string *iv;
+    zend_string *aad;
+    zend_long sTagLen;
 
-static zend_function_entry keypair_class_functions[] = {
-    PHP_FE_END
-};
-
-static zend_function_entry rsapssparams_class_functions[] = {
-    PHP_ME(RsaPssParams, __construct, arginfo_pkcs11_rsapssparams___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-    PHP_FE_END
-};
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_STR(iv)
+        Z_PARAM_STR(aad)
+        Z_PARAM_LONG(sTagLen)
+    ZEND_PARSE_PARAMETERS_END();
+}
 
 static zend_object* pkcs11_ctor(zend_class_entry *ce) {
     pkcs11_object *objval = zend_object_alloc(sizeof(pkcs11_object), ce);
@@ -1240,6 +1236,20 @@ static void pkcs11_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+static zend_function_entry module_class_functions[] = {
+    PHP_ME(Module, __construct, arginfo_pkcs11_module___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_ME(Module, getInfo, arginfo_pkcs11_module_getInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getSlots, arginfo_pkcs11_module_getSlots, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getSlotList, arginfo_pkcs11_module_getSlotList, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getSlotInfo, arginfo_pkcs11_module_getSlotInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getTokenInfo, arginfo_pkcs11_module_getTokenInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getMechanismList, arginfo_pkcs11_module_getMechanismList, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, getMechanismInfo, arginfo_pkcs11_module_getMechanismInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, initToken, arginfo_pkcs11_module_initToken, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, openSession, arginfo_pkcs11_module_openSession, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
 static zend_object* pkcs11_session_ctor(zend_class_entry *ce) {
     pkcs11_session_object *objval = zend_object_alloc(sizeof(pkcs11_session_object), ce);
 
@@ -1261,6 +1271,18 @@ static void pkcs11_session_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+static zend_function_entry session_class_functions[] = {
+    PHP_ME(Session, login, arginfo_pkcs11_session_login, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, getInfo, arginfo_pkcs11_session_getInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, logout, arginfo_pkcs11_session_logout, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, initPin, arginfo_pkcs11_session_initPin, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, setPin, arginfo_pkcs11_session_setPin, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, findObjects, arginfo_pkcs11_session_findObjects, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, generateKey, arginfo_pkcs11_session_generateKey, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, generateKeyPair, arginfo_pkcs11_session_generateKeyPair, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
+
 static zend_object* pkcs11_key_ctor(zend_class_entry *ce) {
     pkcs11_key_object *objval = zend_object_alloc(sizeof(pkcs11_key_object), ce);
 
@@ -1277,6 +1299,14 @@ static void pkcs11_key_dtor(zend_object *zobj) {
 
     zend_object_std_dtor(&objval->std);
 }
+
+static zend_function_entry key_class_functions[] = {
+    PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, getAttributeValue, arginfo_pkcs11_key_getAttributeValue, ZEND_ACC_PUBLIC)
+    PHP_FE_END
+};
 
 static zend_object* pkcs11_keypair_ctor(zend_class_entry *ce) {
     pkcs11_keypair_object *objval = zend_object_alloc(sizeof(pkcs11_keypair_object), ce);
@@ -1295,6 +1325,10 @@ static void pkcs11_keypair_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+static zend_function_entry keypair_class_functions[] = {
+    PHP_FE_END
+};
+
 static zend_object* pkcs11_rsapssparams_ctor(zend_class_entry *ce) {
     pkcs11_rsapssparams_object *objval = zend_object_alloc(sizeof(pkcs11_rsapssparams_object), ce);
 
@@ -1312,16 +1346,38 @@ static void pkcs11_rsapssparams_dtor(zend_object *zobj) {
     zend_object_std_dtor(&objval->std);
 }
 
+static zend_function_entry rsapssparams_class_functions[] = {
+    PHP_ME(RsaPssParams, __construct, arginfo_pkcs11_rsapssparams___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_FE_END
+};
+
+static zend_object* pkcs11_gcmparams_ctor(zend_class_entry *ce) {
+    pkcs11_gcmparams_object *objval = zend_object_alloc(sizeof(pkcs11_gcmparams_object), ce);
+
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_gcmparams_handlers;
+
+    return &objval->std;
+}
+
+static void pkcs11_gcmparams_dtor(zend_object *zobj) {
+
+    pkcs11_gcmparams_object *objval = pkcs11_gcmparams_from_zend_object(zobj);
+
+    zend_object_std_dtor(&objval->std);
+}
+
+static zend_function_entry gcmparams_class_functions[] = {
+    PHP_ME(GcmParams, __construct, arginfo_pkcs11_gcmparams___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_FE_END
+};
+
 PHP_MINIT_FUNCTION(pkcs11)
 {
     zend_class_entry ce;
 
     memcpy(&pkcs11_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-    memcpy(&pkcs11_session_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-    memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-    memcpy(&pkcs11_keypair_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-    memcpy(&pkcs11_rsapssparams_handlers, &std_object_handlers, sizeof(zend_object_handlers));
-
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Module", module_class_functions);
     ce.create_object = pkcs11_ctor;
     pkcs11_handlers.offset = XtOffsetOf(pkcs11_object, std);
@@ -1331,6 +1387,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_Module->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Module->unserialize = zend_class_unserialize_deny;
 
+    memcpy(&pkcs11_session_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Session", session_class_functions);
     ce.create_object = pkcs11_session_ctor;
     pkcs11_session_handlers.offset = XtOffsetOf(pkcs11_session_object, std);
@@ -1340,6 +1397,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_Session->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Session->unserialize = zend_class_unserialize_deny;
 
+    memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Key", key_class_functions);
     ce.create_object = pkcs11_key_ctor;
     pkcs11_key_handlers.offset = XtOffsetOf(pkcs11_key_object, std);
@@ -1349,6 +1407,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
 
+    memcpy(&pkcs11_keypair_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "KeyPair", keypair_class_functions);
     ce.create_object = pkcs11_keypair_ctor;
     pkcs11_keypair_handlers.offset = XtOffsetOf(pkcs11_keypair_object, std);
@@ -1358,6 +1417,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_KeyPair->serialize = zend_class_serialize_deny;
     ce_Pkcs11_KeyPair->unserialize = zend_class_unserialize_deny;
 
+    memcpy(&pkcs11_rsapssparams_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "RsaPssParams", rsapssparams_class_functions);
     ce.create_object = pkcs11_rsapssparams_ctor;
     pkcs11_rsapssparams_handlers.offset = XtOffsetOf(pkcs11_rsapssparams_object, std);
@@ -1366,6 +1426,16 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_RsaPssParams = zend_register_internal_class(&ce);
     ce_Pkcs11_RsaPssParams->serialize = zend_class_serialize_deny;
     ce_Pkcs11_RsaPssParams->unserialize = zend_class_unserialize_deny;
+
+    memcpy(&pkcs11_gcmparams_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "GcmParams", gcmparams_class_functions);
+    ce.create_object = pkcs11_gcmparams_ctor;
+    pkcs11_gcmparams_handlers.offset = XtOffsetOf(pkcs11_gcmparams_object, std);
+    pkcs11_gcmparams_handlers.clone_obj = NULL;
+    pkcs11_gcmparams_handlers.free_obj = pkcs11_gcmparams_dtor;
+    ce_Pkcs11_GcmParams = zend_register_internal_class(&ce);
+    ce_Pkcs11_GcmParams->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_GcmParams->unserialize = zend_class_unserialize_deny;
 
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);
