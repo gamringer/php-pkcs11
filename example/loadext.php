@@ -2,18 +2,20 @@
 
 declare(strict_types=1);
 
-$module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
+$module = new Pkcs11\Module('/usr/local/lib/softhsm/libsofthsm2.so');
 
 
 $slotList = $module->getSlotList();
 var_dump($slotList);
 
 $mechanismList = $module->getMechanismList($slotList[0]);
-var_dump($mechanismList);
-
-$mechanismInfo = $module->getMechanismInfo($slotList[0], $mechanismList[48]);
-var_dump($mechanismInfo);
-var_dump(Pkcs11\CKM_SHA1_RSA_PKCS);
+print_r($mechanismList);
+foreach ($mechanismList as $i => $mechanismId) {
+	if ($mechanismId == Pkcs11\CKM_AES_GCM) {
+		$mechanismInfo = $module->getMechanismInfo($slotList[0], $mechanismList[$i]);
+		var_dump($mechanismInfo);
+	}
+}
 
 /*
 $info = $module->getInfo();
