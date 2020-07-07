@@ -1033,7 +1033,7 @@ PHP_METHOD(Key, encrypt) {
     CK_RV rv;
     zend_long mechanismId;
     zend_string *plaintext;
-    zval *mechanismArgument;
+    zval *mechanismArgument = NULL;
 
     ZEND_PARSE_PARAMETERS_START(2,3)
         Z_PARAM_LONG(mechanismId)
@@ -1044,14 +1044,18 @@ PHP_METHOD(Key, encrypt) {
 
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
 
-    if (Z_TYPE_P(mechanismArgument) == IS_STRING) {
-        mechanism.pParameter = Z_STRVAL_P(mechanismArgument);
-        mechanism.ulParameterLen = Z_STRLEN_P(mechanismArgument);
+    if (mechanismArgument) {
+        if (Z_TYPE_P(mechanismArgument) == IS_STRING) {
+            mechanism.pParameter = Z_STRVAL_P(mechanismArgument);
+            mechanism.ulParameterLen = Z_STRLEN_P(mechanismArgument);
 
-    } else if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
-        pkcs11_gcmparams_object *mechanismObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
-        mechanism.pParameter = &mechanismObj->params;
-        mechanism.ulParameterLen = sizeof(mechanismObj->params);
+        } else if (Z_TYPE_P(mechanismArgument) == IS_OBJECT) {
+            if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
+                pkcs11_gcmparams_object *mechanismObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
+                mechanism.pParameter = &mechanismObj->params;
+                mechanism.ulParameterLen = sizeof(mechanismObj->params);
+            }
+        }
     }
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
@@ -1135,7 +1139,7 @@ PHP_METHOD(Key, decrypt) {
         mechanism.pParameter = &mechanismObj->params;
         mechanism.ulParameterLen = sizeof(mechanismObj->params);
     }
-    
+
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
     rv = objval->session->pkcs11->functionList->C_DecryptInit(
         objval->session->session,
