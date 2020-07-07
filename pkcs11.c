@@ -804,7 +804,7 @@ PHP_METHOD(Session, generateKeyPair) {
     object_init_ex(&zpkeyobj, ce_Pkcs11_Key);
     pkey_obj = Z_PKCS11_KEY_P(&zpkeyobj);
     pkey_obj->session = objval;
-    pkey_obj->key = sKey;
+    pkey_obj->key = pKey;
 
     pkcs11_keypair_object* keypair_obj;
 
