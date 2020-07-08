@@ -22,6 +22,7 @@ Currently supports:
 * Encrypt/Decrypt (C_EncryptInit, C_Encrypt, C_DecryptInit, C_Decrypt) Tested with:
   * CKM_AES_CBC_PAD
   * CKM_AES_GCM
+  * CKM_RSA_PKCS
 * Signing (C_SignInit, C_Sign) Tested with:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
