@@ -1245,7 +1245,7 @@ PHP_METHOD(RsaPssParams, __construct) {
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_rsaoaepparams___construct, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, mgfId, IS_LONG, 0)
-    //ZEND_ARG_TYPE_INFO(0, source, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, source, IS_STRING, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(RsaOaepParams, __construct) {
@@ -1253,20 +1253,23 @@ PHP_METHOD(RsaOaepParams, __construct) {
     CK_RV rv;
     zend_long mechanismId;
     zend_long mgfId;
-    //zend_long source;
+    zend_string *source = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(2,2)
+    ZEND_PARSE_PARAMETERS_START(2,3)
         Z_PARAM_LONG(mechanismId)
         Z_PARAM_LONG(mgfId)
-    //    Z_PARAM_LONG(source)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(source)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_rsaoaepparams_object *objval = Z_PKCS11_RSAOAEPPARAMS_P(ZEND_THIS);
     objval->params.hashAlg = mechanismId;
     objval->params.mgf = mgfId;
     objval->params.source = CKZ_DATA_SPECIFIED;
-    //objval->params.pSourceData = NULL;
-    //objval->params.ulSourceDataLen = 0;
+    if (source && ZSTR_LEN(source) > 0) {
+        objval->params.pSourceData = ZSTR_VAL(source);
+        objval->params.ulSourceDataLen = ZSTR_LEN(source);
+    }
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_gcmparams___construct, 0, 0, 3)

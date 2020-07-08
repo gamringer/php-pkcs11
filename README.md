@@ -23,6 +23,7 @@ Currently supports:
   * CKM_AES_CBC_PAD
   * CKM_AES_GCM
   * CKM_RSA_PKCS
+  * CKM_RSA_PKCS_OAEP
 * Signing (C_SignInit, C_Sign) Tested with:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
