@@ -961,6 +961,75 @@ PHP_METHOD(Key, sign) {
     free(signature);
 }
 
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_verify, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, signature, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, verify) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_string *data;
+    zend_string *signature;
+    zval *mechanismArgument = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3,4)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_STR(data)
+        Z_PARAM_STR(signature)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(mechanismArgument)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    CK_VOID_PTR pParams;
+
+    if (mechanismArgument) {
+        if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
+            pkcs11_rsapssparams_object *mechanismObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
+            mechanism.pParameter = &mechanismObj->params;
+            mechanism.ulParameterLen = sizeof(mechanismObj->params);
+        }
+    }
+
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_VerifyInit(
+        objval->session->session,
+        &mechanism,
+        objval->key
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to verify");
+        return;
+    }
+
+    CK_ULONG signatureLen;
+    rv = objval->session->pkcs11->functionList->C_Verify(
+        objval->session->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        ZSTR_VAL(signature),
+        ZSTR_LEN(signature)
+    );
+
+    if (rv == CKR_SIGNATURE_INVALID) {
+        RETURN_BOOL(false);
+    }
+
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to verify");
+        return;
+    }
+
+    RETURN_BOOL(true);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_getAttributeValue, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, attributeIds, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -1392,6 +1461,7 @@ static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, encrypt, arginfo_pkcs11_key_encrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, verify, arginfo_pkcs11_key_verify, ZEND_ACC_PUBLIC)
     PHP_ME(Key, getAttributeValue, arginfo_pkcs11_key_getAttributeValue, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };

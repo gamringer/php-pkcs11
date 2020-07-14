@@ -27,6 +27,9 @@ $keypair = $session->generateKeyPair(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
 $data = "Hello World!";
 $signature = $keypair->skey->sign(Pkcs11\CKM_SHA256_RSA_PKCS, $data);
 
+$valid = $keypair->pkey->verify(Pkcs11\CKM_SHA256_RSA_PKCS, $data, $signature);
+var_dump($valid);
+
 $attributes = $keypair->skey->getAttributeValue([
 	Pkcs11\CKA_PUBLIC_EXPONENT,
 	Pkcs11\CKA_MODULUS,

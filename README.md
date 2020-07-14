@@ -24,12 +24,12 @@ Currently supports:
   * CKM_AES_GCM
   * CKM_RSA_PKCS
   * CKM_RSA_PKCS_OAEP
-* Signing (C_SignInit, C_Sign) Tested with:
+* Signing (C_SignInit, C_Sign, C_VerifyInit, C_Verify) Tested with:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
+  * CKM_ECDSA
 
 Coming up in (probable) order:
-* ECDSA Signature
 * C_WrapKey
 * C_UnwrapKey
 * C_DeriveKey

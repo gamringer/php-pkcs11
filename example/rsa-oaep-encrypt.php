@@ -6,7 +6,7 @@ require 'helper.php';
 
 use phpseclib\Crypt\RSA;
 
-$module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
+$module = new Pkcs11\Module('/usr/local/lib/softhsm/libsofthsm2.so');
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
