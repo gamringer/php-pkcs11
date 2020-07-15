@@ -78,6 +78,11 @@ typedef struct _pkcs11_gcmparams_object {
     zend_object std;
 } pkcs11_gcmparams_object;
 
+typedef struct _pkcs11_ecdh1deriveparams_object {
+    CK_ECDH1_DERIVE_PARAMS params;
+    zend_object std;
+} pkcs11_ecdh1deriveparams_object;
+
 
 #define Z_PKCS11_P(zv)  pkcs11_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SESSION_P(zv)  pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
@@ -86,10 +91,11 @@ typedef struct _pkcs11_gcmparams_object {
 #define Z_PKCS11_RSAPSSPARAMS_P(zv)  pkcs11_rsapssparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAOAEPPARAMS_P(zv)  pkcs11_rsaoaepparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_GCMPARAMS_P(zv)  pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_ECDH1DERIVEPARAMS_P(zv)  pkcs11_ecdh1deriveparams_from_zend_object(Z_OBJ_P((zv)))
 
 static inline pkcs11_object* pkcs11_from_zend_object(zend_object *obj) {
     return (pkcs11_object*)((char*)(obj) - XtOffsetOf(pkcs11_object, std));
-}
+} 
 
 static inline pkcs11_session_object* pkcs11_session_from_zend_object(zend_object *obj) {
     return (pkcs11_session_object*)((char*)(obj) - XtOffsetOf(pkcs11_session_object, std));
@@ -115,6 +121,10 @@ static inline pkcs11_gcmparams_object* pkcs11_gcmparams_from_zend_object(zend_ob
     return (pkcs11_gcmparams_object*)((char*)(obj) - XtOffsetOf(pkcs11_gcmparams_object, std));
 }
 
+static inline pkcs11_ecdh1deriveparams_object* pkcs11_ecdh1deriveparams_from_zend_object(zend_object *obj) {
+    return (pkcs11_ecdh1deriveparams_object*)((char*)(obj) - XtOffsetOf(pkcs11_ecdh1deriveparams_object, std));
+}
+
 static zend_class_entry *ce_Pkcs11_Module;
 static zend_object_handlers pkcs11_handlers;
 
@@ -135,6 +145,9 @@ static zend_object_handlers pkcs11_rsaoaepparams_handlers;
 
 static zend_class_entry *ce_Pkcs11_GcmParams;
 static zend_object_handlers pkcs11_gcmparams_handlers;
+
+static zend_class_entry *ce_Pkcs11_Ecdh1DeriveParams;
+static zend_object_handlers pkcs11_ecdh1deriveparams_handlers;
 
 void pkcs11_error(char* generic, char* specific) {
     char buf[256];
@@ -961,7 +974,6 @@ PHP_METHOD(Key, sign) {
     free(signature);
 }
 
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_verify, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
@@ -1286,6 +1298,50 @@ PHP_METHOD(Key, decrypt) {
     RETURN_STR(returnval);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_derive, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_INFO(0, mechanismArgument)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Key, derive) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    zval *mechanismArgument = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_ZVAL(mechanismArgument)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    CK_VOID_PTR pParams;
+    CK_OBJECT_HANDLE_PTR phKey;
+
+    if (mechanismArgument) {
+        if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\Ecdh1DeriveParams")) {
+            pkcs11_ecdh1deriveparams_object *mechanismObj = Z_PKCS11_ECDH1DERIVEPARAMS_P(mechanismArgument);
+            mechanism.pParameter = &mechanismObj->params;
+            mechanism.ulParameterLen = sizeof(mechanismObj->params);
+        }
+    }
+
+    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_DeriveKey(
+        objval->session->session,
+        &mechanism,
+        objval->key,
+        NULL,
+        0,
+        phKey
+    );
+    if (rv != CKR_OK) {
+        php_printf("%ld\n", rv);
+        pkcs11_error("PKCS11 module error", "Unable to derive");
+        return;
+    }
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_rsapssparams___construct, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, mgfId, IS_LONG, 0)
@@ -1366,6 +1422,33 @@ PHP_METHOD(GcmParams, __construct) {
     objval->params.pAAD = ZSTR_VAL(aad);
     objval->params.ulAADLen = ZSTR_LEN(aad);
     objval->params.ulTagBits = sTagLen;
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_ecdh1deriveparams___construct, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, kdfId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, sharedData, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, publicData, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Ecdh1DeriveParams, __construct) {
+
+    CK_RV rv;
+    zend_long kdfId;
+    zend_string *sharedData;
+    zend_string *publicData;
+
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_LONG(kdfId)
+        Z_PARAM_STR(sharedData)
+        Z_PARAM_STR(publicData)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_ecdh1deriveparams_object *objval = Z_PKCS11_ECDH1DERIVEPARAMS_P(ZEND_THIS);
+    objval->params.kdf = kdfId;
+    objval->params.pSharedData = ZSTR_VAL(sharedData);
+    objval->params.ulSharedDataLen = ZSTR_LEN(sharedData);
+    objval->params.pPublicData = ZSTR_VAL(publicData);
+    objval->params.ulPublicDataLen = ZSTR_LEN(publicData);
 }
 
 static zend_object* pkcs11_ctor(zend_class_entry *ce) {
@@ -1462,6 +1545,7 @@ static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, decrypt, arginfo_pkcs11_key_decrypt, ZEND_ACC_PUBLIC)
     PHP_ME(Key, sign, arginfo_pkcs11_key_sign, ZEND_ACC_PUBLIC)
     PHP_ME(Key, verify, arginfo_pkcs11_key_verify, ZEND_ACC_PUBLIC)
+    PHP_ME(Key, derive, arginfo_pkcs11_key_derive, ZEND_ACC_PUBLIC)
     PHP_ME(Key, getAttributeValue, arginfo_pkcs11_key_getAttributeValue, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
@@ -1553,6 +1637,28 @@ static zend_function_entry gcmparams_class_functions[] = {
     PHP_FE_END
 };
 
+static zend_object* pkcs11_ecdh1deriveparams_ctor(zend_class_entry *ce) {
+    pkcs11_ecdh1deriveparams_object *objval = zend_object_alloc(sizeof(pkcs11_ecdh1deriveparams_object), ce);
+
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_ecdh1deriveparams_handlers;
+
+    return &objval->std;
+}
+
+static void pkcs11_ecdh1deriveparams_dtor(zend_object *zobj) {
+
+    pkcs11_ecdh1deriveparams_object *objval = pkcs11_ecdh1deriveparams_from_zend_object(zobj);
+
+    zend_object_std_dtor(&objval->std);
+}
+
+static zend_function_entry ecdh1deriveparams_class_functions[] = {
+    PHP_ME(Ecdh1DeriveParams, __construct, arginfo_pkcs11_ecdh1deriveparams___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_FE_END
+};
+
 PHP_MINIT_FUNCTION(pkcs11)
 {
     zend_class_entry ce;
@@ -1626,6 +1732,16 @@ PHP_MINIT_FUNCTION(pkcs11)
     ce_Pkcs11_GcmParams = zend_register_internal_class(&ce);
     ce_Pkcs11_GcmParams->serialize = zend_class_serialize_deny;
     ce_Pkcs11_GcmParams->unserialize = zend_class_unserialize_deny;
+
+    memcpy(&pkcs11_ecdh1deriveparams_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Ecdh1DeriveParams", ecdh1deriveparams_class_functions);
+    ce.create_object = pkcs11_ecdh1deriveparams_ctor;
+    pkcs11_ecdh1deriveparams_handlers.offset = XtOffsetOf(pkcs11_ecdh1deriveparams_object, std);
+    pkcs11_ecdh1deriveparams_handlers.clone_obj = NULL;
+    pkcs11_ecdh1deriveparams_handlers.free_obj = pkcs11_ecdh1deriveparams_dtor;
+    ce_Pkcs11_Ecdh1DeriveParams = zend_register_internal_class(&ce);
+    ce_Pkcs11_Ecdh1DeriveParams->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_Ecdh1DeriveParams->unserialize = zend_class_unserialize_deny;
 
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);
@@ -2201,6 +2317,33 @@ PHP_MINIT_FUNCTION(pkcs11)
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKG_MGF1_SHA224",                0x00000005UL, CONST_CS | CONST_PERSISTENT);
     
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKZ_DATA_SPECIFIED",             0x00000001UL, CONST_CS | CONST_PERSISTENT);
+
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_NULL",                       0x00000001UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA1_KDF",                   0x00000002UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA1_KDF_ASN1",              0x00000003UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA1_KDF_CONCATENATE",       0x00000004UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA224_KDF",                 0x00000005UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA256_KDF",                 0x00000006UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA384_KDF",                 0x00000007UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA512_KDF",                 0x00000008UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_CPDIVERSIFY_KDF",            0x00000009UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_224_KDF",               0x0000000AUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_256_KDF",               0x0000000BUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_384_KDF",               0x0000000CUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_512_KDF",               0x0000000DUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA1_KDF_SP800",             0x0000000EUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA224_KDF_SP800",           0x0000000FUL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA256_KDF_SP800",           0x00000010UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA384_KDF_SP800",           0x00000011UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA512_KDF_SP800",           0x00000012UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_224_KDF_SP800",         0x00000013UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_256_KDF_SP800",         0x00000014UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_384_KDF_SP800",         0x00000015UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_SHA3_512_KDF_SP800",         0x00000016UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_BLAKE2B_160_KDF",            0x00000017UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_BLAKE2B_256_KDF",            0x00000018UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_BLAKE2B_384_KDF",            0x00000019UL, CONST_CS | CONST_PERSISTENT);
+    REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKD_BLAKE2B_512_KDF",            0x0000001aUL, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }
