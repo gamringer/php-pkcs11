@@ -28,11 +28,11 @@ Currently supports:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
   * CKM_ECDSA
+  * CKM_EDDSA
 * Deriving (C_DeriveKey) Tested with:
   * CKM_ECDH1_DERIVE
 
 Coming up in (probable) order:
-* EDDSA
 * X25519 & X448
 * Blake
 * C_WrapKey
