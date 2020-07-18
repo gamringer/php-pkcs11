@@ -32,6 +32,9 @@ Currently supports:
   * CKM_ECDH1_DERIVE
 
 Coming up in (probable) order:
+* EDDSA
+* X25519 & X448
+* Blake
 * C_WrapKey
 * C_UnwrapKey
 
