@@ -1298,9 +1298,10 @@ PHP_METHOD(Key, decrypt) {
     RETURN_STR(returnval);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_derive, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_derive, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_INFO(0, mechanismArgument)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Key, derive) {
@@ -1308,15 +1309,21 @@ PHP_METHOD(Key, derive) {
     CK_RV rv;
     zend_long mechanismId;
     zval *mechanismArgument = NULL;
+    HashTable *template;
 
-    ZEND_PARSE_PARAMETERS_START(2,2)
+    ZEND_PARSE_PARAMETERS_START(3,3)
         Z_PARAM_LONG(mechanismId)
         Z_PARAM_ZVAL(mechanismArgument)
+        Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
     CK_VOID_PTR pParams;
-    CK_OBJECT_HANDLE_PTR phKey;
+    CK_OBJECT_HANDLE phKey;
+
+    int templateItemCount;
+    CK_ATTRIBUTE *templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
 
     if (mechanismArgument) {
         if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\Ecdh1DeriveParams")) {
@@ -1331,15 +1338,22 @@ PHP_METHOD(Key, derive) {
         objval->session->session,
         &mechanism,
         objval->key,
-        NULL,
-        0,
-        phKey
+        templateObj,
+        templateItemCount,
+        &phKey
     );
     if (rv != CKR_OK) {
         php_printf("%ld\n", rv);
         pkcs11_error("PKCS11 module error", "Unable to derive");
         return;
     }
+
+    pkcs11_key_object* key_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_Key);
+    key_obj = Z_PKCS11_KEY_P(return_value);
+    key_obj->session = objval->session;
+    key_obj->key = phKey;
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_rsapssparams___construct, 0, 0, 3)
@@ -1445,8 +1459,8 @@ PHP_METHOD(Ecdh1DeriveParams, __construct) {
 
     pkcs11_ecdh1deriveparams_object *objval = Z_PKCS11_ECDH1DERIVEPARAMS_P(ZEND_THIS);
     objval->params.kdf = kdfId;
-    objval->params.pSharedData = ZSTR_VAL(sharedData);
-    objval->params.ulSharedDataLen = ZSTR_LEN(sharedData);
+    objval->params.pSharedData = NULL;//ZSTR_VAL(sharedData);
+    objval->params.ulSharedDataLen = 0;//ZSTR_LEN(sharedData);
     objval->params.pPublicData = ZSTR_VAL(publicData);
     objval->params.ulPublicDataLen = ZSTR_LEN(publicData);
 }

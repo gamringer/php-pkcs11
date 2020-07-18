@@ -28,9 +28,10 @@ Currently supports:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
   * CKM_ECDSA
+* Deriving (C_DeriveKey) Tested with:
+  * CKM_ECDH1_DERIVE
 
 Coming up in (probable) order:
 * C_WrapKey
 * C_UnwrapKey
-* C_DeriveKey
 

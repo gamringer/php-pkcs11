@@ -29,16 +29,27 @@ $keypair = $session->generateKeyPair(Pkcs11\CKM_EC_KEY_PAIR_GEN, [
 	Pkcs11\CKA_LABEL => "Test ECDH Private",
 ]);
 
-$attributes = $keypair->pkey->getAttributeValue([
-	Pkcs11\CKA_LABEL,
-	Pkcs11\CKA_EC_POINT,
+$rawPublickeyOther = hex2bin('04410434ffa340f38c53f79c02361028ab63d4430e734f6bc42d2c59ae18e980881eb1d7efad542fa2273c9860fe4bac68ef317165f1c7f0dbc6db1b803be65c735705');
+
+$shared = '';
+
+// SoftHSM2 only supports CKD_NULL
+$params = new Pkcs11\Ecdh1DeriveParams(Pkcs11\CKD_NULL, $shared, $rawPublickeyOther);
+$secret = $keypair->skey->derive(Pkcs11\CKM_ECDH1_DERIVE, $params, [
+	Pkcs11\CKA_TOKEN => false,
+	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
+	Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_AES,
+	Pkcs11\CKA_SENSITIVE => false,
+	Pkcs11\CKA_EXTRACTABLE => false,
+	Pkcs11\CKA_ENCRYPT => true,
+	Pkcs11\CKA_DECRYPT => true,
 ]);
 
-$shared = 'allo';
-$public = '';
-$params = new Pkcs11\Ecdh1DeriveParams(Pkcs11\CKD_SHA256_KDF, $shared, $public);
-$secret = $keypair->skey->derive(Pkcs11\CKM_ECDH1_DERIVE, $params);
-
 var_dump($secret);
+
+$iv = random_bytes(16);
+$data = 'Hello World!';
+$ciphertext = $secret->encrypt(Pkcs11\CKM_AES_CBC_PAD, $data, $iv);
+var_dump(bin2hex($ciphertext));
 
 $session->logout();
