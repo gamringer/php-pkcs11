@@ -33,9 +33,9 @@ Currently supports:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 
 Coming up in (probable) order:
-* ChaCha20-Poly1305
-* Blake
 * HMAC
 * C_WrapKey
 * C_UnwrapKey
+* ChaCha20-Poly1305
+* Blake
 
