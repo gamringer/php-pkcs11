@@ -2,13 +2,6 @@
 
 declare(strict_types=1);
 
-use Mdanter\Ecc\Crypto\Signature\SignHasher;
-use Mdanter\Ecc\EccFactory;
-use Mdanter\Ecc\Crypto\Signature\Signer;
-use Mdanter\Ecc\Serializer\PublicKey\PemPublicKeySerializer;
-use Mdanter\Ecc\Serializer\PublicKey\DerPublicKeySerializer;
-use Mdanter\Ecc\Serializer\Signature\DerSignatureSerializer;
-
 require 'helper.php';
 
 $module = new Pkcs11\Module('/usr/local/lib/softhsm/libsofthsm2.so');

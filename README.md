@@ -30,11 +30,12 @@ Currently supports:
   * CKM_ECDSA
   * CKM_EDDSA
 * Deriving (C_DeriveKey) Tested with:
-  * CKM_ECDH1_DERIVE
+  * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 
 Coming up in (probable) order:
-* X25519 & X448
+* ChaCha20-Poly1305
 * Blake
+* HMAC
 * C_WrapKey
 * C_UnwrapKey
 
