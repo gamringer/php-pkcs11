@@ -29,11 +29,11 @@ Currently supports:
   * CKM_*RSA_PKCS_PSS
   * CKM_ECDSA
   * CKM_EDDSA
+  * CKM_*HMAC
 * Deriving (C_DeriveKey) Tested with:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 
 Coming up in (probable) order:
-* HMAC
 * C_WrapKey
 * C_UnwrapKey
 * ChaCha20-Poly1305
