@@ -34,6 +34,9 @@ Currently supports:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 
 Coming up in (probable) order:
+* C_CreateObject
+* C_CopyObject
+* C_DestroyObject
 * C_WrapKey
 * C_UnwrapKey
 * ChaCha20-Poly1305
