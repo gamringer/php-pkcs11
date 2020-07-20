@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-$module = new Pkcs11\Module('/usr/lib/softhsm/libsofthsm2.so');
+require 'helper.php';
+
+$module = new Pkcs11\Module($modulePath);
 
 
 $slotList = $module->getSlotList();

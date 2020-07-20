@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require 'helper.php';
 
-$module = new Pkcs11\Module('/usr/local/lib/softhsm/libsofthsm2.so');
+$module = new Pkcs11\Module($modulePath);
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');

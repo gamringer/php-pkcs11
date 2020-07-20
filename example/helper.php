@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 require __DIR__ . '/vendor/autoload.php';
+
+$modulePath = '/usr/local/lib/softhsm/libsofthsm2.so';
 
 function rawToRsaPem($modulus, $exponent){
 	$der = hex2bin('30820122300d06092a864886f70d01010105000382010f003082010a0282010100')
