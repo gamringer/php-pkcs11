@@ -159,7 +159,7 @@ void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *tem
     zval *templateValue;
     zend_ulong templateValueKey;
     *templateItemCount = zend_hash_num_elements(*template);
-    *templateObj = calloc(*templateItemCount, sizeof(CK_ATTRIBUTE));
+    *templateObj = ecalloc(*templateItemCount, sizeof(CK_ATTRIBUTE));
     unsigned int i = 0;
     CK_BBOOL btrue = CK_TRUE;
     CK_BBOOL bfalse = CK_FALSE;
@@ -297,10 +297,10 @@ PHP_METHOD(Module, getSlots) {
         return;
     }
 
-    pSlotList = (CK_SLOT_ID_PTR) malloc(ulSlotCount * sizeof(CK_SLOT_ID));
+    pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
     rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
     if (rv != CKR_OK) {
-        free(pSlotList);
+        efree(pSlotList);
         pkcs11_error("PKCS11 module error", "Unable to get slot list from token");
         return;
     }
@@ -320,7 +320,7 @@ PHP_METHOD(Module, getSlots) {
         add_assoc_stringl(&slotObj, "description", slotInfo.slotDescription, 64);
         add_index_zval(return_value, pSlotList[i], &slotObj);
     }
-    free(pSlotList);
+    efree(pSlotList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotList, 0, 0, 0)
@@ -345,7 +345,7 @@ PHP_METHOD(Module, getSlotList) {
         return;
     }
 
-    pSlotList = (CK_SLOT_ID_PTR) malloc(ulSlotCount * sizeof(CK_SLOT_ID));
+    pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
     rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
     if (rv != CKR_OK) {
         pkcs11_error("PKCS11 module error", "Unable to get slot list from token");
@@ -358,7 +358,7 @@ PHP_METHOD(Module, getSlotList) {
         add_next_index_long(return_value, pSlotList[i]);
     }
 
-    free(pSlotList);
+    efree(pSlotList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getSlotInfo, 0, 0, 1)
@@ -483,10 +483,10 @@ PHP_METHOD(Module, getMechanismList) {
         return;
     }
 
-    pMechanismList = (CK_MECHANISM_TYPE_PTR) malloc(ulMechanismCount * sizeof(CK_MECHANISM_TYPE));
+    pMechanismList = (CK_MECHANISM_TYPE_PTR) ecalloc(ulMechanismCount, sizeof(CK_MECHANISM_TYPE));
     rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
     if (rv != CKR_OK) {
-        free(pMechanismList);
+        efree(pMechanismList);
         pkcs11_error("PKCS11 module error", "Unable to get mechanism list from token 2");
         return;
     }
@@ -496,7 +496,7 @@ PHP_METHOD(Module, getMechanismList) {
     for (i=0; i<ulMechanismCount; i++) {
         add_next_index_long(return_value, pMechanismList[i]);
     }
-    free(pMechanismList);
+    efree(pMechanismList);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module_getMechanismInfo, 0, 0, 2)
@@ -947,7 +947,7 @@ PHP_METHOD(Key, sign) {
         return;
     }
 
-    CK_BYTE_PTR signature = calloc(signatureLen, sizeof(CK_BYTE));
+    CK_BYTE_PTR signature = ecalloc(signatureLen, sizeof(CK_BYTE));
     rv = objval->session->pkcs11->functionList->C_Sign(
         objval->session->session,
         ZSTR_VAL(data),
@@ -970,8 +970,8 @@ PHP_METHOD(Key, sign) {
     );
     RETURN_STR(returnval);
  
-    free(pParams);
-    free(signature);
+    efree(pParams);
+    efree(signature);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_verify, 0, 0, 3)
@@ -1059,7 +1059,7 @@ PHP_METHOD(Key, getAttributeValue) {
 
     int attributeIdCount = zend_hash_num_elements(Z_ARRVAL_P(attributeIds));
 
-    CK_ATTRIBUTE *template = (CK_ATTRIBUTE *) malloc(sizeof(CK_ATTRIBUTE) * attributeIdCount);
+    CK_ATTRIBUTE *template = (CK_ATTRIBUTE *) ecalloc(sizeof(CK_ATTRIBUTE), attributeIdCount);
 
     i = 0;
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(attributeIds), attributeId) {
@@ -1085,7 +1085,7 @@ PHP_METHOD(Key, getAttributeValue) {
     }
 
     for (i=0; i<attributeIdCount; i++) {
-        template[i].pValue = (uint8_t *) calloc(1, template[i].ulValueLen);
+        template[i].pValue = (uint8_t *) ecalloc(1, template[i].ulValueLen);
     }
 
     rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
@@ -1113,7 +1113,7 @@ PHP_METHOD(Key, getAttributeValue) {
         add_index_str(return_value, template[i].type, foo);
     }
 
-    free(template);
+    efree(template);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_encrypt, 0, 0, 2)
@@ -1183,7 +1183,7 @@ PHP_METHOD(Key, encrypt) {
         return;
     }
 
-    CK_BYTE_PTR ciphertext = calloc(ciphertextLen, sizeof(CK_BYTE));
+    CK_BYTE_PTR ciphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
     rv = objval->session->pkcs11->functionList->C_Encrypt(
         objval->session->session,
         ZSTR_VAL(plaintext),
@@ -1274,7 +1274,7 @@ PHP_METHOD(Key, decrypt) {
         return;
     }
 
-    CK_BYTE_PTR plaintext = calloc(plaintextLen, sizeof(CK_BYTE));
+    CK_BYTE_PTR plaintext = ecalloc(plaintextLen, sizeof(CK_BYTE));
     rv = objval->session->pkcs11->functionList->C_Decrypt(
         objval->session->session,
         ZSTR_VAL(ciphertext),
