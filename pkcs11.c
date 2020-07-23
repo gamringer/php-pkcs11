@@ -922,7 +922,6 @@ PHP_METHOD(Key, sign) {
     ZEND_PARSE_PARAMETERS_END();
 
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
-    CK_VOID_PTR pParams;
 
     if (mechanismArgument) {
         if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
@@ -981,7 +980,6 @@ PHP_METHOD(Key, sign) {
     );
     RETURN_STR(returnval);
  
-    efree(pParams);
     efree(signature);
 }
 
@@ -1070,7 +1068,7 @@ PHP_METHOD(Key, getAttributeValue) {
 
     int attributeIdCount = zend_hash_num_elements(Z_ARRVAL_P(attributeIds));
 
-    CK_ATTRIBUTE *template = (CK_ATTRIBUTE *) ecalloc(sizeof(CK_ATTRIBUTE), attributeIdCount);
+    CK_ATTRIBUTE_PTR template = (CK_ATTRIBUTE *) ecalloc(sizeof(CK_ATTRIBUTE), attributeIdCount);
 
     i = 0;
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(attributeIds), attributeId) {
@@ -1120,6 +1118,8 @@ PHP_METHOD(Key, getAttributeValue) {
             template[i].pValue,
             template[i].ulValueLen
         );
+
+        efree(template[i].pValue);
 
         add_index_str(return_value, template[i].type, foo);
     }
@@ -1216,6 +1216,8 @@ PHP_METHOD(Key, encrypt) {
         ciphertextLen
     );
     RETURN_STR(returnval);
+
+    efree(ciphertext);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_decrypt, 0, 0, 2)
@@ -1307,6 +1309,8 @@ PHP_METHOD(Key, decrypt) {
         plaintextLen
     );
     RETURN_STR(returnval);
+
+    efree(plaintext);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_derive, 0, 0, 3)
