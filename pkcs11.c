@@ -184,6 +184,10 @@ void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *tem
     ZEND_HASH_FOREACH_END();
 }
 
+void freeTemplate(CK_ATTRIBUTE_PTR *templateObj) {
+    efree(*templateObj);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_module___construct, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, modulePath, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -748,7 +752,7 @@ PHP_METHOD(Session, generateKey) {
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
 
     int templateItemCount;
-    CK_ATTRIBUTE *templateObj;
+    CK_ATTRIBUTE_PTR templateObj;
     parseTemplate(&template, &templateObj, &templateItemCount);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
@@ -770,6 +774,8 @@ PHP_METHOD(Session, generateKey) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval;
     key_obj->key = hKey;
+
+    freeTemplate(&templateObj);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_generateKeyPair, 0, 0, 2)
@@ -797,11 +803,11 @@ PHP_METHOD(Session, generateKeyPair) {
 
     CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
     int skTemplateItemCount;
-    CK_ATTRIBUTE *skTemplateObj;
+    CK_ATTRIBUTE_PTR skTemplateObj;
     parseTemplate(&skTemplate, &skTemplateObj, &skTemplateItemCount);
 
     int pkTemplateItemCount;
-    CK_ATTRIBUTE *pkTemplateObj;
+    CK_ATTRIBUTE_PTR pkTemplateObj;
     parseTemplate(&pkTemplate, &pkTemplateObj, &pkTemplateItemCount);
 
     rv = objval->pkcs11->functionList->C_GenerateKeyPair(
@@ -841,6 +847,9 @@ PHP_METHOD(Session, generateKeyPair) {
     keypair_obj = Z_PKCS11_KEYPAIR_P(return_value);
     keypair_obj->pkey = pkey_obj;
     keypair_obj->skey = skey_obj;
+
+    freeTemplate(&skTemplateObj);
+    freeTemplate(&pkTemplateObj);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_session_findObjects, 0, 0, 1)
@@ -859,7 +868,7 @@ PHP_METHOD(Session, findObjects) {
     ZEND_PARSE_PARAMETERS_END();
 
     int templateItemCount;
-    CK_ATTRIBUTE *templateObj;
+    CK_ATTRIBUTE_PTR templateObj;
     parseTemplate(&template, &templateObj, &templateItemCount);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
@@ -888,6 +897,8 @@ PHP_METHOD(Session, findObjects) {
     }
 
     rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
+
+    freeTemplate(&templateObj);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_key_sign, 0, 0, 2)
@@ -1322,7 +1333,7 @@ PHP_METHOD(Key, derive) {
     CK_OBJECT_HANDLE phKey;
 
     int templateItemCount;
-    CK_ATTRIBUTE *templateObj;
+    CK_ATTRIBUTE_PTR templateObj;
     parseTemplate(&template, &templateObj, &templateItemCount);
 
     if (mechanismArgument) {
@@ -1354,6 +1365,8 @@ PHP_METHOD(Key, derive) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval->session;
     key_obj->key = phKey;
+
+    freeTemplate(&templateObj);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pkcs11_rsapssparams___construct, 0, 0, 3)
