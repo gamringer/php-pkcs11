@@ -161,8 +161,8 @@ void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *tem
     *templateItemCount = zend_hash_num_elements(*template);
     *templateObj = ecalloc(*templateItemCount, sizeof(CK_ATTRIBUTE));
     unsigned int i = 0;
-    CK_BBOOL btrue = CK_TRUE;
-    CK_BBOOL bfalse = CK_FALSE;
+    static CK_BBOOL btrue = CK_TRUE;
+    static CK_BBOOL bfalse = CK_FALSE;
     ZEND_HASH_FOREACH_NUM_KEY_VAL(*template, templateValueKey, templateValue)
         if (Z_TYPE_P(templateValue) == IS_LONG) {
             (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, &(Z_LVAL_P(templateValue)), sizeof(CK_ULONG)};
