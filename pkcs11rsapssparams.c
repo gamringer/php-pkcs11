@@ -16,27 +16,45 @@
    +----------------------------------------------------------------------+
 */
 
-#ifndef PHP_PKCS11_H
-# define PHP_PKCS11_H
+#include "pkcs11int.h"
 
-extern zend_module_entry pkcs11_module_entry;
-# define phpext_pkcs11_ptr &pkcs11_module_entry
+zend_class_entry *ce_Pkcs11_RsaPssParams;
+static zend_object_handlers pkcs11_rsapssparams_handlers;
 
-# define PHP_PKCS11_NAME    "pkcs11"
-# define PHP_PKCS11_VERSION "0.1.0"
 
-# if defined(ZTS) && defined(COMPILE_DL_PKCS11)
-ZEND_TSRMLS_CACHE_EXTERN()
-# endif
+ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mgfId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, sLen, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
-#define CK_PTR *
-#define CK_DECLARE_FUNCTION(returnType, name) returnType name
-#define CK_DECLARE_FUNCTION_POINTER(returnType, name) returnType (* name)
-#define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
-#ifndef NULL_PTR
-#define NULL_PTR 0
-#endif
+PHP_METHOD(RsaPssParams, __construct) {
 
-#include "pkcs11.h"
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_long mgfId;
+    zend_long sLen;
 
-#endif	/* PHP_PKCS11_H */
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_LONG(mgfId)
+        Z_PARAM_LONG(sLen)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_rsapssparams_object *objval = Z_PKCS11_RSAPSSPARAMS_P(ZEND_THIS);
+    objval->params.hashAlg = mechanismId;
+    objval->params.mgf = mgfId;
+    objval->params.sLen = sLen;
+}
+
+
+void pkcs11_rsapssparams_shutdown(pkcs11_rsapssparams_object *obj) {
+}
+
+static zend_function_entry rsapssparams_class_functions[] = {
+    PHP_ME(RsaPssParams, __construct, arginfo___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_FE_END
+};
+
+
+DEFINE_MAGIC_FUNCS(pkcs11_rsapssparams, rsapssparams, RsaPssParams)
