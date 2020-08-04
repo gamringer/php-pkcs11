@@ -471,6 +471,8 @@ PHP_METHOD(Key, derive) {
         templateItemCount,
         &phKey
     );
+    freeTemplate(templateObj);
+
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to derive");
         return;
@@ -482,8 +484,6 @@ PHP_METHOD(Key, derive) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval->session;
     key_obj->key = phKey;
-
-    freeTemplate(&templateObj);
 }
 
 

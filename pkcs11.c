@@ -60,8 +60,8 @@ void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *tem
     ZEND_HASH_FOREACH_END();
 }
 
-void freeTemplate(CK_ATTRIBUTE_PTR *templateObj) {
-    efree(*templateObj);
+void freeTemplate(CK_ATTRIBUTE_PTR templateObj) {
+    efree(templateObj);
 }
 
 

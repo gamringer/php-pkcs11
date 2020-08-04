@@ -182,6 +182,7 @@ PHP_METHOD(Session, generateKey) {
         &mechanism,
         templateObj, templateItemCount, &hKey
     );
+    freeTemplate(templateObj);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to generate key");
@@ -194,8 +195,6 @@ PHP_METHOD(Session, generateKey) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval;
     key_obj->key = hKey;
-
-    freeTemplate(&templateObj);
 }
 
 
@@ -232,6 +231,8 @@ PHP_METHOD(Session, generateKeyPair) {
         skTemplateObj, skTemplateItemCount,
         &pKey, &sKey
     );
+    freeTemplate(skTemplateObj);
+    freeTemplate(pkTemplateObj);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to generate key pair");
@@ -261,9 +262,6 @@ PHP_METHOD(Session, generateKeyPair) {
     keypair_obj = Z_PKCS11_KEYPAIR_P(return_value);
     keypair_obj->pkey = pkey_obj;
     keypair_obj->skey = skey_obj;
-
-    freeTemplate(&skTemplateObj);
-    freeTemplate(&pkTemplateObj);
 }
 
 
@@ -286,6 +284,7 @@ PHP_METHOD(Session, findObjects) {
     rv = objval->pkcs11->functionList->C_FindObjectsInit(objval->session, templateObj, templateItemCount);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to find objects");
+        freeTemplate(templateObj);
         return;
     }
 
@@ -309,7 +308,7 @@ PHP_METHOD(Session, findObjects) {
 
     rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
 
-    freeTemplate(&templateObj);
+    freeTemplate(templateObj);
 }
 
 

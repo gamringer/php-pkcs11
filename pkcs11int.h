@@ -145,6 +145,6 @@ extern void pkcs11_error(CK_RV rv, char *error);
 extern void general_error(char *generic, char *specific);
 
 extern void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *templateItemCount);
-extern void freeTemplate(CK_ATTRIBUTE_PTR *templateObj);
+extern void freeTemplate(CK_ATTRIBUTE_PTR templateObj);
 
 #endif
