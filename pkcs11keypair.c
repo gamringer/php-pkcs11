@@ -16,27 +16,18 @@
    +----------------------------------------------------------------------+
 */
 
-#ifndef PHP_PKCS11_H
-# define PHP_PKCS11_H
+#include "pkcs11int.h"
 
-extern zend_module_entry pkcs11_module_entry;
-# define phpext_pkcs11_ptr &pkcs11_module_entry
+zend_class_entry *ce_Pkcs11_KeyPair;
+static zend_object_handlers pkcs11_keypair_handlers;
 
-# define PHP_PKCS11_NAME    "pkcs11"
-# define PHP_PKCS11_VERSION "0.1.0"
 
-# if defined(ZTS) && defined(COMPILE_DL_PKCS11)
-ZEND_TSRMLS_CACHE_EXTERN()
-# endif
+void pkcs11_keypair_shutdown(pkcs11_keypair_object *obj) {
+}
 
-#define CK_PTR *
-#define CK_DECLARE_FUNCTION(returnType, name) returnType name
-#define CK_DECLARE_FUNCTION_POINTER(returnType, name) returnType (* name)
-#define CK_CALLBACK_FUNCTION(returnType, name) returnType (* name)
-#ifndef NULL_PTR
-#define NULL_PTR 0
-#endif
+static zend_function_entry keypair_class_functions[] = {
+    PHP_FE_END
+};
 
-#include "pkcs11.h"
 
-#endif	/* PHP_PKCS11_H */
+DEFINE_MAGIC_FUNCS(pkcs11_keypair, keypair, KeyPair)
