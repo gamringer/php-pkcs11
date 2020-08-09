@@ -18,6 +18,7 @@ var_dump($object);
 
 $attributes = $object->getAttributeValue([
 	Pkcs11\CKA_VALUE,
+	Pkcs11\CKA_TOKEN,
 ]);
 
 var_dump($attributes);
@@ -28,8 +29,20 @@ $copy = $session->copyObject($object, [
 
 var_dump($copy);
 
-$attributes = $object->getAttributeValue([
+$attributes = $copy->getAttributeValue([
 	Pkcs11\CKA_VALUE,
+	Pkcs11\CKA_TOKEN,
+]);
+
+var_dump($attributes);
+
+
+$session->destroyObject($copy);
+
+
+$attributes = $copy->getAttributeValue([
+	Pkcs11\CKA_VALUE,
+	Pkcs11\CKA_TOKEN,
 ]);
 
 var_dump($attributes);

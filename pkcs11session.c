@@ -66,6 +66,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_copyObject, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
+    ZEND_ARG_INFO(0, object)
+ZEND_END_ARG_INFO()
+
 PHP_METHOD(Session, getInfo) {
 
     CK_RV rv;
@@ -373,18 +377,42 @@ PHP_METHOD(Session, copyObject) {
     );
 
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to create object");
+        pkcs11_error(rv, "Unable to copy object");
         return;
     }
 
     pkcs11_object_object* object_obj;
 
     object_init_ex(return_value, ce_Pkcs11_Object);
-    object_obj = Z_PKCS11_KEY_P(return_value);
+    object_obj = Z_PKCS11_OBJECT_P(return_value);
     object_obj->session = objval;
     object_obj->object = hObject;
     
     freeTemplate(templateObj);
+}
+
+PHP_METHOD(Session, destroyObject) {
+
+    CK_RV rv;
+    zval *object = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_ZVAL(object)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_OBJECT_HANDLE hObject;
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    pkcs11_object_object *p11objval = Z_PKCS11_OBJECT_P(object);
+    rv = objval->pkcs11->functionList->C_DestroyObject(
+        objval->session,
+        p11objval->object
+    );
+
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to destroy object");
+        return;
+    }
 }
 
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
@@ -403,6 +431,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, findObjects,     arginfo_findObjects,     ZEND_ACC_PUBLIC)
     PHP_ME(Session, createObject,    arginfo_createObject,    ZEND_ACC_PUBLIC)
     PHP_ME(Session, copyObject,      arginfo_copyObject,      ZEND_ACC_PUBLIC)
+    PHP_ME(Session, destroyObject,   arginfo_destroyObject,   ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,     arginfo_generateKey,     ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair, arginfo_generateKeyPair, ZEND_ACC_PUBLIC)
     PHP_FE_END

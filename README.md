@@ -32,11 +32,11 @@ Currently supports:
   * CKM_*HMAC
 * Deriving (C_DeriveKey) Tested with:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
+* Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
 Coming up in (probable) order:
-* C_CreateObject
-* C_CopyObject
-* C_DestroyObject
+* Key should extend Object
+* findObjects should return a Key object if that's its type
 * C_WrapKey
 * C_UnwrapKey
 * ChaCha20-Poly1305
