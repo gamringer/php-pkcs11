@@ -69,6 +69,7 @@ PHP_MINIT_FUNCTION(pkcs11)
 {
     register_pkcs11();
     register_pkcs11_session();
+    register_pkcs11_object();
     register_pkcs11_key();
     register_pkcs11_keypair();
     register_pkcs11_rsapssparams();

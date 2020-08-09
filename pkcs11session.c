@@ -57,6 +57,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_findObjects, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_createObject, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_copyObject, 0, 0, 2)
+    ZEND_ARG_INFO(0, object)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(Session, getInfo) {
 
@@ -76,7 +84,6 @@ PHP_METHOD(Session, getInfo) {
     add_assoc_long(return_value, "flags", sessionInfo.flags);
     add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
-
 
 PHP_METHOD(Session, login) {
 
@@ -98,7 +105,6 @@ PHP_METHOD(Session, login) {
     }
 }
 
-
 PHP_METHOD(Session, logout) {
 
     CK_RV rv;
@@ -110,7 +116,6 @@ PHP_METHOD(Session, logout) {
         return;
     }
 }
-
 
 PHP_METHOD(Session, initPin) {
 
@@ -129,7 +134,6 @@ PHP_METHOD(Session, initPin) {
         return;
     }
 }
-
 
 PHP_METHOD(Session, setPin) {
 
@@ -156,7 +160,6 @@ PHP_METHOD(Session, setPin) {
         return;
     }
 }
-
 
 PHP_METHOD(Session, generateKey) {
 
@@ -196,7 +199,6 @@ PHP_METHOD(Session, generateKey) {
     key_obj->session = objval;
     key_obj->key = hKey;
 }
-
 
 PHP_METHOD(Session, generateKeyPair) {
 
@@ -264,7 +266,6 @@ PHP_METHOD(Session, generateKeyPair) {
     keypair_obj->skey = skey_obj;
 }
 
-
 PHP_METHOD(Session, findObjects) {
 
     CK_RV rv;
@@ -311,6 +312,80 @@ PHP_METHOD(Session, findObjects) {
     freeTemplate(templateObj);
 }
 
+PHP_METHOD(Session, createObject) {
+
+    CK_RV rv;
+    HashTable *template;
+
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_ARRAY_HT(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_OBJECT_HANDLE hObject;
+
+    int templateItemCount;
+    CK_ATTRIBUTE_PTR templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_CreateObject(
+        objval->session,
+        templateObj, templateItemCount, &hObject
+    );
+
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to create object");
+        return;
+    }
+
+    pkcs11_object_object* object_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_Object);
+    object_obj = Z_PKCS11_OBJECT_P(return_value);
+    object_obj->session = objval;
+    object_obj->object = hObject;
+
+    freeTemplate(templateObj);
+}
+
+PHP_METHOD(Session, copyObject) {
+
+    CK_RV rv;
+    zval *object = NULL;
+    HashTable *template;
+
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_ZVAL(object)
+        Z_PARAM_ARRAY_HT(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_OBJECT_HANDLE hObject;
+
+    int templateItemCount;
+    CK_ATTRIBUTE_PTR templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    pkcs11_object_object *originalval = Z_PKCS11_OBJECT_P(object);
+    rv = objval->pkcs11->functionList->C_CopyObject(
+        objval->session,
+        originalval->object, templateObj, templateItemCount, &hObject
+    );
+
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to create object");
+        return;
+    }
+
+    pkcs11_object_object* object_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_Object);
+    object_obj = Z_PKCS11_KEY_P(return_value);
+    object_obj->session = objval;
+    object_obj->object = hObject;
+    
+    freeTemplate(templateObj);
+}
 
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     // called before the pkcs11_session_object is freed
@@ -326,6 +401,8 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initPin,         arginfo_initPin,         ZEND_ACC_PUBLIC)
     PHP_ME(Session, setPin,          arginfo_setPin,          ZEND_ACC_PUBLIC)
     PHP_ME(Session, findObjects,     arginfo_findObjects,     ZEND_ACC_PUBLIC)
+    PHP_ME(Session, createObject,    arginfo_createObject,    ZEND_ACC_PUBLIC)
+    PHP_ME(Session, copyObject,      arginfo_copyObject,      ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,     arginfo_generateKey,     ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair, arginfo_generateKeyPair, ZEND_ACC_PUBLIC)
     PHP_FE_END

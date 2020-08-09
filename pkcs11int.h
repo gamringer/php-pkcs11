@@ -53,6 +53,12 @@ typedef struct _pkcs11_session_object {
     zend_object std;
 } pkcs11_session_object;
 
+typedef struct _pkcs11_object_object {
+    pkcs11_session_object *session;
+    CK_OBJECT_HANDLE object;
+    zend_object std;
+} pkcs11_object_object;
+
 typedef struct _pkcs11_key_object {
     pkcs11_session_object *session;
     CK_OBJECT_HANDLE key;
@@ -88,6 +94,7 @@ typedef struct _pkcs11_ecdh1deriveparams_object {
 
 #define Z_PKCS11_P(zv)                      pkcs11_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SESSION_P(zv)              pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_OBJECT_P(zv)               pkcs11_object_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEY_P(zv)                  pkcs11_key_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEYPAIR_P(zv)              pkcs11_keypair_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAPSSPARAMS_P(zv)         pkcs11_rsapssparams_from_zend_object(Z_OBJ_P((zv)))
@@ -104,6 +111,7 @@ extern zend_class_entry *ce_Pkcs11_##classname;
 
 DECLARE_MAGIC_FUNCS(pkcs11,                   Module)
 DECLARE_MAGIC_FUNCS(pkcs11_session,           Session)
+DECLARE_MAGIC_FUNCS(pkcs11_object,            Object)
 DECLARE_MAGIC_FUNCS(pkcs11_key,               Key)
 DECLARE_MAGIC_FUNCS(pkcs11_keypair,           KeyPair)
 DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,      RsaPssParams)
