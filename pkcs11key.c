@@ -192,77 +192,6 @@ PHP_METHOD(Key, verify) {
 }
 
 
-PHP_METHOD(Key, getAttributeValue) {
-
-    CK_RV rv;
-    zval *attributeIds;
-    zval *attributeId;
-    unsigned int i;
-
-    ZEND_PARSE_PARAMETERS_START(1,1)
-        Z_PARAM_ARRAY(attributeIds)
-    ZEND_PARSE_PARAMETERS_END();
-
-    int attributeIdCount = zend_hash_num_elements(Z_ARRVAL_P(attributeIds));
-
-    CK_ATTRIBUTE_PTR template = (CK_ATTRIBUTE *) ecalloc(sizeof(CK_ATTRIBUTE), attributeIdCount);
-
-    i = 0;
-    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(attributeIds), attributeId) {
-        if (Z_TYPE_P(attributeId) != IS_LONG) {
-            general_error("PKCS11 module error", "Unable to get attribute value. Attribute ID must be an integer");
-            return;
-        }
-        template[i] = (CK_ATTRIBUTE) {zval_get_long(attributeId), NULL_PTR, 0};
-        i++;
-    } ZEND_HASH_FOREACH_END();
-
-    pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
-        objval->session->session,
-        objval->key,
-        template,
-        attributeIdCount
-    );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get attribute value");
-        return;
-    }
-
-    for (i=0; i<attributeIdCount; i++) {
-        template[i].pValue = (uint8_t *) ecalloc(1, template[i].ulValueLen);
-    }
-
-    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
-        objval->session->session,
-        objval->key,
-        template,
-        attributeIdCount
-    );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get attribute value");
-        return;
-    }
-
-    array_init(return_value);
-    for (i=0; i<attributeIdCount; i++) {
-        zend_string *foo;
-        foo = zend_string_alloc(template[i].ulValueLen, 0);
-        memcpy(
-            ZSTR_VAL(foo),
-            template[i].pValue,
-            template[i].ulValueLen
-        );
-
-        efree(template[i].pValue);
-
-        add_index_str(return_value, template[i].type, foo);
-    }
-
-    efree(template);
-}
-
-
 PHP_METHOD(Key, encrypt) {
 
     CK_RV rv;
@@ -496,9 +425,32 @@ static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, sign,              arginfo_sign,              ZEND_ACC_PUBLIC)
     PHP_ME(Key, verify,            arginfo_verify,            ZEND_ACC_PUBLIC)
     PHP_ME(Key, derive,            arginfo_derive,            ZEND_ACC_PUBLIC)
-    PHP_ME(Key, getAttributeValue, arginfo_getAttributeValue, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
+static zend_object *pkcs11_key_ctor(zend_class_entry *ce) {
+    pkcs11_key_object *objval = zend_object_alloc(sizeof(pkcs11_key_object), ce);
 
-DEFINE_MAGIC_FUNCS(pkcs11_key, key, Key)
+    zend_object_std_init(&objval->std, ce);
+    object_properties_init(&objval->std, ce);
+    objval->std.handlers = &pkcs11_key_handlers;
+
+    return &objval->std;
+}
+static void pkcs11_key_dtor(zend_object *zobj) {
+    pkcs11_key_object *objval = pkcs11_key_from_zend_object(zobj);
+    pkcs11_key_shutdown(objval);
+    zend_object_std_dtor(&objval->std);
+}
+void register_pkcs11_key() {
+    zend_class_entry ce;
+    memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Key", key_class_functions);
+    ce.create_object = pkcs11_key_ctor;
+    pkcs11_key_handlers.offset = XtOffsetOf(pkcs11_key_object, std);
+    pkcs11_key_handlers.clone_obj = NULL;
+    pkcs11_key_handlers.free_obj = pkcs11_key_dtor;
+    ce_Pkcs11_Key = zend_register_internal_class_ex(&ce, ce_Pkcs11_P11Object);
+    ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
+    ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
+}

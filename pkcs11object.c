@@ -18,7 +18,7 @@
 
 #include "pkcs11int.h"
 
-zend_class_entry *ce_Pkcs11_Object;
+zend_class_entry *ce_Pkcs11_P11Object;
 static zend_object_handlers pkcs11_object_handlers;
 
 
@@ -51,7 +51,7 @@ PHP_METHOD(Object, getAttributeValue) {
         i++;
     } ZEND_HASH_FOREACH_END();
 
-    pkcs11_object_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
+    pkcs11_object_object *objval = Z_PKCS11_OBJECT_P(ZEND_THIS);
     rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
         objval->session->session,
         objval->object,
@@ -105,4 +105,4 @@ static zend_function_entry object_class_functions[] = {
 };
 
 
-DEFINE_MAGIC_FUNCS(pkcs11_object, object, Object)
+DEFINE_MAGIC_FUNCS(pkcs11_object, object, P11Object)

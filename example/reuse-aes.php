@@ -13,6 +13,8 @@ $keys = $session->findObjects([
 	Pkcs11\CKA_LABEL => "Test AES",
 ]);
 
+var_dump($keys[0]);
+
 $iv = random_bytes(16);
 $data = 'Hello World!';
 $ciphertext = $keys[0]->encrypt(Pkcs11\CKM_AES_CBC_PAD, $data, $iv);

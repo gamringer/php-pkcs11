@@ -29,4 +29,15 @@ var_dump(bin2hex($ciphertext));
 $plaintext = $key->decrypt(Pkcs11\CKM_AES_CBC_PAD, $ciphertext, $iv);
 var_dump($plaintext);
 
+showAttributes($key);
+
+
+function showAttributes(\Pkcs11\P11Object $object) {
+	$attributes = $object->getAttributeValue([
+		Pkcs11\CKA_LABEL,
+	]);
+
+	var_dump($attributes);
+}
+
 $session->logout();

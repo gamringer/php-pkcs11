@@ -111,14 +111,13 @@ extern zend_class_entry *ce_Pkcs11_##classname;
 
 DECLARE_MAGIC_FUNCS(pkcs11,                   Module)
 DECLARE_MAGIC_FUNCS(pkcs11_session,           Session)
-DECLARE_MAGIC_FUNCS(pkcs11_object,            Object)
+DECLARE_MAGIC_FUNCS(pkcs11_object,            P11Object)
 DECLARE_MAGIC_FUNCS(pkcs11_key,               Key)
 DECLARE_MAGIC_FUNCS(pkcs11_keypair,           KeyPair)
 DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,      RsaPssParams)
 DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,     RsaOaepParams)
 DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,         GcmParams)
 DECLARE_MAGIC_FUNCS(pkcs11_ecdh1deriveparams, Ecdh1DeriveParams)
-
 
 #define DEFINE_MAGIC_FUNCS(tt, lowername, classname)                            \
 static zend_object *tt##_ctor(zend_class_entry *ce) {                           \
@@ -154,5 +153,6 @@ extern void general_error(char *generic, char *specific);
 
 extern void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *templateItemCount);
 extern void freeTemplate(CK_ATTRIBUTE_PTR templateObj);
+extern char* getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject);
 
 #endif

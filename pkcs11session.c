@@ -302,13 +302,15 @@ PHP_METHOD(Session, findObjects) {
             break;
         }
 
-        zval zkeyobj;
-        pkcs11_key_object* key_obj;
-        object_init_ex(&zkeyobj, ce_Pkcs11_Key);
-        key_obj = Z_PKCS11_KEY_P(&zkeyobj);
-        key_obj->session = objval;
-        key_obj->key = hObject;
-        zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zkeyobj);
+        char* objclass = getObjectClass(objval, &hObject);
+
+        zval zp11objectobj;
+        pkcs11_object_object* object_obj;
+        object_init_ex(&zp11objectobj, ce_Pkcs11_P11Object);
+        object_obj = Z_PKCS11_OBJECT_P(&zp11objectobj);
+        object_obj->session = objval;
+        object_obj->object = hObject;
+        zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zp11objectobj);
     }
 
     rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
@@ -344,7 +346,7 @@ PHP_METHOD(Session, createObject) {
 
     pkcs11_object_object* object_obj;
 
-    object_init_ex(return_value, ce_Pkcs11_Object);
+    object_init_ex(return_value, ce_Pkcs11_P11Object);
     object_obj = Z_PKCS11_OBJECT_P(return_value);
     object_obj->session = objval;
     object_obj->object = hObject;
@@ -383,7 +385,7 @@ PHP_METHOD(Session, copyObject) {
 
     pkcs11_object_object* object_obj;
 
-    object_init_ex(return_value, ce_Pkcs11_Object);
+    object_init_ex(return_value, ce_Pkcs11_P11Object);
     object_obj = Z_PKCS11_OBJECT_P(return_value);
     object_obj->session = objval;
     object_obj->object = hObject;

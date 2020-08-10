@@ -64,6 +64,43 @@ void freeTemplate(CK_ATTRIBUTE_PTR templateObj) {
     efree(templateObj);
 }
 
+char* getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject) {
+    printf("asdassasasaS\n");
+    CK_ATTRIBUTE template[] = {
+        {CKA_CLASS, NULL_PTR, 0}
+    };
+    CK_RV rv;
+    
+    rv = session->pkcs11->functionList->C_GetAttributeValue(
+        session->session,
+        *hObject,
+        template,
+        1
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get attribute value");
+        return;
+    }
+    /*
+    for (i=0; i<attributeIdCount; i++) {
+        template[i].pValue = (uint8_t *) ecalloc(1, template[i].ulValueLen);
+    }
+
+    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
+        objval->session->session,
+        objval->object,
+        template,
+        attributeIdCount
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get attribute value");
+        return;
+    }
+    */
+
+    return "all";
+}
+
 
 PHP_MINIT_FUNCTION(pkcs11)
 {
