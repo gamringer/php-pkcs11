@@ -302,7 +302,19 @@ PHP_METHOD(Session, findObjects) {
             break;
         }
 
-        char* objclass = getObjectClass(objval, &hObject);
+        CK_ULONG classId;
+        getObjectClass(objval, &hObject, &classId);
+
+        if (classId == 2 || classId == 3 || classId == 4 || classId == 8) {
+            zval zkeyobj;
+            pkcs11_key_object* key_obj;
+            object_init_ex(&zkeyobj, ce_Pkcs11_Key);
+            key_obj = Z_PKCS11_KEY_P(&zkeyobj);
+            key_obj->session = objval;
+            key_obj->key = hObject;
+            zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zkeyobj);
+            continue;
+        }
 
         zval zp11objectobj;
         pkcs11_object_object* object_obj;
@@ -338,9 +350,22 @@ PHP_METHOD(Session, createObject) {
         objval->session,
         templateObj, templateItemCount, &hObject
     );
+    freeTemplate(templateObj);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to create object");
+        return;
+    }
+
+    CK_ULONG classId;
+    getObjectClass(objval, &hObject, &classId);
+
+    if (classId == 2 || classId == 3 || classId == 4 || classId == 8) {
+        pkcs11_key_object* key_obj;
+        object_init_ex(return_value, ce_Pkcs11_Key);
+        key_obj = Z_PKCS11_KEY_P(return_value);
+        key_obj->session = objval;
+        key_obj->key = hObject;
         return;
     }
 
@@ -351,7 +376,6 @@ PHP_METHOD(Session, createObject) {
     object_obj->session = objval;
     object_obj->object = hObject;
 
-    freeTemplate(templateObj);
 }
 
 PHP_METHOD(Session, copyObject) {
@@ -377,9 +401,23 @@ PHP_METHOD(Session, copyObject) {
         objval->session,
         originalval->object, templateObj, templateItemCount, &hObject
     );
+    freeTemplate(templateObj);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to copy object");
+        return;
+    }
+
+    
+    CK_ULONG classId;
+    getObjectClass(objval, &hObject, &classId);
+
+    if (classId == 2 || classId == 3 || classId == 4 || classId == 8) {
+        pkcs11_key_object* key_obj;
+        object_init_ex(return_value, ce_Pkcs11_Key);
+        key_obj = Z_PKCS11_KEY_P(return_value);
+        key_obj->session = objval;
+        key_obj->key = hObject;
         return;
     }
 
@@ -390,7 +428,6 @@ PHP_METHOD(Session, copyObject) {
     object_obj->session = objval;
     object_obj->object = hObject;
     
-    freeTemplate(templateObj);
 }
 
 PHP_METHOD(Session, destroyObject) {

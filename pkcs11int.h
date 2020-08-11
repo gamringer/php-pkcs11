@@ -153,6 +153,6 @@ extern void general_error(char *generic, char *specific);
 
 extern void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *templateItemCount);
 extern void freeTemplate(CK_ATTRIBUTE_PTR templateObj);
-extern char* getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject);
+extern void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject, CK_ULONG_PTR classId);
 
 #endif

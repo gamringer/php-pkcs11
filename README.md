@@ -35,7 +35,6 @@ Currently supports:
 * Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
 Coming up in (probable) order:
-* findObjects should return a Key object if that's its type
 * C_WrapKey
 * C_UnwrapKey
 * ChaCha20-Poly1305

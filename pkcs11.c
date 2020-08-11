@@ -64,8 +64,7 @@ void freeTemplate(CK_ATTRIBUTE_PTR templateObj) {
     efree(templateObj);
 }
 
-char* getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject) {
-    printf("asdassasasaS\n");
+void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject, CK_ULONG_PTR classId) {
     CK_ATTRIBUTE template[] = {
         {CKA_CLASS, NULL_PTR, 0}
     };
@@ -81,24 +80,26 @@ char* getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObjec
         pkcs11_error(rv, "Unable to get attribute value");
         return;
     }
-    /*
-    for (i=0; i<attributeIdCount; i++) {
-        template[i].pValue = (uint8_t *) ecalloc(1, template[i].ulValueLen);
-    }
+    template[0].pValue = (uint8_t *) ecalloc(1, template[0].ulValueLen);
 
-    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
-        objval->session->session,
-        objval->object,
+    rv = session->pkcs11->functionList->C_GetAttributeValue(
+        session->session,
+        *hObject,
         template,
-        attributeIdCount
+        1
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get attribute value");
         return;
     }
-    */
 
-    return "all";
+    memcpy(
+        classId,
+        template[0].pValue,
+        template[0].ulValueLen
+    );
+
+    efree(template[0].pValue);
 }
 
 
