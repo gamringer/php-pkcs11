@@ -2,6 +2,10 @@
 
 Work in progress. DO NOT USE!
 
+Tested with the following HSMs:
+* SafeNET Luna SA 4
+* SoftHSM 2.6
+
 Currently supports:
 
 * C_Initialize (via new PKCS11\Module())
@@ -30,12 +34,13 @@ Currently supports:
   * CKM_ECDSA
   * CKM_EDDSA
   * CKM_*HMAC
+* Key Wrapping (C_WrapKey) Tested with 
+  * CKM_AES_KEY_WRAP_PAD
 * Deriving (C_DeriveKey) Tested with:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 * Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
 Coming up in (probable) order:
-* C_WrapKey
 * C_UnwrapKey
 * ChaCha20-Poly1305
 * Blake
