@@ -506,6 +506,8 @@ PHP_METHOD(Key, unwrap) {
         templateItemCount,
         &uhKey
     );
+    freeTemplate(templateObj);
+    
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to unwrap");
         return;
