@@ -34,6 +34,7 @@ Currently supports:
   * CKM_ECDSA
   * CKM_EDDSA
   * CKM_*HMAC
+* SignUpdate/SignFinal (via SignatureContext object)
 * Key Wrapping (C_WrapKey, C_UnwrapKey) Tested with 
   * CKM_RSA_PKCS
   * CKM_RSA_PKCS_OAEP
@@ -42,7 +43,6 @@ Currently supports:
 * Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
 Coming up in (probable) order:
-* SignUpdate/SignFinal (via SignatureContext object)
 * EncryptUpdate/EncryptFinal (via EncryptionContext object)
 * ChaCha20-Poly1305
 * Blake

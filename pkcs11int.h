@@ -91,6 +91,11 @@ typedef struct _pkcs11_ecdh1deriveparams_object {
     zend_object std;
 } pkcs11_ecdh1deriveparams_object;
 
+typedef struct _pkcs11_signaturecontext_object {
+    pkcs11_key_object *key;
+    zend_object std;
+} pkcs11_signaturecontext_object;
+
 
 #define Z_PKCS11_P(zv)                      pkcs11_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SESSION_P(zv)              pkcs11_session_from_zend_object(Z_OBJ_P((zv)))
@@ -101,6 +106,7 @@ typedef struct _pkcs11_ecdh1deriveparams_object {
 #define Z_PKCS11_RSAOAEPPARAMS_P(zv)        pkcs11_rsaoaepparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_GCMPARAMS_P(zv)            pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_ECDH1DERIVEPARAMS_P(zv)    pkcs11_ecdh1deriveparams_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_SIGNATURECONTEXT_P(zv)     pkcs11_signaturecontext_from_zend_object(Z_OBJ_P((zv)))
 
 #define DECLARE_MAGIC_FUNCS(tt, classname)                                  \
 static inline tt##_object *tt##_from_zend_object(zend_object *obj) {        \
@@ -118,6 +124,7 @@ DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,      RsaPssParams)
 DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,     RsaOaepParams)
 DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,         GcmParams)
 DECLARE_MAGIC_FUNCS(pkcs11_ecdh1deriveparams, Ecdh1DeriveParams)
+DECLARE_MAGIC_FUNCS(pkcs11_signaturecontext,  SignatureContext)
 
 #define DEFINE_MAGIC_FUNCS(tt, lowername, classname)                            \
 static zend_object *tt##_ctor(zend_class_entry *ce) {                           \
