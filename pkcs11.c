@@ -115,6 +115,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_gcmparams();
     register_pkcs11_ecdh1deriveparams();
     register_pkcs11_signaturecontext();
+    register_pkcs11_encryptioncontext();
 
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS_KEY_PAIR_GEN",      0x00000000UL, CONST_CS | CONST_PERSISTENT);
     REGISTER_NS_LONG_CONSTANT("Pkcs11", "CKM_RSA_PKCS",                   0x00000001UL, CONST_CS | CONST_PERSISTENT);

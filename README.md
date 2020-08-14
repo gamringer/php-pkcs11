@@ -28,6 +28,7 @@ Currently supports:
   * CKM_AES_GCM
   * CKM_RSA_PKCS
   * CKM_RSA_PKCS_OAEP
+* EncryptUpdate/EncryptFinal (via EncryptionContext object)
 * Signing (C_SignInit, C_Sign, C_VerifyInit, C_Verify) Tested with:
   * CKM_*RSA_PKCS
   * CKM_*RSA_PKCS_PSS
@@ -43,7 +44,10 @@ Currently supports:
 * Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
 Coming up in (probable) order:
-* EncryptUpdate/EncryptFinal (via EncryptionContext object)
+* DecryptUpdate/DecryptFinal (via DecryptionContext object)
+* Digest (C_DigestInit, C_Digest, C_DigestKey)
+* DigestUpdate/DigestFinal (via DigestionContext object)
+* VerifyUpdate/VerifyFinal (via VerificationContext object)
 * ChaCha20-Poly1305
 * Blake
 
