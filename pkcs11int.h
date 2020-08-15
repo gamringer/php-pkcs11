@@ -96,10 +96,20 @@ typedef struct _pkcs11_signaturecontext_object {
     zend_object std;
 } pkcs11_signaturecontext_object;
 
+typedef struct _pkcs11_verificationcontext_object {
+    pkcs11_key_object *key;
+    zend_object std;
+} pkcs11_verificationcontext_object;
+
 typedef struct _pkcs11_encryptioncontext_object {
     pkcs11_key_object *key;
     zend_object std;
 } pkcs11_encryptioncontext_object;
+
+typedef struct _pkcs11_decryptioncontext_object {
+    pkcs11_key_object *key;
+    zend_object std;
+} pkcs11_decryptioncontext_object;
 
 
 #define Z_PKCS11_P(zv)                      pkcs11_from_zend_object(Z_OBJ_P((zv)))
@@ -112,7 +122,9 @@ typedef struct _pkcs11_encryptioncontext_object {
 #define Z_PKCS11_GCMPARAMS_P(zv)            pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_ECDH1DERIVEPARAMS_P(zv)    pkcs11_ecdh1deriveparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SIGNATURECONTEXT_P(zv)     pkcs11_signaturecontext_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_VERIFICATIONCONTEXT_P(zv)  pkcs11_verificationcontext_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_ENCRYPTIONCONTEXT_P(zv)    pkcs11_encryptioncontext_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_DECRYPTIONCONTEXT_P(zv)    pkcs11_decryptioncontext_from_zend_object(Z_OBJ_P((zv)))
 
 #define DECLARE_MAGIC_FUNCS(tt, classname)                                  \
 static inline tt##_object *tt##_from_zend_object(zend_object *obj) {        \
@@ -121,17 +133,19 @@ static inline tt##_object *tt##_from_zend_object(zend_object *obj) {        \
 extern void register_##tt();                                                \
 extern zend_class_entry *ce_Pkcs11_##classname;
 
-DECLARE_MAGIC_FUNCS(pkcs11,                   Module)
-DECLARE_MAGIC_FUNCS(pkcs11_session,           Session)
-DECLARE_MAGIC_FUNCS(pkcs11_object,            P11Object)
-DECLARE_MAGIC_FUNCS(pkcs11_key,               Key)
-DECLARE_MAGIC_FUNCS(pkcs11_keypair,           KeyPair)
-DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,      RsaPssParams)
-DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,     RsaOaepParams)
-DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,         GcmParams)
-DECLARE_MAGIC_FUNCS(pkcs11_ecdh1deriveparams, Ecdh1DeriveParams)
-DECLARE_MAGIC_FUNCS(pkcs11_signaturecontext,  SignatureContext)
-DECLARE_MAGIC_FUNCS(pkcs11_encryptioncontext, EncryptionContext)
+DECLARE_MAGIC_FUNCS(pkcs11,                     Module)
+DECLARE_MAGIC_FUNCS(pkcs11_session,             Session)
+DECLARE_MAGIC_FUNCS(pkcs11_object,              P11Object)
+DECLARE_MAGIC_FUNCS(pkcs11_key,                 Key)
+DECLARE_MAGIC_FUNCS(pkcs11_keypair,             KeyPair)
+DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,        RsaPssParams)
+DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,       RsaOaepParams)
+DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,           GcmParams)
+DECLARE_MAGIC_FUNCS(pkcs11_ecdh1deriveparams,   Ecdh1DeriveParams)
+DECLARE_MAGIC_FUNCS(pkcs11_signaturecontext,    SignatureContext)
+DECLARE_MAGIC_FUNCS(pkcs11_verificationcontext, VerificationContext)
+DECLARE_MAGIC_FUNCS(pkcs11_encryptioncontext,   EncryptionContext)
+DECLARE_MAGIC_FUNCS(pkcs11_decryptioncontext,   DecryptionContext)
 
 #define DEFINE_MAGIC_FUNCS(tt, lowername, classname)                            \
 static zend_object *tt##_ctor(zend_class_entry *ce) {                           \

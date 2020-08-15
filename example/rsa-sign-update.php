@@ -30,4 +30,13 @@ $signature = $signatureContext->finalize();
 var_dump($signatureContext);
 var_dump(bin2hex($signature));
 
+$verificationContext = $keypair->pkey->initializeVerification(Pkcs11\CKM_SHA256_RSA_PKCS_PSS, $pssParams);
+
+$verificationContext->update('Hello Wo');
+$verificationContext->update('rld!');
+$verifies = $verificationContext->finalize($signature);
+
+var_dump($verificationContext);
+var_dump($verifies);
+
 $session->logout();

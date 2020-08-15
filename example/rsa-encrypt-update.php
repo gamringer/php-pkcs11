@@ -22,6 +22,7 @@ $keypair = $session->generateKeyPair(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
 $oaepParam = new Pkcs11\RsaOaepParams(Pkcs11\CKM_SHA_1, Pkcs11\CKG_MGF1_SHA1);
 
 $encryptionContext = $keypair->pkey->initializeEncryption(Pkcs11\CKM_RSA_PKCS_OAEP, $oaepParam);
+var_dump($encryptionContext);
 
 $ciphertext = '';
 $ciphertext .= $encryptionContext->update(random_bytes(16));
@@ -31,6 +32,15 @@ var_dump(bin2hex($ciphertext));
 $ciphertext .= $encryptionContext->finalize();
 var_dump(bin2hex($ciphertext));
 
-var_dump($encryptionContext);
+$decryptionContext = $keypair->pkey->initializeDecryption(Pkcs11\CKM_RSA_PKCS_OAEP, $oaepParam);
+var_dump($decryptionContext);
+
+$plaintext = '';
+$plaintext .= $decryptionContext->update(substr($ciphertext, 0, 18));
+var_dump(bin2hex($plaintext));
+$plaintext .= $decryptionContext->update(substr($ciphertext, 18));
+var_dump(bin2hex($plaintext));
+$plaintext .= $decryptionContext->finalize();
+var_dump(bin2hex($plaintext));
 
 $session->logout();
