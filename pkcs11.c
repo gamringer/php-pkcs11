@@ -116,6 +116,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_ecdh1deriveparams();
     register_pkcs11_signaturecontext();
     register_pkcs11_verificationcontext();
+    register_pkcs11_digestcontext();
     register_pkcs11_encryptioncontext();
     register_pkcs11_decryptioncontext();
 

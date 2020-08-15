@@ -101,6 +101,11 @@ typedef struct _pkcs11_verificationcontext_object {
     zend_object std;
 } pkcs11_verificationcontext_object;
 
+typedef struct _pkcs11_digestcontext_object {
+    pkcs11_session_object *session;
+    zend_object std;
+} pkcs11_digestcontext_object;
+
 typedef struct _pkcs11_encryptioncontext_object {
     pkcs11_key_object *key;
     zend_object std;
@@ -123,6 +128,7 @@ typedef struct _pkcs11_decryptioncontext_object {
 #define Z_PKCS11_ECDH1DERIVEPARAMS_P(zv)    pkcs11_ecdh1deriveparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SIGNATURECONTEXT_P(zv)     pkcs11_signaturecontext_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_VERIFICATIONCONTEXT_P(zv)  pkcs11_verificationcontext_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_DIGESTCONTEXT_P(zv)        pkcs11_digestcontext_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_ENCRYPTIONCONTEXT_P(zv)    pkcs11_encryptioncontext_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_DECRYPTIONCONTEXT_P(zv)    pkcs11_decryptioncontext_from_zend_object(Z_OBJ_P((zv)))
 
@@ -144,6 +150,7 @@ DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,           GcmParams)
 DECLARE_MAGIC_FUNCS(pkcs11_ecdh1deriveparams,   Ecdh1DeriveParams)
 DECLARE_MAGIC_FUNCS(pkcs11_signaturecontext,    SignatureContext)
 DECLARE_MAGIC_FUNCS(pkcs11_verificationcontext, VerificationContext)
+DECLARE_MAGIC_FUNCS(pkcs11_digestcontext,       DigestContext)
 DECLARE_MAGIC_FUNCS(pkcs11_encryptioncontext,   EncryptionContext)
 DECLARE_MAGIC_FUNCS(pkcs11_decryptioncontext,   DecryptionContext)
 

@@ -53,6 +53,17 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_generateKeyPair, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_digest, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_initializeDigest, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_findObjects, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -270,6 +281,103 @@ PHP_METHOD(Session, generateKeyPair) {
     keypair_obj->skey = skey_obj;
 }
 
+PHP_METHOD(Session, digest) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    zend_string *data;
+    zval *mechanismArgument = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(2,3)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_STR(data)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(mechanismArgument)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_DigestInit(
+        objval->session,
+        &mechanism
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to digest");
+        return;
+    }
+
+    CK_ULONG digestLen;
+    rv = objval->pkcs11->functionList->C_Digest(
+        objval->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        NULL_PTR,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to digest");
+        return;
+    }
+
+    CK_BYTE_PTR digest = ecalloc(digestLen, sizeof(CK_BYTE));
+    rv = objval->pkcs11->functionList->C_Digest(
+        objval->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        digest,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to digest");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(digestLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        digest,
+        digestLen
+    );
+    RETURN_STR(returnval);
+ 
+    efree(digest);
+}
+
+
+PHP_METHOD(Session, initializeDigest) {
+
+    CK_RV rv;
+    zend_long mechanismId;
+    zval *mechanismArgument = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1,2)
+        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(mechanismArgument)
+    ZEND_PARSE_PARAMETERS_END();
+
+    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = objval->pkcs11->functionList->C_DigestInit(
+        objval->session,
+        &mechanism
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to initialize digest");
+        return;
+    }
+
+    pkcs11_digestcontext_object* context_obj;
+
+    object_init_ex(return_value, ce_Pkcs11_DigestContext);
+    context_obj = Z_PKCS11_DIGESTCONTEXT_P(return_value);
+    context_obj->session = objval;
+}
+
+
 PHP_METHOD(Session, findObjects) {
 
     CK_RV rv;
@@ -462,17 +570,19 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
 }
 
 static zend_function_entry session_class_functions[] = {
-    PHP_ME(Session, login,           arginfo_login,           ZEND_ACC_PUBLIC)
-    PHP_ME(Session, getInfo,         arginfo_getInfo,         ZEND_ACC_PUBLIC)
-    PHP_ME(Session, logout,          arginfo_logout,          ZEND_ACC_PUBLIC)
-    PHP_ME(Session, initPin,         arginfo_initPin,         ZEND_ACC_PUBLIC)
-    PHP_ME(Session, setPin,          arginfo_setPin,          ZEND_ACC_PUBLIC)
-    PHP_ME(Session, findObjects,     arginfo_findObjects,     ZEND_ACC_PUBLIC)
-    PHP_ME(Session, createObject,    arginfo_createObject,    ZEND_ACC_PUBLIC)
-    PHP_ME(Session, copyObject,      arginfo_copyObject,      ZEND_ACC_PUBLIC)
-    PHP_ME(Session, destroyObject,   arginfo_destroyObject,   ZEND_ACC_PUBLIC)
-    PHP_ME(Session, generateKey,     arginfo_generateKey,     ZEND_ACC_PUBLIC)
-    PHP_ME(Session, generateKeyPair, arginfo_generateKeyPair, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, login,            arginfo_login,            ZEND_ACC_PUBLIC)
+    PHP_ME(Session, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
+    PHP_ME(Session, logout,           arginfo_logout,           ZEND_ACC_PUBLIC)
+    PHP_ME(Session, initPin,          arginfo_initPin,          ZEND_ACC_PUBLIC)
+    PHP_ME(Session, setPin,           arginfo_setPin,           ZEND_ACC_PUBLIC)
+    PHP_ME(Session, findObjects,      arginfo_findObjects,      ZEND_ACC_PUBLIC)
+    PHP_ME(Session, createObject,     arginfo_createObject,     ZEND_ACC_PUBLIC)
+    PHP_ME(Session, copyObject,       arginfo_copyObject,       ZEND_ACC_PUBLIC)
+    PHP_ME(Session, destroyObject,    arginfo_destroyObject,    ZEND_ACC_PUBLIC)
+    PHP_ME(Session, digest,           arginfo_digest,           ZEND_ACC_PUBLIC)
+    PHP_ME(Session, initializeDigest, arginfo_initializeDigest, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, generateKey,      arginfo_generateKey,      ZEND_ACC_PUBLIC)
+    PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
