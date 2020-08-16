@@ -26,6 +26,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getAttributeValue, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, attributeIds, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getSize, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 PHP_METHOD(Object, getAttributeValue) {
 
     CK_RV rv;
@@ -96,11 +99,32 @@ PHP_METHOD(Object, getAttributeValue) {
     efree(template);
 }
 
+PHP_METHOD(Object, getSize) {
+
+    CK_RV rv;
+
+    CK_ULONG ulSize;
+
+    pkcs11_object_object *objval = Z_PKCS11_OBJECT_P(ZEND_THIS);
+    rv = objval->session->pkcs11->functionList->C_GetObjectSize(
+        objval->session->session,
+        objval->object,
+        &ulSize
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get object size");
+        return;
+    }
+
+    RETURN_LONG(ulSize);
+}
+
 void pkcs11_object_shutdown(pkcs11_object_object *obj) {
 }
 
 static zend_function_entry object_class_functions[] = {
     PHP_ME(Object, getAttributeValue, arginfo_getAttributeValue, ZEND_ACC_PUBLIC)
+    PHP_ME(Object, getSize, arginfo_getSize, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 

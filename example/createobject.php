@@ -38,6 +38,7 @@ $attributes = $copy->getAttributeValue([
 ]);
 
 var_dump($attributes);
+var_dump($copy->getSize());
 
 
 $session->destroyObject($copy);
