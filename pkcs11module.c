@@ -475,8 +475,7 @@ void pkcs11_shutdown(pkcs11_object *obj) {
 
 
 static zend_function_entry module_class_functions[] = {
-    PHP_ME(Module, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC
-                                                             | ZEND_ACC_CTOR)
+    PHP_ME(Module, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
     PHP_ME(Module, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlots,         arginfo_getSlots,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
@@ -486,6 +485,17 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
+
+    PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetSlots,         getSlots,         arginfo_getSlots,         ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
+    PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
+
     PHP_FE_END
 };
 

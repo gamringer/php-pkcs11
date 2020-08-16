@@ -47,4 +47,6 @@ Currently supports:
   * CKM_ECDH1_DERIVE (P-256, P-384, P-521, X25519, X448)
 * Object Management (C_CreateObject, C_CopyObject, C_DestroyObject)
 
-
+Upcoming features:
+* Pkcs11\Mechanism object to avoid having to pass IV or Mechanism Param object as second argument to action methods
+* Include original PKCS11 functions as Method Aliases on the Pkcs11\Module object
