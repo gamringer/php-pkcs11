@@ -19,7 +19,7 @@ $attributes = $keys[0]->getAttributeValue([
 ]);
 
 $data = "Hello World!";
-$signature = $keys[0]->sign(Pkcs11\CKM_SHA256_RSA_PKCS, $data);
+$signature = $keys[0]->sign(new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS), $data);
 
 $session->logout();
 

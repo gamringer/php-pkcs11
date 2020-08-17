@@ -12,20 +12,21 @@ $session->login(Pkcs11\CKU_USER,'123456');
 $domainParameters = hex2bin('06032B6570'); // Ed25519
 $domainParameters = hex2bin('06032B6571'); // Ed448
 
-$keypair = $session->generateKeyPair(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN, [
+$keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN), [
 	Pkcs11\CKA_VERIFY => true,
 	Pkcs11\CKA_LABEL => "Test EDDSA Public",
 	Pkcs11\CKA_EC_PARAMS => $domainParameters,
 ],[
-	Pkcs11\CKA_TOKEN => true,
+	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_PRIVATE => true,
 	Pkcs11\CKA_SENSITIVE => true,
 	Pkcs11\CKA_LABEL => "Test EDDSA Private",
 ]);
 
 $data = "Hello World!";
-$signature = $keypair->skey->sign(Pkcs11\CKM_EDDSA, $data);
-$check = $keypair->pkey->verify(Pkcs11\CKM_EDDSA, $data, $signature);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_EDDSA);
+$signature = $keypair->skey->sign($mechanism, $data);
+$check = $keypair->pkey->verify($mechanism, $data, $signature);
 
 $session->logout();
 

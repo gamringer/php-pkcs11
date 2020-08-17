@@ -11,7 +11,7 @@ $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
 
-$key = $session->generateKey(Pkcs11\CKM_AES_KEY_GEN, [
+$key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_SENSITIVE => false,
@@ -30,7 +30,7 @@ function showAttributes(\Pkcs11\P11Object $object) {
 	var_dump($attributes);
 }
 
-$digestContext = $session->initializeDigest(Pkcs11\CKM_SHA256);
+$digestContext = $session->initializeDigest(new Pkcs11\Mechanism(Pkcs11\CKM_SHA256));
 
 $digestContext->update("Hello W");
 $digestContext->update("orld!");

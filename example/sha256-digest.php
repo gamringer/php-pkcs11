@@ -12,7 +12,7 @@ $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
 
 $data = "Hello World!";
-$digest = $session->digest(Pkcs11\CKM_SHA256, $data);
+$digest = $session->digest(new Pkcs11\Mechanism(Pkcs11\CKM_SHA256), $data);
 var_dump($digest);
 
 $digest2 = hash('sha256', $data, true);

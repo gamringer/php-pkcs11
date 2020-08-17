@@ -9,7 +9,7 @@ $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
 
-$wkey = $session->generateKey(Pkcs11\CKM_AES_KEY_GEN, [
+$wkey = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_SENSITIVE => true,
@@ -23,7 +23,7 @@ $wkey = $session->generateKey(Pkcs11\CKM_AES_KEY_GEN, [
 	Pkcs11\CKA_PRIVATE => true,
 ]);
 
-$key = $session->generateKey(Pkcs11\CKM_AES_KEY_GEN, [
+$key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_SENSITIVE => true,
@@ -36,10 +36,10 @@ $key = $session->generateKey(Pkcs11\CKM_AES_KEY_GEN, [
 	Pkcs11\CKA_EXTRACTABLE => true,
 ]);
 
-$ciphertext = $wkey->wrap(Pkcs11\CKM_AES_KEY_WRAP, $key);
+$ciphertext = $wkey->wrap(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_WRAP), $key);
 var_dump(bin2hex($ciphertext));
 
-$uwkey = $key->unwrap(Pkcs11\CKM_AES_KEY_WRAP, $ciphertext, [
+$uwkey = $key->unwrap(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_WRAP), $ciphertext, [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_SENSITIVE => true,

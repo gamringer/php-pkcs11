@@ -17,8 +17,9 @@ var_dump($keys[0]);
 
 $iv = random_bytes(16);
 $data = 'Hello World!';
-$ciphertext = $keys[0]->encrypt(Pkcs11\CKM_AES_CBC_PAD, $data, $iv);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_AES_CBC_PAD, $iv);
+$ciphertext = $keys[0]->encrypt($mechanism, $data);
 var_dump(bin2hex($ciphertext));
 
-$plaintext = $keys[0]->decrypt(Pkcs11\CKM_AES_CBC_PAD, $ciphertext, $iv);
+$plaintext = $keys[0]->decrypt($mechanism, $ciphertext);
 var_dump($plaintext);

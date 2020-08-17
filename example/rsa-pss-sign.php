@@ -21,11 +21,9 @@ $attributes = $keys[0]->getAttributeValue([
 ]);
 
 $data = "Hello World!";
-$signature = $keys[0]->sign(
-	Pkcs11\CKM_SHA256_RSA_PKCS_PSS,
-	$data,
-	new Pkcs11\RsaPssParams(Pkcs11\CKM_SHA256, Pkcs11\CKG_MGF1_SHA256, 32)
-);
+$pssParams = new Pkcs11\RsaPssParams(Pkcs11\CKM_SHA256, Pkcs11\CKG_MGF1_SHA256, 32);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS_PSS, $pssParams);
+$signature = $keys[0]->sign($mechanism, $data);
 
 $session->logout();
 

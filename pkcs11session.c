@@ -43,25 +43,23 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_setPin, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generateKey, 0, 0, 2)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generateKeyPair, 0, 0, 2)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, pkTemplate, IS_ARRAY, 0)
     ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_digest, 0, 0, 2)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
-    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_initializeDigest, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_findObjects, 0, 0, 1)
@@ -179,16 +177,16 @@ PHP_METHOD(Session, setPin) {
 PHP_METHOD(Session, generateKey) {
 
     CK_RV rv;
-    zend_long mechanismId;
+    zval *mechanism;
     HashTable *template;
 
     ZEND_PARSE_PARAMETERS_START(2,2)
-        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_ZVAL(mechanism)
         Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
     CK_OBJECT_HANDLE hKey;
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     int templateItemCount;
     CK_ATTRIBUTE_PTR templateObj;
@@ -197,7 +195,7 @@ PHP_METHOD(Session, generateKey) {
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_GenerateKey(
         objval->session,
-        &mechanism,
+        &mechanismObjval->mechanism,
         templateObj, templateItemCount, &hKey
     );
     freeTemplate(templateObj);
@@ -218,12 +216,12 @@ PHP_METHOD(Session, generateKey) {
 PHP_METHOD(Session, generateKeyPair) {
 
     CK_RV rv;
-    zend_long mechanismId;
+    zval *mechanism;
     HashTable *pkTemplate;
     HashTable *skTemplate;
 
     ZEND_PARSE_PARAMETERS_START(3,3)
-        Z_PARAM_LONG(mechanismId)
+        Z_PARAM_ZVAL(mechanism)
         Z_PARAM_ARRAY_HT(pkTemplate)
         Z_PARAM_ARRAY_HT(skTemplate)
     ZEND_PARSE_PARAMETERS_END();
@@ -232,7 +230,7 @@ PHP_METHOD(Session, generateKeyPair) {
 
     CK_OBJECT_HANDLE pKey, sKey;
 
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
     int skTemplateItemCount;
     CK_ATTRIBUTE_PTR skTemplateObj;
     parseTemplate(&skTemplate, &skTemplateObj, &skTemplateItemCount);
@@ -243,7 +241,7 @@ PHP_METHOD(Session, generateKeyPair) {
 
     rv = objval->pkcs11->functionList->C_GenerateKeyPair(
         objval->session,
-        &mechanism,
+        &mechanismObjval->mechanism,
         pkTemplateObj, pkTemplateItemCount,
         skTemplateObj, skTemplateItemCount,
         &pKey, &sKey
@@ -284,23 +282,20 @@ PHP_METHOD(Session, generateKeyPair) {
 PHP_METHOD(Session, digest) {
 
     CK_RV rv;
-    zend_long mechanismId;
+    zval *mechanism;
     zend_string *data;
-    zval *mechanismArgument = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(2,3)
-        Z_PARAM_LONG(mechanismId)
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_ZVAL(mechanism)
         Z_PARAM_STR(data)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(mechanismArgument)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_DigestInit(
         objval->session,
-        &mechanism
+        &mechanismObjval->mechanism
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to digest");
@@ -349,21 +344,18 @@ PHP_METHOD(Session, digest) {
 PHP_METHOD(Session, initializeDigest) {
 
     CK_RV rv;
-    zend_long mechanismId;
-    zval *mechanismArgument = NULL;
+    zval *mechanism;
 
-    ZEND_PARSE_PARAMETERS_START(1,2)
-        Z_PARAM_LONG(mechanismId)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(mechanismArgument)
+    ZEND_PARSE_PARAMETERS_START(1,1)
+        Z_PARAM_ZVAL(mechanism)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_DigestInit(
         objval->session,
-        &mechanism
+        &mechanismObjval->mechanism
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize digest");

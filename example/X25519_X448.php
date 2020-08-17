@@ -17,11 +17,11 @@ $rawPublickeyOther = hex2bin('0420715bbc7a82f99613f23580cdf87e0ff179524201fdad7d
 
 
 // SoftHSMv2 uses CKM_EC_EDWARDS_KEY_PAIR_GEN instead of CKM_EC_MONTGOMERY_KEY_PAIR_GEN
-$keypair = $session->generateKeyPair(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN, [
+$keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN), [
 	Pkcs11\CKA_LABEL => "Test X25519 Public",
 	Pkcs11\CKA_EC_PARAMS => $domainParameters,
 ],[
-	Pkcs11\CKA_TOKEN => true,
+	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_PRIVATE => true,
 	Pkcs11\CKA_SENSITIVE => true,
 	Pkcs11\CKA_DERIVE => true,
@@ -36,7 +36,8 @@ $shared = '';
 
 // SoftHSM2 only supports CKD_NULL
 $params = new Pkcs11\Ecdh1DeriveParams(Pkcs11\CKD_NULL, $shared, $rawPublickeyOther);
-$secret = $keypair->skey->derive(Pkcs11\CKM_ECDH1_DERIVE, $params, [
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_ECDH1_DERIVE, $params);
+$secret = $keypair->skey->derive($mechanism, [
 	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_AES,
@@ -54,7 +55,8 @@ var_dump($secret);
 
 $iv = random_bytes(16);
 $data = 'Hello World!';
-$ciphertext = $secret->encrypt(Pkcs11\CKM_AES_CBC_PAD, $data, $iv);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_AES_CBC_PAD, $iv);
+$ciphertext = $secret->encrypt($mechanism, $data);
 var_dump(bin2hex($ciphertext));
 
 $session->logout();

@@ -9,7 +9,7 @@ $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
 /*
-$key = $session->generateKey(Pkcs11\CKM_CHACHA20_KEY_GEN, [
+$key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_CHACHA20_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_TOKEN => true,
 	Pkcs11\CKA_SENSITIVE => true,
@@ -20,10 +20,11 @@ $key = $session->generateKey(Pkcs11\CKM_CHACHA20_KEY_GEN, [
 
 $iv = random_bytes(16);
 $data = 'Hello World!';
-$ciphertext = $key->encrypt(Pkcs11\CKM_CHACHA20_POLY1305, $data, $iv);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_CHACHA20_POLY1305, $iv);
+$ciphertext = $key->encrypt($mechanism, $data);
 var_dump(bin2hex($ciphertext));
 
-$plaintext = $key->decrypt(Pkcs11\CKM_CHACHA20_POLY1305, $ciphertext, $iv);
+$plaintext = $key->decrypt($mechanism, $ciphertext);
 var_dump($plaintext);
 */
 

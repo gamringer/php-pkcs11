@@ -19,9 +19,9 @@ $gcmParams = new Pkcs11\GcmParams($iv, $aad, 128);
 
 $data = 'Hello World!';
 var_dump($data);
-$ciphertext = $keys[0]->encrypt(Pkcs11\CKM_AES_GCM, $data, $gcmParams);
-var_dump($data);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_AES_GCM, $gcmParams);
+$ciphertext = $keys[0]->encrypt($mechanism, $data);
 var_dump(bin2hex($ciphertext));
 
-$plaintext = $keys[0]->decrypt(Pkcs11\CKM_AES_GCM, $ciphertext, $gcmParams);
+$plaintext = $keys[0]->decrypt($mechanism, $ciphertext);
 var_dump($plaintext);

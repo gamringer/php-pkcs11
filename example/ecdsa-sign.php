@@ -18,12 +18,12 @@ $session->login(Pkcs11\CKU_USER,'123456');
 
 $domainParameters = hex2bin('06082A8648CE3D030107');
 
-$keypair = $session->generateKeyPair(Pkcs11\CKM_EC_KEY_PAIR_GEN, [
+$keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_EC_KEY_PAIR_GEN), [
 	Pkcs11\CKA_VERIFY => true,
 	Pkcs11\CKA_LABEL => "Test ECDSA Public",
 	Pkcs11\CKA_EC_PARAMS => $domainParameters,
 ],[
-	Pkcs11\CKA_TOKEN => true,
+	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_PRIVATE => true,
 	Pkcs11\CKA_SENSITIVE => true,
 	Pkcs11\CKA_SIGN => true,
@@ -35,13 +35,11 @@ $attributes = $keypair->pkey->getAttributeValue([
 	Pkcs11\CKA_EC_POINT,
 ]);
 
-$der = pubKeyToDer(substr($attributes[Pkcs11\CKA_EC_POINT], 2));
-$der = pubKeyToDerBK($attributes[Pkcs11\CKA_EC_POINT]);
-
 $data = "Hello World!";
 $hash = hash('sha256', $data, true);
-$signature = $keypair->skey->sign(Pkcs11\CKM_ECDSA, $hash);
-$check = $keypair->pkey->verify(Pkcs11\CKM_ECDSA, $hash, $signature);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_ECDSA);
+$signature = $keypair->skey->sign($mechanism, $hash);
+$check = $keypair->pkey->verify($mechanism, $hash, $signature);
 
 $session->logout();
 
@@ -52,4 +50,3 @@ echo "S:\n" . bin2hex(substr($signature, 32, 32)), PHP_EOL, PHP_EOL;
 echo 'Validates: ' . ($check ? 'Yes' : 'No'), PHP_EOL, PHP_EOL;
 
 echo "B64 Signature:\n" . base64url_encode($signature), PHP_EOL, PHP_EOL;
-echo $pem, PHP_EOL;

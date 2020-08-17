@@ -9,7 +9,7 @@ $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER,'123456');
 
-$keypair = $session->generateKeyPair(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
+$keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN), [
 	Pkcs11\CKA_ENCRYPT => true,
 	Pkcs11\CKA_MODULUS_BITS => 2048,
 	Pkcs11\CKA_PUBLIC_EXPONENT => hex2bin('010001'),
@@ -20,8 +20,9 @@ $keypair = $session->generateKeyPair(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
 ]);
 
 $oaepParam = new Pkcs11\RsaOaepParams(Pkcs11\CKM_SHA_1, Pkcs11\CKG_MGF1_SHA1);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_OAEP, $oaepParam);
 
-$encryptionContext = $keypair->pkey->initializeEncryption(Pkcs11\CKM_RSA_PKCS_OAEP, $oaepParam);
+$encryptionContext = $keypair->pkey->initializeEncryption($mechanism);
 var_dump($encryptionContext);
 
 $ciphertext = '';
@@ -32,7 +33,7 @@ var_dump(bin2hex($ciphertext));
 $ciphertext .= $encryptionContext->finalize();
 var_dump(bin2hex($ciphertext));
 
-$decryptionContext = $keypair->pkey->initializeDecryption(Pkcs11\CKM_RSA_PKCS_OAEP, $oaepParam);
+$decryptionContext = $keypair->pkey->initializeDecryption($mechanism);
 var_dump($decryptionContext);
 
 $plaintext = '';
