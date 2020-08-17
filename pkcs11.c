@@ -110,6 +110,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_object();
     register_pkcs11_key();
     register_pkcs11_keypair();
+    register_pkcs11_mechanism();
     register_pkcs11_rsapssparams();
     register_pkcs11_rsaoaepparams();
     register_pkcs11_gcmparams();

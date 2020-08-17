@@ -71,6 +71,11 @@ typedef struct _pkcs11_keypair_object {
     zend_object std;
 } pkcs11_keypair_object;
 
+typedef struct _pkcs11_mechanism_object {
+    CK_MECHANISM mechanism;
+    zend_object std;
+} pkcs11_mechanism_object;
+
 typedef struct _pkcs11_rsapssparams_object {
     CK_RSA_PKCS_PSS_PARAMS params;
     zend_object std;
@@ -137,6 +142,7 @@ typedef struct _pkcs11_decryptioncontext_object {
 #define Z_PKCS11_OBJECT_P(zv)                        pkcs11_object_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEY_P(zv)                           pkcs11_key_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_KEYPAIR_P(zv)                       pkcs11_keypair_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_MECHANISM_P(zv)                     pkcs11_mechanism_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAPSSPARAMS_P(zv)                  pkcs11_rsapssparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAOAEPPARAMS_P(zv)                 pkcs11_rsaoaepparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_GCMPARAMS_P(zv)                     pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
@@ -162,6 +168,7 @@ DECLARE_MAGIC_FUNCS(pkcs11_session,                       Session)
 DECLARE_MAGIC_FUNCS(pkcs11_object,                        P11Object)
 DECLARE_MAGIC_FUNCS(pkcs11_key,                           Key)
 DECLARE_MAGIC_FUNCS(pkcs11_keypair,                       KeyPair)
+DECLARE_MAGIC_FUNCS(pkcs11_mechanism,                     Mechanism)
 DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,                  RsaPssParams)
 DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,                 RsaOaepParams)
 DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,                     GcmParams)

@@ -24,10 +24,11 @@ $keypair = $session->generateKeyPair(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN, [
 	Pkcs11\CKA_LABEL => "Test RSA Private",
 ]);
 
-$data = "Hello World!";
-$signature = $keypair->skey->sign(Pkcs11\CKM_SHA256_RSA_PKCS, $data);
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS);
 
-$valid = $keypair->pkey->verify(Pkcs11\CKM_SHA256_RSA_PKCS, $data, $signature);
+$data = "Hello World!";
+$signature = $keypair->skey->sign($mechanism, $data);
+$valid = $keypair->pkey->verify($mechanism, $data, $signature);
 var_dump($valid);
 
 $attributes = $keypair->skey->getAttributeValue([

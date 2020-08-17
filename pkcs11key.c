@@ -43,16 +43,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_initializeDecryption, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sign, 0, 0, 2)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
-    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_verify, 0, 0, 3)
-    ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
     ZEND_ARG_TYPE_INFO(0, signature, IS_STRING, 0)
-    ZEND_ARG_TYPE_INFO(0, mechanismArgument, IS_OBJECT, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getAttributeValue, 0, 0, 1)
@@ -279,38 +277,27 @@ PHP_METHOD(Key, initializeDecryption) {
 PHP_METHOD(Key, sign) {
 
     CK_RV rv;
-    zend_long mechanismId;
+    zval *mechanism;
     zend_string *data;
-    zval *mechanismArgument = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(2,3)
-        Z_PARAM_LONG(mechanismId)
+    ZEND_PARSE_PARAMETERS_START(2,2)
+        Z_PARAM_ZVAL(mechanism)
         Z_PARAM_STR(data)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(mechanismArgument)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
-
-    if (mechanismArgument) {
-        if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
-            pkcs11_rsapssparams_object *mechanismObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
-            mechanism.pParameter = &mechanismObj->params;
-            mechanism.ulParameterLen = sizeof(mechanismObj->params);
-        }
-    }
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
     rv = objval->session->pkcs11->functionList->C_SignInit(
         objval->session->session,
-        &mechanism,
+        &mechanismObjval->mechanism,
         objval->key
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to sign");
         return;
     }
-
+    
     CK_ULONG signatureLen;
     rv = objval->session->pkcs11->functionList->C_Sign(
         objval->session->session,
@@ -353,34 +340,22 @@ PHP_METHOD(Key, sign) {
 PHP_METHOD(Key, verify) {
 
     CK_RV rv;
-    zend_long mechanismId;
+    zval *mechanism;
     zend_string *data;
     zend_string *signature;
-    zval *mechanismArgument = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(3,4)
-        Z_PARAM_LONG(mechanismId)
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_ZVAL(mechanism)
         Z_PARAM_STR(data)
         Z_PARAM_STR(signature)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_ZVAL(mechanismArgument)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_MECHANISM mechanism = {mechanismId, NULL_PTR, 0};
-    CK_VOID_PTR pParams;
-
-    if (mechanismArgument) {
-        if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
-            pkcs11_rsapssparams_object *mechanismObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
-            mechanism.pParameter = &mechanismObj->params;
-            mechanism.ulParameterLen = sizeof(mechanismObj->params);
-        }
-    }
-
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
+    
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
     rv = objval->session->pkcs11->functionList->C_VerifyInit(
         objval->session->session,
-        &mechanism,
+        &mechanismObjval->mechanism,
         objval->key
     );
     if (rv != CKR_OK) {
