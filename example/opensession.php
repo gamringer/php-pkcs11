@@ -22,3 +22,6 @@ $session->login(Pkcs11\CKU_USER,'123456');
 var_dump($session->getInfo()['state']);
 $session->logout();
 var_dump($session->getInfo()['state']);
+
+$info = $module->C_GetSessionInfo($session);
+var_dump($info);

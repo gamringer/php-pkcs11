@@ -462,6 +462,27 @@ PHP_METHOD(Module, openSession) {
 }
 
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_GetSessionInfo) {
+    CK_RV rv;
+
+    zval *session;
+    zval *retval = emalloc(sizeof(zval));
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(session)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    call_obj_func(&sessionobjval->std, "getInfo", return_value, 0, NULL);
+}
+
+
 void pkcs11_shutdown(pkcs11_object *obj) {
     // called before the pkcs11_object is freed
     if (obj->functionList != NULL) {
@@ -495,6 +516,8 @@ static zend_function_entry module_class_functions[] = {
     PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
 
     PHP_FE_END
 };

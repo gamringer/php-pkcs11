@@ -217,5 +217,6 @@ extern void general_error(char *generic, char *specific);
 extern void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *templateItemCount);
 extern void freeTemplate(CK_ATTRIBUTE_PTR templateObj);
 extern void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject, CK_ULONG_PTR classId);
+extern int call_obj_func(zend_object *object, char *function_name, zval *retval_ptr, uint32_t param_count, zval params[]);
 
 #endif
