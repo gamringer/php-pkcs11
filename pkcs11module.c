@@ -581,7 +581,7 @@ PHP_METHOD(Module, C_GenerateKey) {
 
     call_obj_func(&sessionobjval->std, "generateKey", return_value, 2, params);
 }
-/*
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKeyPair, 0, 0, 4)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
@@ -613,64 +613,320 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     zval *retval = emalloc(sizeof(zval));
     call_obj_func(&sessionobjval->std, "generateKeyPair", retval, 3, params);
 
-    zend_string *zpkeystr = zend_string_init("pkey", 4, 0);
-    zend_property_info *propinfo = zend_hash_find_ptr(&Z_PKCS11_KEYPAIR_P(retval)->std.ce->properties_info, zpkeystr);
-    ;
+    zval *rvpr;
+    zval *zpkey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "pkey", sizeof("pkey") - 1, 0, rvpr);
+    zval *zskey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "skey", sizeof("skey") - 1, 0, rvpr);
 
-    printf("%s\n", ZSTR_VAL(propinfo->name));
-
-    zend_string_release(zpkeystr);
-    zval *foo = &(Z_PKCS11_KEYPAIR_P(retval)->std.properties_table[propinfo->offset]);
-
-    printf("%s\n", ZSTR_VAL(Z_PKCS11_KEYPAIR_P(retval)->std.ce->name));
-
-    //ZVAL_COPY_VALUE(, return_value);
-
-    /*
-    //printf("%s\n", ZSTR_VAL(Z_OBJ_P(zpkey)->ce->name));
-/*
-/*
-    HashTable *props = Z_OBJPROP(retval)
     array_init(return_value);
-    add_next_index_zval(return_value, );
-    add_next_index_zval(return_value, );
+    zend_hash_next_index_insert(Z_ARRVAL_P(return_value), zpkey);
+    zend_hash_next_index_insert(Z_ARRVAL_P(return_value), zskey);
 
     efree(retval);
 }
-*/
-/*
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Digest, 0, 0, 3)
+
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestInit, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_DigestInit) {
+    CK_RV rv;
+
+    zval *session;
+    zval *mechanism;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(mechanism)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
+
+    rv = sessionobjval->pkcs11->functionList->C_DigestInit(
+        sessionobjval->session,
+        &mechanismObjval->mechanism
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to initialize digest");
+        return;
+    }
+}
+
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Digest, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_InitializeDigest, 0, 0, 2)
+PHP_METHOD(Module, C_Digest) {
+    CK_RV rv;
+
+    zval *session;
+    zend_string *data;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_STR(data)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    CK_ULONG digestLen;
+    rv = sessionobjval->pkcs11->functionList->C_Digest(
+        sessionobjval->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        NULL_PTR,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to digest");
+        return;
+    }
+
+    CK_BYTE_PTR digest = ecalloc(digestLen, sizeof(CK_BYTE));
+    rv = sessionobjval->pkcs11->functionList->C_Digest(
+        sessionobjval->session,
+        ZSTR_VAL(data),
+        ZSTR_LEN(data),
+        digest,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to digest");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(digestLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        digest,
+        digestLen
+    );
+    RETURN_STR(returnval);
+ 
+    efree(digest);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestUpdate, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
-    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, part, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
+PHP_METHOD(Module, C_DigestUpdate) {
+    CK_RV rv;
+
+    zval *session;
+    zend_string *part;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_STR(part)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    rv = sessionobjval->pkcs11->functionList->C_DigestUpdate(
+        sessionobjval->session,
+        ZSTR_VAL(part),
+        ZSTR_LEN(part)
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to update digest");
+        return;
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestKey, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
-    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_OBJECT, 0)
 ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_DigestKey) {
+    CK_RV rv;
+
+    zval *session;
+    zval *key;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+    pkcs11_key_object *keyobjval = Z_PKCS11_KEY_P(key);
+
+    rv = sessionobjval->pkcs11->functionList->C_DigestKey(
+        sessionobjval->session,
+        keyobjval->key
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to update digest");
+        return;
+    }
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestFinal, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_DigestFinal) {
+    CK_RV rv;
+
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(session)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    CK_ULONG digestLen;
+    rv = sessionobjval->pkcs11->functionList->C_DigestFinal(
+        sessionobjval->session,
+        NULL_PTR,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to finalize digest");
+        return;
+    }
+
+    CK_BYTE_PTR digest = ecalloc(digestLen, sizeof(CK_BYTE));
+    rv = sessionobjval->pkcs11->functionList->C_DigestFinal(
+        sessionobjval->session,
+        digest,
+        &digestLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to finalize digest");
+        return;
+    }
+
+    zend_string *returnval;
+    returnval = zend_string_alloc(digestLen, 0);
+    memcpy(
+        ZSTR_VAL(returnval),
+        digest,
+        digestLen
+    );
+    RETURN_STR(returnval);
+ 
+    efree(digest);
+}
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
+
+PHP_METHOD(Module, C_CreateObject) {
+    CK_RV rv;
+
+    zval *session;
+    zval *template;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    zval params[] = {*template};
+
+    call_obj_func(&sessionobjval->std, "createObject", return_value, 1, params);
+}
+
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
-    ZEND_ARG_INFO(0, object)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
+
+
+PHP_METHOD(Module, C_FindObjects) {
+    CK_RV rv;
+
+    zval *session;
+    zval *template;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    zval params[] = {*template};
+
+    call_obj_func(&sessionobjval->std, "findObjects", return_value, 1, params);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, object, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_CopyObject) {
+    CK_RV rv;
+
+    zval *session;
+    zval *object;
+    zval *template;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(object)
+        Z_PARAM_ZVAL(template)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    zval params[] = {*object, *template};
+
+    call_obj_func(&sessionobjval->std, "copyObject", return_value, 2, params);
+}
+
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DestroyObject, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_INFO(0, object)
 ZEND_END_ARG_INFO()
-*/
+
+PHP_METHOD(Module, C_DestroyObject) {
+    CK_RV rv;
+
+    zval *session;
+    zval *object;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(object)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    zval params[] = {*object};
+
+    call_obj_func(&sessionobjval->std, "destroyObject", return_value, 1, params);
+}
+
 void pkcs11_shutdown(pkcs11_object *obj) {
     // called before the pkcs11_object is freed
     if (obj->functionList != NULL) {
@@ -710,7 +966,17 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SetPIN,                  arginfo_C_SetPIN,                  ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKey,             arginfo_C_GenerateKey,             ZEND_ACC_PUBLIC)
-    //PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DigestInit,              arginfo_C_DigestInit,              ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Digest,                  arginfo_C_Digest,                  ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DigestUpdate,            arginfo_C_DigestUpdate,            ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DigestKey,               arginfo_C_DigestKey,               ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DigestFinal,             arginfo_C_DigestFinal,             ZEND_ACC_PUBLIC)
+    
+    PHP_ME(Module, C_CreateObject,            arginfo_C_CreateObject,            ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_FindObjects,             arginfo_C_FindObjects,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_CopyObject,              arginfo_C_CopyObject,              ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DestroyObject,           arginfo_C_DestroyObject,           ZEND_ACC_PUBLIC)
 
     PHP_FE_END
 };
