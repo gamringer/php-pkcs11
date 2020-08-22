@@ -218,6 +218,7 @@ PHP_METHOD(Module, getSlotList) {
     pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
     rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
     if (rv != CKR_OK) {
+        efree(pSlotList);
         pkcs11_error(rv, "Unable to get slot list from token");
         return;
     }
