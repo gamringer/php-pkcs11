@@ -29,6 +29,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetInfo, 0, 0, 1)
+    ZEND_ARG_INFO(1, pInfo)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getSlots, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -114,22 +118,15 @@ PHP_METHOD(Module, __construct) {
 }
 
 
-PHP_METHOD(Module, getInfo) {
-    zend_string *retval;
+CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
+
     CK_RV rv;
     CK_INFO info;
-
-    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
-
-    if (!objval->initialised) {
-        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
-        return;
-    }
 
     rv = objval->functionList->C_GetInfo(&info);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get information from token");
-        return;
+        return rv;
     }
 
     zval cryptokiversion;
@@ -142,11 +139,49 @@ PHP_METHOD(Module, getInfo) {
     add_assoc_long(&libversion, "major", info.libraryVersion.major);
     add_assoc_long(&libversion, "minor", info.libraryVersion.minor);
 
-    array_init(return_value);
-    add_assoc_zval(return_value, "version", &cryptokiversion);
-    add_assoc_stringl(return_value, "manufacturer_id", info.manufacturerID, 32);
-    add_assoc_stringl(return_value, "lib_description", info.libraryDescription, 32);
-    add_assoc_zval(return_value, "lib_version", &libversion);
+    array_init(retval);
+    add_assoc_zval(retval, "version", &cryptokiversion);
+    add_assoc_stringl(retval, "manufacturer_id", info.manufacturerID, 32);
+    add_assoc_stringl(retval, "lib_description", info.libraryDescription, 32);
+    add_assoc_zval(retval, "lib_version", &libversion);
+
+    return rv;
+}
+
+PHP_METHOD(Module, getInfo) {
+    CK_RV rv;
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = php_C_GetInfo(objval, return_value);
+}
+
+PHP_METHOD(Module, C_GetInfo) {
+    CK_RV rv;
+    zval *pInfo;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(pInfo)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = php_C_GetInfo(objval, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pInfo, &retval);
+
+    RETURN_LONG(rv);
 }
 
 
@@ -588,6 +623,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKeyPair, 0, 0, 4)
     ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, pkTemplate, IS_ARRAY, 0)
     ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
+    ZEND_ARG_INFO(1, phPublicKey)
+    ZEND_ARG_INFO(1, phPrivateKey)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GenerateKeyPair) {
@@ -597,13 +634,16 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     zval *mechanism;
     zval *pkTemplate;
     zval *skTemplate;
+    zval *phPublicKey;
+    zval *phPrivateKey;
 
-
-    ZEND_PARSE_PARAMETERS_START(4, 4)
+    ZEND_PARSE_PARAMETERS_START(6, 6)
         Z_PARAM_ZVAL(session)
         Z_PARAM_ZVAL(mechanism)
         Z_PARAM_ZVAL(pkTemplate)
         Z_PARAM_ZVAL(skTemplate)
+        Z_PARAM_ZVAL(phPublicKey)
+        Z_PARAM_ZVAL(phPrivateKey)
     ZEND_PARSE_PARAMETERS_END();
   
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
@@ -617,14 +657,12 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     zval *rvpr;
     zval *zpkey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "pkey", sizeof("pkey") - 1, 0, rvpr);
     zval *zskey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "skey", sizeof("skey") - 1, 0, rvpr);
-
-    array_init(return_value);
-    zend_hash_next_index_insert(Z_ARRVAL_P(return_value), zpkey);
-    zend_hash_next_index_insert(Z_ARRVAL_P(return_value), zskey);
-
     efree(retval);
-}
 
+    ZEND_TRY_ASSIGN_REF_VALUE(phPublicKey, zpkey);
+    ZEND_TRY_ASSIGN_REF_VALUE(phPrivateKey, zskey);
+
+}
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestInit, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
@@ -952,7 +990,9 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
-    PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetInfo,        arginfo_C_GetInfo,        ZEND_ACC_PUBLIC)
+
+    //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetSlots,         getSlots,         arginfo_getSlots,         ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)

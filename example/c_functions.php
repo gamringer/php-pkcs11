@@ -6,9 +6,12 @@ require 'helper.php';
 
 $module = new Pkcs11\Module($modulePath);
 
+$module->C_GetInfo($info);
+var_dump($info);
 
 $slotList = $module->C_GetSlotList();
 var_dump($slotList);
+exit;
 
 $session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 var_dump($session);
@@ -97,7 +100,7 @@ $found = $module->C_FindObjects($session, [
 ]);
 var_dump($found);
 
-list($pkey, $skey) = $module->C_GenerateKeyPair(
+/*list($pkey, $skey) = */$module->C_GenerateKeyPair(
 	$session,
 	new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN),
 	[
@@ -113,5 +116,6 @@ list($pkey, $skey) = $module->C_GenerateKeyPair(
 		Pkcs11\CKA_DECRYPT => true,
 		Pkcs11\CKA_LABEL => "Test RSA Encrypt Private",
 	]
+	,$pkey,$skey
 );
 var_dump($pkey, $skey);
