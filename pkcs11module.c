@@ -39,6 +39,11 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getSlotList, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSlotList, 0, 0, 0)
+    ZEND_ARG_INFO(0, tokenPresent)
+    ZEND_ARG_INFO(1, pSlotList)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getSlotInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
@@ -184,6 +189,34 @@ PHP_METHOD(Module, C_GetInfo) {
     RETURN_LONG(rv);
 }
 
+CK_RV php_C_GetSlotList(pkcs11_object *objval, CK_BBOOL tokenPresent, zval *retval) {
+
+    CK_RV rv;
+    CK_ULONG ulSlotCount;
+    CK_SLOT_ID_PTR pSlotList;
+
+    rv = objval->functionList->C_GetSlotList(tokenPresent, NULL_PTR, &ulSlotCount);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot list from token");
+        return rv;
+    }
+
+    pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
+    rv = objval->functionList->C_GetSlotList(tokenPresent, pSlotList, &ulSlotCount);
+    if (rv != CKR_OK) {
+        efree(pSlotList);
+        pkcs11_error(rv, "Unable to get slot list from token");
+        return rv;
+    }
+
+    uint i;
+    array_init(retval);
+    for (i=0; i<ulSlotCount; i++) {
+        add_next_index_long(retval, pSlotList[i]);
+    }
+
+    efree(pSlotList);
+}
 
 PHP_METHOD(Module, getSlots) {
     CK_RV rv;
@@ -232,10 +265,6 @@ PHP_METHOD(Module, getSlots) {
 
 
 PHP_METHOD(Module, getSlotList) {
-    CK_RV rv;
-    CK_ULONG ulSlotCount;
-    CK_SLOT_ID_PTR pSlotList;
-    CK_SLOT_INFO slotInfo;
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
@@ -244,27 +273,7 @@ PHP_METHOD(Module, getSlotList) {
         return;
     }
 
-    rv = objval->functionList->C_GetSlotList(CK_FALSE, NULL_PTR, &ulSlotCount);
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot list from token");
-        return;
-    }
-
-    pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
-    rv = objval->functionList->C_GetSlotList(CK_FALSE, pSlotList, &ulSlotCount);
-    if (rv != CKR_OK) {
-        efree(pSlotList);
-        pkcs11_error(rv, "Unable to get slot list from token");
-        return;
-    }
-
-    uint i;
-    array_init(return_value);
-    for (i=0; i<ulSlotCount; i++) {
-        add_next_index_long(return_value, pSlotList[i]);
-    }
-
-    efree(pSlotList);
+    CK_RV rv = php_C_GetSlotList(objval, false, return_value);
 }
 
 
@@ -993,7 +1002,6 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_GetInfo,        arginfo_C_GetInfo,        ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_GetSlots,         getSlots,         arginfo_getSlots,         ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)

@@ -9,7 +9,8 @@ $module = new Pkcs11\Module($modulePath);
 $module->C_GetInfo($info);
 var_dump($info);
 
-$slotList = $module->C_GetSlotList();
+//$module->C_GetSlotList(true, $slotList);
+$slotList = $module->getSlotList();
 var_dump($slotList);
 exit;
 
