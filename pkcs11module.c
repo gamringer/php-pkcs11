@@ -39,13 +39,18 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getSlotList, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSlotList, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSlotList, 0, 0, 2)
     ZEND_ARG_INFO(0, tokenPresent)
     ZEND_ARG_INFO(1, pSlotList)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getSlotInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSlotInfo, 0, 0, 2)
+    ZEND_ARG_INFO(0, slotId)
+    ZEND_ARG_INFO(1, pInfo)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getTokenInfo, 0, 0, 1)
@@ -154,8 +159,6 @@ CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
 }
 
 PHP_METHOD(Module, getInfo) {
-    CK_RV rv;
-
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
     if (!objval->initialised) {
@@ -163,7 +166,7 @@ PHP_METHOD(Module, getInfo) {
         return;
     }
 
-    rv = php_C_GetInfo(objval, return_value);
+    CK_RV rv = php_C_GetInfo(objval, return_value);
 }
 
 PHP_METHOD(Module, C_GetInfo) {
@@ -216,6 +219,8 @@ CK_RV php_C_GetSlotList(pkcs11_object *objval, CK_BBOOL tokenPresent, zval *retv
     }
 
     efree(pSlotList);
+
+    return rv;
 }
 
 PHP_METHOD(Module, getSlots) {
@@ -263,7 +268,6 @@ PHP_METHOD(Module, getSlots) {
     efree(pSlotList);
 }
 
-
 PHP_METHOD(Module, getSlotList) {
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
@@ -276,6 +280,49 @@ PHP_METHOD(Module, getSlotList) {
     CK_RV rv = php_C_GetSlotList(objval, false, return_value);
 }
 
+PHP_METHOD(Module, C_GetSlotList) {
+    CK_RV rv;
+    zend_bool tokenPresent;
+    zval *pSlotList;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_BOOL(tokenPresent)
+        Z_PARAM_ZVAL(pSlotList)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    rv = php_C_GetSlotList(objval, tokenPresent, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pSlotList, &retval);
+
+    RETURN_LONG(rv);
+}
+
+
+CK_RV php_C_GetSlotInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+
+    CK_RV rv;
+    CK_SLOT_INFO slotInfo;
+
+    rv = objval->functionList->C_GetSlotInfo(slotId, &slotInfo);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot info from token");
+        return rv;
+    }
+
+    array_init(retval);
+    add_assoc_long(retval, "id", slotId);
+    add_assoc_stringl(retval, "description", slotInfo.slotDescription, 64);
+
+    return rv;
+}
 
 PHP_METHOD(Module, getSlotInfo) {
 
@@ -285,8 +332,27 @@ PHP_METHOD(Module, getSlotInfo) {
         Z_PARAM_LONG(slotId)
     ZEND_PARSE_PARAMETERS_END();
 
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+
+    CK_RV rv = php_C_GetSlotInfo(objval, slotId, return_value);
+}
+
+PHP_METHOD(Module, C_GetSlotInfo) {
     CK_RV rv;
-    CK_SLOT_INFO slotInfo;
+    zend_long slotId;
+    zval *pInfo;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(slotId)
+        Z_PARAM_ZVAL(pInfo)
+    ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
@@ -295,15 +361,11 @@ PHP_METHOD(Module, getSlotInfo) {
         return;
     }
 
-    rv = objval->functionList->C_GetSlotInfo(slotId, &slotInfo);
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot info from token");
-        return;
-    }
+    rv = php_C_GetSlotInfo(objval, slotId, &retval);
 
-    array_init(return_value);
-    add_assoc_long(return_value, "id", slotId);
-    add_assoc_stringl(return_value, "description", slotInfo.slotDescription, 64);
+    ZEND_TRY_ASSIGN_REF_VALUE(pInfo, &retval);
+
+    RETURN_LONG(rv);
 }
 
 
@@ -1000,10 +1062,12 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GetInfo,        arginfo_C_GetInfo,        ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetSlotList,    arginfo_C_GetSlotList,    ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetSlotInfo,    arginfo_C_GetSlotInfo,    ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
+    //PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
+    //PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)

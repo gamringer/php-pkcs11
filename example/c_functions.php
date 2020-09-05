@@ -6,12 +6,17 @@ require 'helper.php';
 
 $module = new Pkcs11\Module($modulePath);
 
-$module->C_GetInfo($info);
+$rv = $module->C_GetInfo($info);
+var_dump($rv);
 var_dump($info);
 
-//$module->C_GetSlotList(true, $slotList);
-$slotList = $module->getSlotList();
+$rv = $module->C_GetSlotList(true, $slotList);
+var_dump($rv);
 var_dump($slotList);
+
+$rv = $module->C_GetSlotInfo($slotList[0], $slotInfo);
+var_dump($rv);
+var_dump($slotInfo);
 exit;
 
 $session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
