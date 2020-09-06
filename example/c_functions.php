@@ -25,6 +25,14 @@ var_dump($tokenInfo);
 $rv = $module->C_GetMechanismList($slotList[0], $mechanismList);
 var_dump($rv);
 var_dump($mechanismList);
+/*
+$info = $module->C_GetMechanismInfo($slotList[0], Pkcs11\CKM_SHA256);
+var_dump($info);
+/**/
+$rv = $module->C_GetMechanismInfo($slotList[0], Pkcs11\CKM_AES_GCM, $mechanismInfo);
+var_dump($rv);
+var_dump($mechanismInfo);
+/**/
 exit;
 
 $session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
