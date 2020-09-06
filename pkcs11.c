@@ -20,14 +20,14 @@
 
 
 void general_error(char *generic, char *specific) {
-    char buf[256];
-    sprintf(buf, "%s: %s", generic, specific);
+    char buf[BUFSIZ];
+    snprintf(buf, sizeof(buf), "%s: %s", generic, specific);
     zend_throw_exception(zend_ce_exception, buf, 0);
 }
 
 void pkcs11_error(CK_RV rv, char *error) {
-    char buf[256];
-    sprintf(buf, "(0x%08lx) PKCS#11 module error: %s", rv, error);
+    char buf[BUFSIZ];
+    snprintf(buf, sizeof(buf), "(0x%08lx) PKCS#11 module error: %s", rv, error);
     zend_throw_exception(zend_ce_exception, buf, 0);
 }
 
