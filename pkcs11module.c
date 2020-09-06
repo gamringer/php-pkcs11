@@ -88,6 +88,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_initToken, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, sopin, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_InitToken, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, slotid, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, label, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, sopin, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_openSession, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotid, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
@@ -612,17 +618,19 @@ PHP_METHOD(Module, C_GetMechanismInfo) {
 }
 
 
+CK_RV php_C_InitToken(pkcs11_object *objval, CK_ULONG slotId, zend_string *label, zend_string *sopin, zval *retval) {
+
+    CK_MECHANISM_INFO mechanismInfo;
+    CK_RV rv = objval->functionList->C_InitToken(slotId, (CK_UTF8CHAR_PTR)sopin, ZSTR_LEN(sopin), (CK_UTF8CHAR_PTR)label);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to initialise token");
+        return rv;
+    }
+
+    return rv;
+}
 
 PHP_METHOD(Module, initToken) {
-    char *var;
-    size_t var_len;
-    zend_string *retval;
-    CK_RV rv;
-    CK_ULONG ulSlotCount;
-    CK_SLOT_ID_PTR pSlotList;
-    CK_SLOT_INFO slotInfo;
-
-
     zend_string    *label_str;
     zend_string    *sopin_str;
     zend_long      slotid;
@@ -639,11 +647,31 @@ PHP_METHOD(Module, initToken) {
         zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
         return;
     }
-    rv = objval->functionList->C_InitToken(slotid, (CK_UTF8CHAR_PTR)sopin_str, ZSTR_LEN(sopin_str), (CK_UTF8CHAR_PTR)label_str);
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to initialise token");
+    
+    CK_RV rv = php_C_InitToken(objval, slotid, label_str, sopin_str, return_value);
+}
+
+PHP_METHOD(Module, C_InitToken) {
+    zend_string    *label_str;
+    zend_string    *sopin_str;
+    zend_long      slotid;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_LONG(slotid)
+        Z_PARAM_STR(label_str)
+        Z_PARAM_STR(sopin_str)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
         return;
     }
+
+    CK_RV rv = php_C_InitToken(objval, slotid, label_str, sopin_str, return_value);
+
+    RETURN_LONG(rv);
 }
 
 
@@ -1180,6 +1208,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_GetTokenInfo,     arginfo_C_GetTokenInfo,     ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetMechanismList, arginfo_C_GetMechanismList, ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetMechanismInfo, arginfo_C_GetMechanismInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_InitToken,        arginfo_C_InitToken,        ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
@@ -1187,7 +1216,7 @@ static zend_function_entry module_class_functions[] = {
     //PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
+    //PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
