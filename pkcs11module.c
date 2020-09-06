@@ -66,6 +66,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getMechanismList, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetMechanismList, 0, 0, 2)
+    ZEND_ARG_INFO(0, slotId)
+    ZEND_ARG_INFO(1, pMechanismList)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMechanismInfo, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
@@ -462,6 +467,36 @@ PHP_METHOD(Module, C_GetTokenInfo) {
     RETURN_LONG(rv);
 }
 
+
+CK_RV php_C_GetMechanismList(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+
+    CK_RV rv;
+
+    CK_ULONG ulMechanismCount;
+    rv = objval->functionList->C_GetMechanismList(slotId, NULL_PTR, &ulMechanismCount);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get mechanism list from token 1");
+        return rv;
+    }
+
+    CK_MECHANISM_TYPE_PTR pMechanismList = (CK_MECHANISM_TYPE_PTR) ecalloc(ulMechanismCount, sizeof(CK_MECHANISM_TYPE));
+    rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
+    if (rv != CKR_OK) {
+        efree(pMechanismList);
+        pkcs11_error(rv, "Unable to get mechanism list from token 2");
+        return rv;
+    }
+
+    uint i;
+    array_init(retval);
+    for (i=0; i<ulMechanismCount; i++) {
+        add_next_index_long(retval, pMechanismList[i]);
+    }
+    efree(pMechanismList);
+
+    return rv;
+}
+
 PHP_METHOD(Module, getMechanismList) {
 
     zend_long slotId;
@@ -470,9 +505,6 @@ PHP_METHOD(Module, getMechanismList) {
         Z_PARAM_LONG(slotId)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_RV rv;
-    CK_ULONG ulMechanismCount;
-    CK_MECHANISM_TYPE_PTR pMechanismList;
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
@@ -481,26 +513,32 @@ PHP_METHOD(Module, getMechanismList) {
         return;
     }
 
-    rv = objval->functionList->C_GetMechanismList(slotId, NULL_PTR, &ulMechanismCount);
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get mechanism list from token 1");
+    CK_RV rv = php_C_GetMechanismList(objval, slotId, return_value);
+}
+
+PHP_METHOD(Module, C_GetMechanismList) {
+    CK_RV rv;
+    zend_long slotId;
+    zval *pMechanismList;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(slotId)
+        Z_PARAM_ZVAL(pMechanismList)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
         return;
     }
 
-    pMechanismList = (CK_MECHANISM_TYPE_PTR) ecalloc(ulMechanismCount, sizeof(CK_MECHANISM_TYPE));
-    rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
-    if (rv != CKR_OK) {
-        efree(pMechanismList);
-        pkcs11_error(rv, "Unable to get mechanism list from token 2");
-        return;
-    }
+    rv = php_C_GetMechanismList(objval, slotId, &retval);
 
-    uint i;
-    array_init(return_value);
-    for (i=0; i<ulMechanismCount; i++) {
-        add_next_index_long(return_value, pMechanismList[i]);
-    }
-    efree(pMechanismList);
+    ZEND_TRY_ASSIGN_REF_VALUE(pMechanismList, &retval);
+
+    RETURN_LONG(rv);
 }
 
 
@@ -1097,16 +1135,17 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
-    PHP_ME(Module, C_GetInfo,        arginfo_C_GetInfo,        ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_GetSlotList,    arginfo_C_GetSlotList,    ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_GetSlotInfo,    arginfo_C_GetSlotInfo,    ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_GetTokenInfo,   arginfo_C_GetTokenInfo,   ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetInfo,          arginfo_C_GetInfo,          ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetSlotList,      arginfo_C_GetSlotList,      ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetSlotInfo,      arginfo_C_GetSlotInfo,      ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetTokenInfo,     arginfo_C_GetTokenInfo,     ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetMechanismList, arginfo_C_GetMechanismList, ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
+    //PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
