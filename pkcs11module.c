@@ -234,9 +234,8 @@ CK_RV php_C_GetSlotList(pkcs11_object *objval, CK_BBOOL tokenPresent, zval *retv
         return rv;
     }
 
-    uint i;
     array_init(retval);
-    for (i=0; i<ulSlotCount; i++) {
+    for (CK_SLOT_ID i=0; i<ulSlotCount; i++) {
         add_next_index_long(retval, pSlotList[i]);
     }
 
@@ -272,10 +271,9 @@ PHP_METHOD(Module, getSlots) {
         return;
     }
 
-    uint i;
     zval slotObj;
     array_init(return_value);
-    for (i=0; i<ulSlotCount; i++) {
+    for (CK_SLOT_ID i=0; i<ulSlotCount; i++) {
         rv = objval->functionList->C_GetSlotInfo(pSlotList[i], &slotInfo);
         if (rv != CKR_OK) {
             pkcs11_error(rv, "Unable to get slot info from token");
