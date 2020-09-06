@@ -57,6 +57,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_getTokenInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetTokenInfo, 0, 0, 2)
+    ZEND_ARG_INFO(0, slotId)
+    ZEND_ARG_INFO(1, pInfo)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getMechanismList, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotId, IS_LONG, 0)
 ZEND_END_ARG_INFO()
@@ -369,6 +374,51 @@ PHP_METHOD(Module, C_GetSlotInfo) {
 }
 
 
+CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+
+    CK_RV rv;
+    CK_TOKEN_INFO tokenInfo;
+
+    rv = objval->functionList->C_GetTokenInfo(slotId, &tokenInfo);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot info from token");
+        return rv;
+    }
+
+    array_init(retval);
+    add_assoc_stringl(retval, "label", tokenInfo.label, 32);
+    add_assoc_stringl(retval, "manufacturerID", tokenInfo.manufacturerID, 32);
+    add_assoc_stringl(retval, "model", tokenInfo.model, 16);
+    add_assoc_stringl(retval, "serialNumber", tokenInfo.serialNumber, 16);
+
+    add_assoc_long(retval, "ulMaxSessionCount", tokenInfo.ulMaxSessionCount);
+    add_assoc_long(retval, "ulSessionCount", tokenInfo.ulSessionCount);
+    add_assoc_long(retval, "ulMaxRwSessionCount", tokenInfo.ulMaxRwSessionCount);
+    add_assoc_long(retval, "ulRwSessionCount", tokenInfo.ulRwSessionCount);
+    add_assoc_long(retval, "ulMaxPinLen", tokenInfo.ulMaxPinLen);
+    add_assoc_long(retval, "ulMinPinLen", tokenInfo.ulMinPinLen);
+    add_assoc_long(retval, "ulTotalPublicMemory", tokenInfo.ulTotalPublicMemory);
+    add_assoc_long(retval, "ulFreePublicMemory", tokenInfo.ulFreePublicMemory);
+    add_assoc_long(retval, "ulTotalPrivateMemory", tokenInfo.ulTotalPrivateMemory);
+    add_assoc_long(retval, "ulFreePrivateMemory", tokenInfo.ulFreePrivateMemory);
+
+    zval hardwareVersion;
+    array_init(&hardwareVersion);
+    add_assoc_long(&hardwareVersion, "major", tokenInfo.hardwareVersion.major);
+    add_assoc_long(&hardwareVersion, "minor", tokenInfo.hardwareVersion.minor);
+    add_assoc_zval(retval, "hardwareVersion", &hardwareVersion);
+
+    zval firmwareVersion;
+    array_init(&firmwareVersion);
+    add_assoc_long(&firmwareVersion, "major", tokenInfo.firmwareVersion.major);
+    add_assoc_long(&firmwareVersion, "minor", tokenInfo.firmwareVersion.minor);
+    add_assoc_zval(retval, "firmwareVersion", &firmwareVersion);
+
+    add_assoc_stringl(retval, "utcTime", tokenInfo.utcTime, 16);
+
+    return rv;
+}
+
 PHP_METHOD(Module, getTokenInfo) {
 
     zend_long slotId;
@@ -377,8 +427,26 @@ PHP_METHOD(Module, getTokenInfo) {
         Z_PARAM_LONG(slotId)
     ZEND_PARSE_PARAMETERS_END();
 
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!objval->initialised) {
+        zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
+        return;
+    }
+
+    CK_RV rv = php_C_GetTokenInfo(objval, slotId, return_value);
+}
+
+PHP_METHOD(Module, C_GetTokenInfo) {
     CK_RV rv;
-    CK_TOKEN_INFO tokenInfo;
+    zend_long slotId;
+    zval *pInfo;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(slotId)
+        Z_PARAM_ZVAL(pInfo)
+    ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
@@ -387,44 +455,12 @@ PHP_METHOD(Module, getTokenInfo) {
         return;
     }
 
-    rv = objval->functionList->C_GetTokenInfo(slotId, &tokenInfo);
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot info from token");
-        return;
-    }
+    rv = php_C_GetTokenInfo(objval, slotId, &retval);
 
-    array_init(return_value);
-    add_assoc_stringl(return_value, "label", tokenInfo.label, 32);
-    add_assoc_stringl(return_value, "manufacturerID", tokenInfo.manufacturerID, 32);
-    add_assoc_stringl(return_value, "model", tokenInfo.model, 16);
-    add_assoc_stringl(return_value, "serialNumber", tokenInfo.serialNumber, 16);
+    ZEND_TRY_ASSIGN_REF_VALUE(pInfo, &retval);
 
-    add_assoc_long(return_value, "ulMaxSessionCount", tokenInfo.ulMaxSessionCount);
-    add_assoc_long(return_value, "ulSessionCount", tokenInfo.ulSessionCount);
-    add_assoc_long(return_value, "ulMaxRwSessionCount", tokenInfo.ulMaxRwSessionCount);
-    add_assoc_long(return_value, "ulRwSessionCount", tokenInfo.ulRwSessionCount);
-    add_assoc_long(return_value, "ulMaxPinLen", tokenInfo.ulMaxPinLen);
-    add_assoc_long(return_value, "ulMinPinLen", tokenInfo.ulMinPinLen);
-    add_assoc_long(return_value, "ulTotalPublicMemory", tokenInfo.ulTotalPublicMemory);
-    add_assoc_long(return_value, "ulFreePublicMemory", tokenInfo.ulFreePublicMemory);
-    add_assoc_long(return_value, "ulTotalPrivateMemory", tokenInfo.ulTotalPrivateMemory);
-    add_assoc_long(return_value, "ulFreePrivateMemory", tokenInfo.ulFreePrivateMemory);
-
-    zval hardwareVersion;
-    array_init(&hardwareVersion);
-    add_assoc_long(&hardwareVersion, "major", tokenInfo.hardwareVersion.major);
-    add_assoc_long(&hardwareVersion, "minor", tokenInfo.hardwareVersion.minor);
-    add_assoc_zval(return_value, "hardwareVersion", &hardwareVersion);
-
-    zval firmwareVersion;
-    array_init(&firmwareVersion);
-    add_assoc_long(&firmwareVersion, "major", tokenInfo.firmwareVersion.major);
-    add_assoc_long(&firmwareVersion, "minor", tokenInfo.firmwareVersion.minor);
-    add_assoc_zval(return_value, "firmwareVersion", &firmwareVersion);
-
-    add_assoc_stringl(return_value, "utcTime", tokenInfo.utcTime, 16);
+    RETURN_LONG(rv);
 }
-
 
 PHP_METHOD(Module, getMechanismList) {
 
@@ -1064,11 +1100,12 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_GetInfo,        arginfo_C_GetInfo,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetSlotList,    arginfo_C_GetSlotList,    ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetSlotInfo,    arginfo_C_GetSlotInfo,    ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetTokenInfo,   arginfo_C_GetTokenInfo,   ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotInfo,      getSlotInfo,      arginfo_getSlotInfo,      ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
+    //PHP_MALIAS(Module, C_GetTokenInfo,     getTokenInfo,     arginfo_getTokenInfo,     ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)

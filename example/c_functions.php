@@ -17,6 +17,10 @@ var_dump($slotList);
 $rv = $module->C_GetSlotInfo($slotList[0], $slotInfo);
 var_dump($rv);
 var_dump($slotInfo);
+
+$rv = $module->C_GetTokenInfo($slotList[0], $tokenInfo);
+var_dump($rv);
+var_dump($tokenInfo);
 exit;
 
 $session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
