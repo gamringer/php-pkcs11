@@ -7,7 +7,7 @@ require 'helper.php';
 $module = new Pkcs11\Module($modulePath);
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
-$session->login(Pkcs11\CKU_USER,'123456');
+$session->login(Pkcs11\CKU_USER, $pinCode);
 
 $domainParameters = hex2bin('06032B6570'); // Ed25519
 $domainParameters = hex2bin('06032B6571'); // Ed448

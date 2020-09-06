@@ -4,7 +4,16 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
-$modulePath = '/usr/local/lib/softhsm/libsofthsm2.so';
+if (getenv('PHP11_MODULE') === false)
+  $modulePath = '/usr/local/lib/softhsm/libsofthsm2.so';
+else
+  $modulePath = getenv('PHP11_MODULE');
+
+if (getenv('PHP11_PINCODE') === false)
+  $pinCode = '123456';
+else
+  $pinCode = getenv('PHP11_PINCODE');
+
 
 function rawToRsaPem($modulus, $exponent){
 	$der = hex2bin('30820122300d06092a864886f70d01010105000382010f003082010a0282010100')

@@ -9,7 +9,7 @@ use phpseclib\Crypt\RSA;
 $module = new Pkcs11\Module($modulePath);
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
-$session->login(Pkcs11\CKU_USER,'123456');
+$session->login(Pkcs11\CKU_USER, $pinCode);
 
 $keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN), [
 	Pkcs11\CKA_ENCRYPT => true,

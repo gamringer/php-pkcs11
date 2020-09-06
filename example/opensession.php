@@ -18,7 +18,7 @@ $session->login(Pkcs11\CKU_SO,'12345678');
 var_dump($session->getInfo()['state']);
 $session->logout();
 var_dump($session->getInfo()['state']);
-$session->login(Pkcs11\CKU_USER,'123456');
+$session->login(Pkcs11\CKU_USER,$pinCode);
 var_dump($session->getInfo()['state']);
 $session->logout();
 var_dump($session->getInfo()['state']);
