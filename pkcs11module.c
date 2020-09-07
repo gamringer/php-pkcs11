@@ -340,6 +340,20 @@ CK_RV php_C_GetSlotInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
     array_init(retval);
     add_assoc_long(retval, "id", slotId);
     add_assoc_stringl(retval, "description", slotInfo.slotDescription, 64);
+    add_assoc_stringl(retval, "manufacturerID", slotInfo.manufacturerID, sizeof(slotInfo.manufacturerID));
+    add_assoc_long(retval, "flags", slotInfo.flags);
+
+    zval hardwareVersion;
+    array_init(&hardwareVersion);
+    add_assoc_long(&hardwareVersion, "major", slotInfo.hardwareVersion.major);
+    add_assoc_long(&hardwareVersion, "minor", slotInfo.hardwareVersion.minor);
+    add_assoc_zval(retval, "hardwareVersion", &hardwareVersion);
+
+    zval firmwareVersion;
+    array_init(&firmwareVersion);
+    add_assoc_long(&firmwareVersion, "major", slotInfo.firmwareVersion.major);
+    add_assoc_long(&firmwareVersion, "minor", slotInfo.firmwareVersion.minor);
+    add_assoc_zval(retval, "firmwareVersion", &firmwareVersion);
 
     return rv;
 }
