@@ -571,7 +571,7 @@ CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, CK_ULONG slotId, CK_ULONG me
     CK_MECHANISM_INFO mechanismInfo;
     CK_RV rv = objval->functionList->C_GetMechanismInfo(slotId, mechanismId, &mechanismInfo);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot info from token");
+        pkcs11_error(rv, "Unable to get mechanism info");
         return rv;
     }
 
