@@ -36,7 +36,7 @@ $tokenInfo = $module->getTokenInfo($slotList[0]);
 var_dump($tokenInfo);
 
 /*
-$module->initToken(5, 'PHP slot', '123456');
+$module->initToken(5, 'PHP slot', $pinCode);
 
 $slots = $module->getSlots();
 var_dump($slots);

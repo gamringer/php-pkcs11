@@ -7,7 +7,7 @@ require 'helper.php';
 $module = new Pkcs11\Module($modulePath);
 $slotList = $module->getSlotList();
 $session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
-$session->login(Pkcs11\CKU_USER,'123456');
+$session->login(Pkcs11\CKU_USER, $pinCode);
 
 $key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
