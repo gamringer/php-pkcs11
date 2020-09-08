@@ -403,10 +403,10 @@ PHP_METHOD(Module, C_GetSlotInfo) {
 }
 
 
-CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval) {
 
     CK_RV rv;
-    CK_TOKEN_INFO tokenInfo;
+    CK_TOKEN_INFO tokenInfo = {};
 
     rv = objval->functionList->C_GetTokenInfo(slotId, &tokenInfo);
     if (rv != CKR_OK) {
@@ -415,10 +415,12 @@ CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
     }
 
     array_init(retval);
-    add_assoc_stringl(retval, "label", tokenInfo.label, 32);
-    add_assoc_stringl(retval, "manufacturerID", tokenInfo.manufacturerID, 32);
-    add_assoc_stringl(retval, "model", tokenInfo.model, 16);
-    add_assoc_stringl(retval, "serialNumber", tokenInfo.serialNumber, 16);
+    add_assoc_stringl(retval, "label", tokenInfo.label, sizeof(tokenInfo.label));
+    add_assoc_stringl(retval, "manufacturerID", tokenInfo.manufacturerID, sizeof(tokenInfo.manufacturerID));
+    add_assoc_stringl(retval, "model", tokenInfo.model, sizeof(tokenInfo.model));
+    add_assoc_stringl(retval, "serialNumber", tokenInfo.serialNumber, sizeof(tokenInfo.serialNumber));
+
+    add_assoc_long(retval, "flags", tokenInfo.flags);
 
     add_assoc_long(retval, "ulMaxSessionCount", tokenInfo.ulMaxSessionCount);
     add_assoc_long(retval, "ulSessionCount", tokenInfo.ulSessionCount);
@@ -443,7 +445,7 @@ CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
     add_assoc_long(&firmwareVersion, "minor", tokenInfo.firmwareVersion.minor);
     add_assoc_zval(retval, "firmwareVersion", &firmwareVersion);
 
-    add_assoc_stringl(retval, "utcTime", tokenInfo.utcTime, 16);
+    add_assoc_stringl(retval, "utcTime", tokenInfo.utcTime, sizeof(tokenInfo.utcTime));
 
     return rv;
 }
