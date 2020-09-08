@@ -492,7 +492,7 @@ PHP_METHOD(Module, C_GetTokenInfo) {
 }
 
 
-CK_RV php_C_GetMechanismList(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+CK_RV php_C_GetMechanismList(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval) {
 
     CK_RV rv;
 
@@ -511,7 +511,7 @@ CK_RV php_C_GetMechanismList(pkcs11_object *objval, CK_ULONG slotId, zval *retva
         return rv;
     }
 
-    uint i;
+    CK_SLOT_ID i;
     array_init(retval);
     for (i=0; i<ulMechanismCount; i++) {
         add_next_index_long(retval, pMechanismList[i]);
