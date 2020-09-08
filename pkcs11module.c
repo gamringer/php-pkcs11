@@ -566,9 +566,10 @@ PHP_METHOD(Module, C_GetMechanismList) {
 }
 
 
-CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, CK_ULONG slotId, CK_ULONG mechanismId, zval *retval) {
+CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, CK_SLOT_ID slotId, CK_MECHANISM_TYPE mechanismId, zval *retval) {
 
-    CK_MECHANISM_INFO mechanismInfo;
+    CK_MECHANISM_INFO mechanismInfo = {};
+
     CK_RV rv = objval->functionList->C_GetMechanismInfo(slotId, mechanismId, &mechanismInfo);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get mechanism info");
@@ -576,8 +577,9 @@ CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, CK_ULONG slotId, CK_ULONG me
     }
 
     array_init(retval);
-    add_assoc_long(retval, "min_key_size", mechanismInfo.ulMinKeySize);
-    add_assoc_long(retval, "max_key_size", mechanismInfo.ulMaxKeySize);
+    add_assoc_long(retval, "ulMinKeySize", mechanismInfo.ulMinKeySize);
+    add_assoc_long(retval, "ulMaxKeySize", mechanismInfo.ulMaxKeySize);
+    add_assoc_long(retval, "flags", mechanismInfo.ulMaxKeySize);
 
     return rv;
 }
