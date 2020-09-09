@@ -45,6 +45,11 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_logout, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateRandom, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, RandomLen, IS_LONG, 0)
+    ZEND_ARG_INFO(1, pRandomData)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_initPin, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -290,6 +295,46 @@ PHP_METHOD(Session, C_Logout) {
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = php_C_Logout(objval, NULL);
+
+    RETURN_LONG(rv);
+}
+
+static CK_RV php_C_GenerateRandom(const pkcs11_session_object * const objval, zend_long php_RandomLen, zval *retval) {
+    CK_BYTE_PTR pRandomData;
+    CK_ULONG ulRandomLen = (CK_ULONG)php_RandomLen;
+    CK_RV rv;
+
+    if (ulRandomLen < 1)
+        return CKR_ARGUMENTS_BAD;
+
+    pRandomData = (CK_BYTE_PTR)ecalloc(sizeof(*pRandomData), ulRandomLen);
+
+    rv = objval->pkcs11->functionList->C_GenerateRandom(objval->session, pRandomData, ulRandomLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    ZVAL_STRINGL(retval, (char *)pRandomData, ulRandomLen);
+    efree(pRandomData);
+
+    return rv;
+}
+
+PHP_METHOD(Session, C_GenerateRandom) {
+    CK_RV rv;
+
+    zend_long php_RandomLen = 0;
+    zval *pRandomData;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(php_RandomLen)
+        Z_PARAM_ZVAL(pRandomData)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = php_C_GenerateRandom(objval, php_RandomLen, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pRandomData, &retval);
 
     RETURN_LONG(rv);
 }
@@ -745,6 +790,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, C_Login,          arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_Logout,         arginfo_logout,           ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_GetSessionInfo, arginfo_C_GetSessionInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, C_GenerateRandom, arginfo_C_GenerateRandom, ZEND_ACC_PUBLIC)
 
     PHP_FE_END
 };
