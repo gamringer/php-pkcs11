@@ -157,7 +157,6 @@ CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
 
     rv = objval->functionList->C_GetInfo(&info);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get information from token");
         return rv;
     }
 
@@ -172,10 +171,10 @@ CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
     add_assoc_long(&libversion, "minor", info.libraryVersion.minor);
 
     array_init(retval);
-    add_assoc_zval(retval, "version", &cryptokiversion);
-    add_assoc_stringl(retval, "manufacturer_id", info.manufacturerID, 32);
-    add_assoc_stringl(retval, "lib_description", info.libraryDescription, 32);
-    add_assoc_zval(retval, "lib_version", &libversion);
+    add_assoc_zval(retval, "cryptokiVersion", &cryptokiversion);
+    add_assoc_stringl(retval, "manufacturerID", info.manufacturerID, sizeof(info.manufacturerID));
+    add_assoc_stringl(retval, "libraryDescription", info.libraryDescription, sizeof(info.libraryDescription));
+    add_assoc_zval(retval, "libraryVersion", &libversion);
 
     return rv;
 }
@@ -189,6 +188,9 @@ PHP_METHOD(Module, getInfo) {
     }
 
     CK_RV rv = php_C_GetInfo(objval, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get information from token");
+    }
 }
 
 PHP_METHOD(Module, C_GetInfo) {
@@ -214,23 +216,21 @@ PHP_METHOD(Module, C_GetInfo) {
     RETURN_LONG(rv);
 }
 
-CK_RV php_C_GetSlotList(pkcs11_object *objval, CK_BBOOL tokenPresent, zval *retval) {
+CK_RV php_C_GetSlotList(pkcs11_object *objval, zend_bool tokenPresent, zval *retval) {
 
     CK_RV rv;
     CK_ULONG ulSlotCount;
     CK_SLOT_ID_PTR pSlotList;
 
-    rv = objval->functionList->C_GetSlotList(tokenPresent, NULL_PTR, &ulSlotCount);
+    rv = objval->functionList->C_GetSlotList((CK_BBOOL)tokenPresent, NULL_PTR, &ulSlotCount);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot list from token");
         return rv;
     }
 
     pSlotList = (CK_SLOT_ID_PTR) ecalloc(ulSlotCount, sizeof(CK_SLOT_ID));
-    rv = objval->functionList->C_GetSlotList(tokenPresent, pSlotList, &ulSlotCount);
+    rv = objval->functionList->C_GetSlotList((CK_BBOOL)tokenPresent, pSlotList, &ulSlotCount);
     if (rv != CKR_OK) {
         efree(pSlotList);
-        pkcs11_error(rv, "Unable to get slot list from token");
         return rv;
     }
 
@@ -282,7 +282,7 @@ PHP_METHOD(Module, getSlots) {
 
         array_init(&slotObj);
         add_assoc_long(&slotObj, "id", pSlotList[i]);
-        add_assoc_stringl(&slotObj, "description", slotInfo.slotDescription, 64);
+        add_assoc_stringl(&slotObj, "slotDescription", slotInfo.slotDescription, sizeof(slotInfo.slotDescription));
         add_index_zval(return_value, pSlotList[i], &slotObj);
     }
     efree(pSlotList);
@@ -298,6 +298,9 @@ PHP_METHOD(Module, getSlotList) {
     }
 
     CK_RV rv = php_C_GetSlotList(objval, false, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot list from token");
+    }
 }
 
 PHP_METHOD(Module, C_GetSlotList) {
@@ -326,19 +329,18 @@ PHP_METHOD(Module, C_GetSlotList) {
 }
 
 
-CK_RV php_C_GetSlotInfo(pkcs11_object *objval, CK_ULONG slotId, zval *retval) {
+CK_RV php_C_GetSlotInfo(pkcs11_object *objval, zend_long slotId, zval *retval) {
 
     CK_RV rv;
     CK_SLOT_INFO slotInfo;
 
-    rv = objval->functionList->C_GetSlotInfo(slotId, &slotInfo);
+    rv = objval->functionList->C_GetSlotInfo((CK_SLOT_ID)slotId, &slotInfo);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot info from token");
         return rv;
     }
 
     array_init(retval);
-    add_assoc_long(retval, "id", slotId);
+    add_assoc_long(retval, "id", (CK_SLOT_ID)slotId);
     add_assoc_stringl(retval, "description", slotInfo.slotDescription, 64);
     add_assoc_stringl(retval, "manufacturerID", slotInfo.manufacturerID, sizeof(slotInfo.manufacturerID));
     add_assoc_long(retval, "flags", slotInfo.flags);
@@ -375,6 +377,9 @@ PHP_METHOD(Module, getSlotInfo) {
 
 
     CK_RV rv = php_C_GetSlotInfo(objval, slotId, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot info from token");
+    }
 }
 
 PHP_METHOD(Module, C_GetSlotInfo) {
@@ -408,9 +413,8 @@ CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval)
     CK_RV rv;
     CK_TOKEN_INFO tokenInfo = {};
 
-    rv = objval->functionList->C_GetTokenInfo(slotId, &tokenInfo);
+    rv = objval->functionList->C_GetTokenInfo((CK_SLOT_ID)slotId, &tokenInfo);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get slot info from token");
         return rv;
     }
 
@@ -466,6 +470,9 @@ PHP_METHOD(Module, getTokenInfo) {
     }
 
     CK_RV rv = php_C_GetTokenInfo(objval, slotId, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get slot info from token");
+    }
 }
 
 PHP_METHOD(Module, C_GetTokenInfo) {
@@ -494,22 +501,20 @@ PHP_METHOD(Module, C_GetTokenInfo) {
 }
 
 
-CK_RV php_C_GetMechanismList(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval) {
+CK_RV php_C_GetMechanismList(pkcs11_object *objval, zend_long slotId, zval *retval) {
 
     CK_RV rv;
 
     CK_ULONG ulMechanismCount;
-    rv = objval->functionList->C_GetMechanismList(slotId, NULL_PTR, &ulMechanismCount);
+    rv = objval->functionList->C_GetMechanismList((CK_SLOT_ID)slotId, NULL_PTR, &ulMechanismCount);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get mechanism list from token 1");
         return rv;
     }
 
     CK_MECHANISM_TYPE_PTR pMechanismList = (CK_MECHANISM_TYPE_PTR) ecalloc(ulMechanismCount, sizeof(CK_MECHANISM_TYPE));
-    rv = objval->functionList->C_GetMechanismList(slotId, pMechanismList, &ulMechanismCount);
+    rv = objval->functionList->C_GetMechanismList((CK_SLOT_ID)slotId, pMechanismList, &ulMechanismCount);
     if (rv != CKR_OK) {
         efree(pMechanismList);
-        pkcs11_error(rv, "Unable to get mechanism list from token 2");
         return rv;
     }
 
@@ -540,6 +545,9 @@ PHP_METHOD(Module, getMechanismList) {
     }
 
     CK_RV rv = php_C_GetMechanismList(objval, slotId, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get mechanism list from token");
+    }
 }
 
 PHP_METHOD(Module, C_GetMechanismList) {
@@ -568,20 +576,19 @@ PHP_METHOD(Module, C_GetMechanismList) {
 }
 
 
-CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, CK_SLOT_ID slotId, CK_MECHANISM_TYPE mechanismId, zval *retval) {
+CK_RV php_C_GetMechanismInfo(pkcs11_object *objval, zend_long slotId, zend_long mechanismId, zval *retval) {
 
     CK_MECHANISM_INFO mechanismInfo = {};
 
-    CK_RV rv = objval->functionList->C_GetMechanismInfo(slotId, mechanismId, &mechanismInfo);
+    CK_RV rv = objval->functionList->C_GetMechanismInfo((CK_SLOT_ID)slotId, (CK_MECHANISM_TYPE)mechanismId, &mechanismInfo);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to get mechanism info");
         return rv;
     }
 
     array_init(retval);
     add_assoc_long(retval, "ulMinKeySize", mechanismInfo.ulMinKeySize);
     add_assoc_long(retval, "ulMaxKeySize", mechanismInfo.ulMaxKeySize);
-    add_assoc_long(retval, "flags", mechanismInfo.ulMaxKeySize);
+    add_assoc_long(retval, "flags", mechanismInfo.flags);
 
     return rv;
 }
@@ -604,6 +611,9 @@ PHP_METHOD(Module, getMechanismInfo) {
     }
 
     CK_RV rv = php_C_GetMechanismInfo(objval, slotId, mechanismId, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to get mechanism info");
+    }
 }
 
 PHP_METHOD(Module, C_GetMechanismInfo) {
@@ -634,12 +644,11 @@ PHP_METHOD(Module, C_GetMechanismInfo) {
 }
 
 
-CK_RV php_C_InitToken(pkcs11_object *objval, CK_ULONG slotId, zend_string *label, zend_string *sopin, zval *retval) {
+CK_RV php_C_InitToken(pkcs11_object *objval, zend_long slotId, zend_string *label, zend_string *sopin, zval *retval) {
 
     CK_MECHANISM_INFO mechanismInfo;
-    CK_RV rv = objval->functionList->C_InitToken(slotId, (CK_UTF8CHAR_PTR)sopin, ZSTR_LEN(sopin), (CK_UTF8CHAR_PTR)label);
+    CK_RV rv = objval->functionList->C_InitToken((CK_SLOT_ID)slotId, (CK_UTF8CHAR_PTR)sopin, ZSTR_LEN(sopin), (CK_UTF8CHAR_PTR)label);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to initialise token");
         return rv;
     }
 
@@ -665,6 +674,9 @@ PHP_METHOD(Module, initToken) {
     }
     
     CK_RV rv = php_C_InitToken(objval, slotid, label_str, sopin_str, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to initialise token");
+    }
 }
 
 PHP_METHOD(Module, C_InitToken) {
