@@ -41,12 +41,12 @@ $info = $module->C_GetSessionInfo($session);
 var_dump($info);
 
 var_dump($session->getInfo()['state']);
-$module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+$session->C_Login(Pkcs11\CKU_USER, $pinCode);
 var_dump($session->getInfo()['state']);
-$module->C_Logout($session);
+$session->C_Logout();
 var_dump($session->getInfo()['state']);
 
-$module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+$session->C_Login(Pkcs11\CKU_USER, $pinCode);
 
 $key = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,

@@ -159,6 +159,39 @@ PHP_METHOD(Session, getInfo) {
     add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
 
+static CK_RV php_C_Login(const pkcs11_session_object * const objval, const zend_long php_userType, const zend_string * const php_Pin, zval *retval) {
+
+    CK_RV rv;
+    CK_USER_TYPE userType;
+    CK_UTF8CHAR_PTR pPin;
+    CK_ULONG ulPinLen;
+
+    userType = (CK_USER_TYPE)php_userType;
+    if (php_Pin != NULL) {
+        pPin = (CK_UTF8CHAR_PTR)ZSTR_VAL(php_Pin);
+        ulPinLen = (CK_ULONG)ZSTR_LEN(php_Pin);
+    } else {
+        pPin = NULL;
+        ulPinLen = 0;
+    }
+
+    /* a nope check */
+    switch(userType) {
+      case CKU_SO:
+      case CKU_USER:
+      case CKU_CONTEXT_SPECIFIC:
+      default:
+      break;
+    }
+
+    rv = objval->pkcs11->functionList->C_Login(objval->session, userType, pPin, ulPinLen);
+    if (rv != CKR_OK) {
+        return rv;
+    }
+
+    return rv;
+}
+
 PHP_METHOD(Session, login) {
 
     CK_RV rv;
@@ -171,7 +204,7 @@ PHP_METHOD(Session, login) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_Login(objval->session, userType, ZSTR_VAL(pin), ZSTR_LEN(pin));
+    rv = php_C_Login(objval, userType, pin, NULL);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to login");
@@ -179,16 +212,52 @@ PHP_METHOD(Session, login) {
     }
 }
 
+PHP_METHOD(Session, C_Login) {
+    CK_RV rv;
+    zend_long php_userType;
+    zend_string *php_Pin = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(php_userType)
+        Z_PARAM_STR(php_Pin)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = php_C_Login(objval, php_userType, php_Pin, NULL);
+
+    RETURN_LONG(rv);
+}
+
+static CK_RV php_C_Logout(const pkcs11_session_object * const objval, zval *retval) {
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_Logout(objval->session);
+    if (rv != CKR_OK) {
+        return rv;
+    }
+
+    return rv;
+}
+
 PHP_METHOD(Session, logout) {
 
     CK_RV rv;
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_Logout(objval->session);
+    rv = php_C_Logout(objval, NULL);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to logout");
         return;
     }
+}
+
+PHP_METHOD(Session, C_Logout) {
+    CK_RV rv;
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = php_C_Logout(objval, NULL);
+
+    RETURN_LONG(rv);
 }
 
 PHP_METHOD(Session, initPin) {
@@ -638,6 +707,10 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initializeDigest, arginfo_initializeDigest, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,      arginfo_generateKey,      ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
+
+    PHP_ME(Session, C_Login,          arginfo_login,            ZEND_ACC_PUBLIC)
+    PHP_ME(Session, C_Logout,         arginfo_logout,           ZEND_ACC_PUBLIC)
+
     PHP_FE_END
 };
 

@@ -774,53 +774,6 @@ PHP_METHOD(Module, C_GetSessionInfo) {
     call_obj_func(&sessionobjval->std, "getInfo", return_value, 0, NULL);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Login, 0, 0, 3)
-    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
-    ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-PHP_METHOD(Module, C_Login) {
-    CK_RV rv;
-
-    zval *session;
-    zval *userType;
-    zval *pin;
-
-    ZEND_PARSE_PARAMETERS_START(3, 3)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(userType)
-        Z_PARAM_ZVAL(pin)
-    ZEND_PARSE_PARAMETERS_END();
-
-    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
-    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
-
-    zval params[] = {*userType, *pin};
-
-    call_obj_func(&sessionobjval->std, "login", return_value, 2, params);
-}
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Logout, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
-ZEND_END_ARG_INFO()
-
-PHP_METHOD(Module, C_Logout) {
-    CK_RV rv;
-
-    zval *session;
-
-    ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_ZVAL(session)
-    ZEND_PARSE_PARAMETERS_END();
-
-    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
-    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
-
-    call_obj_func(&sessionobjval->std, "logout", return_value, 0, NULL);
-}
-
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SetPIN, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, oldPin, IS_STRING, 0)
@@ -1266,8 +1219,6 @@ static zend_function_entry module_class_functions[] = {
     PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_Login,                   arginfo_C_Login,                   ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SetPIN,                  arginfo_C_SetPIN,                  ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKey,             arginfo_C_GenerateKey,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
