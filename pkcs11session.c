@@ -148,6 +148,8 @@ PHP_METHOD(Session, __destruct) {
 
     CK_RV rv;
 
+    ZEND_PARSE_PARAMETERS_NONE();
+
     rv = objval->pkcs11->functionList->C_CloseSession(objval->session);
     if (rv != CKR_OK)
         pkcs11_error(rv, "could not be C_CloseSession()'d");
@@ -286,6 +288,8 @@ PHP_METHOD(Session, logout) {
 
     CK_RV rv;
 
+    ZEND_PARSE_PARAMETERS_NONE();
+
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = php_C_Logout(objval, NULL);
     if (rv != CKR_OK) {
@@ -296,6 +300,8 @@ PHP_METHOD(Session, logout) {
 
 PHP_METHOD(Session, C_Logout) {
     CK_RV rv;
+
+    ZEND_PARSE_PARAMETERS_NONE();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = php_C_Logout(objval, NULL);

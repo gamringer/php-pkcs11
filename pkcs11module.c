@@ -199,6 +199,8 @@ CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
 PHP_METHOD(Module, getInfo) {
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
+    ZEND_PARSE_PARAMETERS_NONE();
+
     if (!objval->initialised) {
         zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
         return;
@@ -267,6 +269,8 @@ PHP_METHOD(Module, getSlots) {
     CK_SLOT_ID_PTR pSlotList;
     CK_SLOT_INFO slotInfo;
 
+    ZEND_PARSE_PARAMETERS_NONE();
+
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
     if (!objval->initialised) {
@@ -308,6 +312,8 @@ PHP_METHOD(Module, getSlots) {
 PHP_METHOD(Module, getSlotList) {
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    ZEND_PARSE_PARAMETERS_NONE();
 
     if (!objval->initialised) {
         zend_throw_exception(zend_ce_exception, "Uninitialised PKCS11 module", 0);
