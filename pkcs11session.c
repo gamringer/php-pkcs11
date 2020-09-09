@@ -45,6 +45,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_logout, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SeedRandom, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, Seed, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateRandom, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, RandomLen, IS_LONG, 0)
     ZEND_ARG_INFO(1, pRandomData)
@@ -295,6 +299,34 @@ PHP_METHOD(Session, C_Logout) {
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = php_C_Logout(objval, NULL);
+
+    RETURN_LONG(rv);
+}
+
+static CK_RV php_C_SeedRandom(const pkcs11_session_object * const objval, zend_string *php_pSeed, zval *retval) {
+    CK_BYTE_PTR pSeed = (CK_BYTE_PTR)ZSTR_VAL(php_pSeed);
+    CK_ULONG ulSeedLen = (CK_ULONG)ZSTR_LEN(php_pSeed);
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_SeedRandom(objval->session, pSeed, ulSeedLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    return rv;
+}
+
+PHP_METHOD(Session, C_SeedRandom) {
+    CK_RV rv;
+
+    zend_string *php_pSeed = NULL;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_STR(php_pSeed)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = php_C_SeedRandom(objval, php_pSeed, NULL);
 
     RETURN_LONG(rv);
 }
@@ -790,6 +822,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, C_Login,          arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_Logout,         arginfo_logout,           ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_GetSessionInfo, arginfo_C_GetSessionInfo, ZEND_ACC_PUBLIC)
+    PHP_ME(Session, C_SeedRandom,     arginfo_C_SeedRandom,     ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_GenerateRandom, arginfo_C_GenerateRandom, ZEND_ACC_PUBLIC)
 
     PHP_FE_END
