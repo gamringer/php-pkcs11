@@ -37,7 +37,7 @@ exit;
 $session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
 var_dump($session);
 
-$info = $module->C_GetSessionInfo($session);
+$session->C_GetSessionInfo($session, $info);
 var_dump($info);
 
 var_dump($session->getInfo()['state']);

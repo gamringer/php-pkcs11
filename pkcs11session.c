@@ -33,6 +33,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
+    ZEND_ARG_INFO(1, pInfo)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_login, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
@@ -140,23 +144,53 @@ PHP_METHOD(Session, __destruct) {
         pkcs11_error(rv, "could not be C_CloseSession()'d");
 }
 
+static CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval) {
+    CK_SESSION_INFO sessionInfo = {};
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    if (rv != CKR_OK)
+        return rv;
+
+    array_init(retval);
+#   define RL(f) add_assoc_long(retval, #f, sessionInfo.f);
+        RL(slotID);
+        RL(state);
+        RL(flags);
+        RL(ulDeviceError);
+#   undef RL
+
+    return rv;
+}
+
+PHP_METHOD(Session, C_GetSessionInfo) {
+    CK_RV rv;
+    zval *pInfo;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(pInfo)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    rv = php_C_GetSessionInfo(objval, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pInfo, &retval);
+
+    RETURN_LONG(rv);
+}
+
 PHP_METHOD(Session, getInfo) {
 
     CK_RV rv;
-    CK_SESSION_INFO sessionInfo;
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    rv = php_C_GetSessionInfo(objval, return_value);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get session info");
         return;
     }
-
-    array_init(return_value);
-    add_assoc_long(return_value, "state", sessionInfo.state);
-    add_assoc_long(return_value, "flags", sessionInfo.flags);
-    add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
 
 static CK_RV php_C_Login(const pkcs11_session_object * const objval, const zend_long php_userType, const zend_string * const php_Pin, zval *retval) {
@@ -710,6 +744,7 @@ static zend_function_entry session_class_functions[] = {
 
     PHP_ME(Session, C_Login,          arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, C_Logout,         arginfo_logout,           ZEND_ACC_PUBLIC)
+    PHP_ME(Session, C_GetSessionInfo, arginfo_C_GetSessionInfo, ZEND_ACC_PUBLIC)
 
     PHP_FE_END
 };
