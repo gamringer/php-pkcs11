@@ -1,5 +1,5 @@
 --TEST--
-OASIS GetSlotInfo() Basic test
+OASIS C_GetTokenInfo() Basic test
 --SKIPIF--
 <?php
 if (!extension_loaded('pkcs11')) {
@@ -19,12 +19,12 @@ $module = new Pkcs11\Module($modulePath);
 $rv = $module->C_GetSlotList(true, $slotList);
 var_dump($rv);
 
-$rv = $module->C_GetSlotInfo($slotList[0], $slotInfo);
+$rv = $module->C_GetTokenInfo($slotList[0], $tokenInfo);
 var_dump($rv);
-var_dump(sizeof($slotInfo, COUNT_RECURSIVE));
+var_dump(sizeof($tokenInfo, COUNT_RECURSIVE));
 
 ?>
 --EXPECTF--
 int(0)
 int(0)
-int(10)
+int(21)

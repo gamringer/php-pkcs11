@@ -1,5 +1,5 @@
 --TEST--
-OASIS C_GetInfo() Basic test
+OASIS C_GetSlotList() Basic test
 --SKIPIF--
 <?php
 if (!extension_loaded('pkcs11')) {
