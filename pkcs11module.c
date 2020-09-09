@@ -26,6 +26,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, modulePath, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo___destruct, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -149,6 +152,20 @@ PHP_METHOD(Module, __construct) {
     objval->initialised = true;
 }
 
+PHP_METHOD(Module, __destruct) {
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    CK_RV rv;
+
+    if (!objval->initialised)
+        return;
+
+    rv = objval->functionList->C_Finalize(NULL);
+    if ((rv != CKR_OK) && (rv != CKR_CRYPTOKI_NOT_INITIALIZED))
+        pkcs11_error(rv, "could not be C_Finalize()'d");
+
+    objval->initialised = false;
+}
 
 CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
 
@@ -1220,6 +1237,7 @@ void pkcs11_shutdown(pkcs11_object *obj) {
 
 static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+    PHP_ME(Module, __destruct,       arginfo___destruct,       ZEND_ACC_PUBLIC)
     PHP_ME(Module, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlots,         arginfo_getSlots,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
