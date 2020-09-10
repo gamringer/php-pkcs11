@@ -1,5 +1,5 @@
 --TEST--
-OASIS Session Basic test - C_Login(), C_Logout(), C_SessionInfo()
+OASIS Session Basic test - C_OpenSession(), C_CloseSession(), C_Login(), C_Logout(), C_SessionInfo()
 --SKIPIF--
 <?php
 if (!extension_loaded('pkcs11')) {
@@ -23,19 +23,20 @@ $module = new Pkcs11\Module($modulePath);
 $rv = $module->C_GetSlotList(true, $s);
 var_dump($rv);
 
-$session = new Pkcs11\Session($module, $s[0], Pkcs11\CKF_RW_SESSION); # aka C_OpenSession()
+$rv => $module->C_OpenSession($s[0], Pkcs11\CRF_RW_SESSION, null, null, $session);
 
 $pin = getenv('PHP11_PIN');
 if (strlen($pin) === 0)
   $pin = null; # Smart card without any pin code
 
-$rv = $session->C_Login(CKU_USER, $pin);
+$rv = $module->C_Login($session, CKU_USER, $pin);
 var_dump($rv);
 
-$rv = $session->C_Logout();
+$rv = $module->C_Logout($session);
 var_dump($rv);
 
-unset($session); # aka C_CloseSession()
+$rv => $module->C_CloseSession($session);
+// or use unset($session); # aka C_CloseSession()
 
 printf("OK".PHP_EOL);
 
