@@ -801,21 +801,28 @@ PHP_METHOD(Module, C_OpenSession) {
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_INFO(1, pInfo)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GetSessionInfo) {
     CK_RV rv;
 
     zval *session;
+    zval *pInfo;
+    zval retval;
 
-    ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_ZVAL(session)
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_ZVAL(pInfo)
     ZEND_PARSE_PARAMETERS_END();
 
-    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    call_obj_func(&sessionobjval->std, "getInfo", return_value, 0, NULL);
+    rv = php_C_GetSessionInfo(sessionobjval, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pInfo, &retval);
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateRandom, 0, 0, 1)
