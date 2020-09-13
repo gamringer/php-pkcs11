@@ -107,6 +107,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 1)
     ZEND_ARG_INFO(1, hSession)
 ZEND_END_ARG_INFO()
 
+
 PHP_METHOD(Module, __construct) {
     char *module_path;
     size_t module_path_len;
@@ -799,6 +800,29 @@ PHP_METHOD(Module, C_OpenSession) {
     RETURN_LONG(rv);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CloseSession, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_CloseSession) {
+    CK_RV rv;
+
+    zval *php_session;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_OBJECT_OF_CLASS(php_session, ce_Pkcs11_Session)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(php_session);
+
+    rv = sessionobjval->pkcs11->functionList->C_CloseSession(sessionobjval->session);
+    // TBC GC_DELREF(&objval->std); /* session is refering the pkcs11 module */
+    sessionobjval->session = 0;
+
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_INFO(1, pInfo)
@@ -1380,6 +1404,7 @@ static zend_function_entry module_class_functions[] = {
     //PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_OpenSession,             arginfo_C_OpenSession,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_CloseSession,            arginfo_C_CloseSession,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Login,                   arginfo_C_Login,                   ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
