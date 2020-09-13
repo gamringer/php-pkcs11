@@ -21,11 +21,13 @@
 zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
 
+#if 0
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, module, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -84,6 +86,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
     ZEND_ARG_INFO(0, object)
 ZEND_END_ARG_INFO()
 
+#if 0
+#error use C_OpenSession()
 extern zend_class_entry *ce_Pkcs11_Module;
 PHP_METHOD(Session, __construct) {
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
@@ -126,6 +130,7 @@ PHP_METHOD(Session, __construct) {
     }
     objval->session = hSession;
 }
+#endif
 
 PHP_METHOD(Session, getInfo) {
 
@@ -611,7 +616,9 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
 }
 
 static zend_function_entry session_class_functions[] = {
+#if 0
     PHP_ME(Session, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+#endif
     PHP_ME(Session, login,            arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Session, logout,           arginfo_logout,           ZEND_ACC_PUBLIC)

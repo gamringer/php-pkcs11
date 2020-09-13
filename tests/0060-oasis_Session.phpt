@@ -23,19 +23,21 @@ $module = new Pkcs11\Module($modulePath);
 $rv = $module->C_GetSlotList(true, $s);
 var_dump($rv);
 
-$rv => $module->C_OpenSession($s[0], Pkcs11\CRF_RW_SESSION, null, null, $session);
+$rv = $module->C_OpenSession($s[0], Pkcs11\CKF_SERIAL_SESSION, null, null, $session);
+var_dump($rv);
+var_dump($session);
 
 $pin = getenv('PHP11_PIN');
 if (strlen($pin) === 0)
   $pin = null; # Smart card without any pin code
 
-$rv = $module->C_Login($session, CKU_USER, $pin);
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pin);
 var_dump($rv);
 
 $rv = $module->C_Logout($session);
 var_dump($rv);
 
-$rv => $module->C_CloseSession($session);
+$rv = $module->C_CloseSession($session);
 // or use unset($session); # aka C_CloseSession()
 
 printf("OK".PHP_EOL);

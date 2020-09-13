@@ -99,6 +99,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_openSession, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, pApplication_TODO, IS_RESOURCE, 1)
+    ZEND_ARG_TYPE_INFO(0, Notify_TODO, IS_CALLABLE, 1)
+    ZEND_ARG_INFO(1, hSession)
+ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, __construct) {
     char *module_path;
@@ -737,6 +744,60 @@ PHP_METHOD(Module, openSession) {
     session_obj->session = phSession;
 }
 
+/*
+ * fabric (__construct like) of a \Session thru a ref parameter
+ */
+PHP_METHOD(Module, C_OpenSession) {
+    CK_RV rv;
+
+    zend_long      php_slotID;
+    zend_long      php_flags;
+    zval           *php_pApplication_TODO = NULL;
+    zend_fcall_info php_fciNotify_TODO;
+    zend_fcall_info_cache fciNotify_cache_TODO;
+    zval           *php_hSession;
+
+    ZEND_PARSE_PARAMETERS_START(5, 5)
+        Z_PARAM_LONG(php_slotID)
+        Z_PARAM_LONG(php_flags)
+	Z_PARAM_RESOURCE_EX(php_pApplication_TODO, 1, 0)
+	Z_PARAM_FUNC_EX(php_fciNotify_TODO, fciNotify_cache_TODO, 1, 0)
+	Z_PARAM_ZVAL(php_hSession)
+    ZEND_PARSE_PARAMETERS_END();
+	//Z_PARAM_OBJECT_EX(php_hSession, 1, 0)
+	//Z_PARAM_OBJECT_OF_CLASS_EX(php_hSession, ce_Pkcs11_Session, 1, 0)
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (((CK_FLAGS)php_flags) &
+         (CKF_RW_SESSION || CKF_SERIAL_SESSION)) {
+        ; /* nope */
+    } else {
+        ; /* nope */
+    }
+
+    pkcs11_session_object* session_objval;
+
+    zval zvhSession = {};
+    object_init_ex(&zvhSession, ce_Pkcs11_Session);
+    session_objval = Z_PKCS11_SESSION_P(&zvhSession);
+    session_objval->pkcs11 = objval;
+    GC_ADDREF(&objval->std); /* session is refering the pkcs11 module */
+
+    CK_SESSION_HANDLE hSession = 0;
+    if (ZEND_NUM_ARGS() > 4)
+        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, NULL_PTR, NULL_PTR, &hSession); /* TODO: add callbacks */
+    else
+        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, NULL_PTR, NULL_PTR, &hSession); /* TODO: add callbacks */
+    session_objval->session = hSession;
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+    }
+
+    ZEND_TRY_ASSIGN_REF_VALUE(php_hSession, &zvhSession);
+
+    RETURN_LONG(rv);
+}
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
@@ -1245,8 +1306,8 @@ static zend_function_entry module_class_functions[] = {
     //PHP_MALIAS(Module, C_GetMechanismList, getMechanismList, arginfo_getMechanismList, ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
-    PHP_MALIAS(Module, C_OpenSession,      openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
 
+    PHP_ME(Module, C_OpenSession,             arginfo_C_OpenSession,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Login,                   arginfo_C_Login,                   ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
