@@ -55,5 +55,13 @@ printf("OK".PHP_EOL);
 --EXPECTF--
 int(0)
 int(0)
+object(Pkcs11\Session)#2 (2) {
+  ["hSession"]=>
+  int(%d)
+  ["slotID"]=>
+  int(0)
+}
+int(0)
+int(0)
 int(0)
 OK
