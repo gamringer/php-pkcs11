@@ -886,21 +886,28 @@ PHP_METHOD(Module, C_Login) {
     CK_RV rv;
 
     zval *session;
-    zval *userType;
-    zval *pin;
+    zend_long userType;
+    zend_string *pin;
 
     ZEND_PARSE_PARAMETERS_START(3, 3)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(userType)
-        Z_PARAM_ZVAL(pin)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_LONG(userType)
+        Z_PARAM_STR(pin)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
+#ifdef notyet
+#error missing rv
     zval params[] = {*userType, *pin};
 
     call_obj_func(&sessionobjval->std, "login", return_value, 2, params);
+#endif
+
+    rv = sessionobjval->pkcs11->functionList->C_Login(sessionobjval->session, userType, ZSTR_VAL(pin), ZSTR_LEN(pin));
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Logout, 0, 0, 1)
@@ -913,13 +920,20 @@ PHP_METHOD(Module, C_Logout) {
     zval *session;
 
     ZEND_PARSE_PARAMETERS_START(1, 1)
-        Z_PARAM_ZVAL(session)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
+#ifdef notyet
+#error missing rv
     call_obj_func(&sessionobjval->std, "logout", return_value, 0, NULL);
+#endif
+
+    rv = sessionobjval->pkcs11->functionList->C_Logout(sessionobjval->session);
+
+    RETURN_LONG(rv);
 }
 
 
