@@ -220,4 +220,5 @@ extern void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR 
 extern int call_obj_func(zend_object *object, char *function_name, zval *retval_ptr, uint32_t param_count, zval params[]);
 
 CK_RV php_C_GenerateRandom(const pkcs11_session_object * const objval, zend_long php_RandomLen, zval *retval);
+CK_RV php_C_SeedRandom(const pkcs11_session_object * const objval, zend_string *php_pSeed, zval *retval);
 #endif

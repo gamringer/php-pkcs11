@@ -183,6 +183,18 @@ PHP_METHOD(Session, logout) {
     }
 }
 
+CK_RV php_C_SeedRandom(const pkcs11_session_object * const objval, zend_string *php_pSeed, zval *retval) {
+    CK_BYTE_PTR pSeed = (CK_BYTE_PTR)ZSTR_VAL(php_pSeed);
+    CK_ULONG ulSeedLen = (CK_ULONG)ZSTR_LEN(php_pSeed);
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_SeedRandom(objval->session, pSeed, ulSeedLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    return rv;
+}
+
 CK_RV php_C_GenerateRandom(const pkcs11_session_object * const objval, zend_long php_RandomLen, zval *retval) {
     CK_BYTE_PTR pRandomData;
     CK_ULONG ulRandomLen = (CK_ULONG)php_RandomLen;
