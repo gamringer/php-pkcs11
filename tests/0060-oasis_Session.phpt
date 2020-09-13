@@ -26,6 +26,7 @@ var_dump($rv);
 $rv = $module->C_OpenSession($s[0], Pkcs11\CKF_SERIAL_SESSION, null, null, $session);
 var_dump($rv);
 var_dump($session);
+var_dump($session->getInfo());
 
 $pin = getenv('PHP11_PIN');
 if (strlen($pin) === 0)
