@@ -818,6 +818,34 @@ PHP_METHOD(Module, C_GetSessionInfo) {
     call_obj_func(&sessionobjval->std, "getInfo", return_value, 0, NULL);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateRandom, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, RandomLen, IS_LONG, 0)
+    ZEND_ARG_INFO(1, pRandomData)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_GenerateRandom) {
+    CK_RV rv;
+
+    zval *php_session;
+    zend_long php_RandomLen = 0;
+    zval *pRandomData;
+    zval retval;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(php_session, ce_Pkcs11_Session)
+        Z_PARAM_LONG(php_RandomLen)
+        Z_PARAM_ZVAL(pRandomData)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(php_session);
+    rv = php_C_GenerateRandom(objval, php_RandomLen, &retval);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(pRandomData, &retval);
+
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Login, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
@@ -1319,6 +1347,8 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_DigestUpdate,            arginfo_C_DigestUpdate,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestKey,               arginfo_C_DigestKey,               ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestFinal,             arginfo_C_DigestFinal,             ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     
     PHP_ME(Module, C_CreateObject,            arginfo_C_CreateObject,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_FindObjects,             arginfo_C_FindObjects,             ZEND_ACC_PUBLIC)

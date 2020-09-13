@@ -183,6 +183,26 @@ PHP_METHOD(Session, logout) {
     }
 }
 
+CK_RV php_C_GenerateRandom(const pkcs11_session_object * const objval, zend_long php_RandomLen, zval *retval) {
+    CK_BYTE_PTR pRandomData;
+    CK_ULONG ulRandomLen = (CK_ULONG)php_RandomLen;
+    CK_RV rv;
+
+    if (ulRandomLen < 1)
+        return CKR_ARGUMENTS_BAD;
+
+    pRandomData = (CK_BYTE_PTR)ecalloc(sizeof(*pRandomData), ulRandomLen);
+
+    rv = objval->pkcs11->functionList->C_GenerateRandom(objval->session, pRandomData, ulRandomLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    ZVAL_STRINGL(retval, (char *)pRandomData, ulRandomLen);
+    efree(pRandomData);
+
+    return rv;
+}
+
 PHP_METHOD(Session, initPin) {
 
     CK_RV rv;
@@ -632,6 +652,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initializeDigest, arginfo_initializeDigest, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,      arginfo_generateKey,      ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
+
     PHP_FE_END
 };
 
