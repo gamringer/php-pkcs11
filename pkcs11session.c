@@ -132,23 +132,36 @@ PHP_METHOD(Session, __construct) {
 }
 #endif
 
+CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval) {
+    CK_SESSION_INFO sessionInfo = {};
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    if (rv != CKR_OK)
+        return rv;
+
+    array_init(retval);
+#   define RL(f) add_assoc_long(retval, #f, sessionInfo.f);
+        RL(slotID);
+        RL(state);
+        RL(flags);
+        RL(ulDeviceError);
+#   undef RL
+
+    return rv;
+}
+
 PHP_METHOD(Session, getInfo) {
 
     CK_RV rv;
-    CK_SESSION_INFO sessionInfo;
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    rv = php_C_GetSessionInfo(objval, return_value);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get session info");
         return;
     }
-
-    array_init(return_value);
-    add_assoc_long(return_value, "state", sessionInfo.state);
-    add_assoc_long(return_value, "flags", sessionInfo.flags);
-    add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
 
 PHP_METHOD(Session, login) {
