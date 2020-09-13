@@ -86,6 +86,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
     ZEND_ARG_INFO(0, object)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo___debugInfo, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 #if 0
 #error use C_OpenSession()
 extern zend_class_entry *ce_Pkcs11_Module;
@@ -652,6 +655,17 @@ PHP_METHOD(Session, destroyObject) {
     }
 }
 
+PHP_METHOD(Session, __debugInfo) {
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+
+    array_init(return_value);
+    add_assoc_long(return_value, "hSession", objval->session);
+    add_assoc_long(return_value, "slotID", objval->slotID);
+    /* TODO: add $module objval->std */
+}
+
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     // called before the pkcs11_session_object is freed
     // TBC: is it called before pkcs11_shutdown() ? It has to.
@@ -677,6 +691,8 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initializeDigest, arginfo_initializeDigest, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,      arginfo_generateKey,      ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
+
+    PHP_ME(Session, __debugInfo,      arginfo___debugInfo,        ZEND_ACC_PUBLIC)
 
     PHP_FE_END
 };
