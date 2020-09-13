@@ -27,9 +27,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo___destruct, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -128,16 +125,6 @@ PHP_METHOD(Session, __construct) {
           return;
     }
     objval->session = hSession;
-}
-
-PHP_METHOD(Session, __destruct) {
-    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-
-    CK_RV rv;
-
-    rv = objval->pkcs11->functionList->C_CloseSession(objval->session);
-    if (rv != CKR_OK)
-        pkcs11_error(rv, "could not be C_CloseSession()'d");
 }
 
 PHP_METHOD(Session, getInfo) {
@@ -617,6 +604,7 @@ PHP_METHOD(Session, destroyObject) {
 
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     // called before the pkcs11_session_object is freed
+    // TBC: is it called before pkcs11_shutdown() ? It has to.
     if (obj->pkcs11->functionList != NULL) {
         obj->pkcs11->functionList->C_CloseSession(obj->session);
     }
@@ -624,7 +612,6 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
 
 static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(Session, __destruct,       arginfo___destruct,       ZEND_ACC_PUBLIC)
     PHP_ME(Session, login,            arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Session, logout,           arginfo_logout,           ZEND_ACC_PUBLIC)
