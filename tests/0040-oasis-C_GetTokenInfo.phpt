@@ -27,4 +27,4 @@ var_dump(sizeof($tokenInfo, COUNT_RECURSIVE));
 --EXPECTF--
 int(0)
 int(0)
-int(21)
+int(22)
