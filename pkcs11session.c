@@ -84,6 +84,8 @@ PHP_METHOD(Session, getInfo) {
     CK_RV rv;
     CK_SESSION_INFO sessionInfo;
 
+    ZEND_PARSE_PARAMETERS_NONE();
+
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
 
@@ -121,6 +123,8 @@ PHP_METHOD(Session, login) {
 PHP_METHOD(Session, logout) {
 
     CK_RV rv;
+
+    ZEND_PARSE_PARAMETERS_NONE();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
     rv = objval->pkcs11->functionList->C_Logout(objval->session);
