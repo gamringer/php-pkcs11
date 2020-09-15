@@ -30,7 +30,8 @@ $rv = $module->C_GetMechanismInfo($slotList[0], Pkcs11\CKM_AES_GCM, $mechanismIn
 var_dump($rv);
 var_dump($mechanismInfo);
 
-$module->C_InitToken(0, 'PHP slot', '123456');
+$rv = $module->C_InitToken(0, 'PHP slot', '123456');
+var_dump($rv);
 
 exit;
 
