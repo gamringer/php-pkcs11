@@ -144,12 +144,11 @@ CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *ret
         return rv;
 
     array_init(retval);
-#   define RL(f) add_assoc_long(retval, #f, sessionInfo.f);
-        RL(slotID);
-        RL(state);
-        RL(flags);
-        RL(ulDeviceError);
-#   undef RL
+
+    add_assoc_long(retval, "slotID", sessionInfo.slotID);
+    add_assoc_long(retval, "state", sessionInfo.state);
+    add_assoc_long(retval, "flags", sessionInfo.flags);
+    add_assoc_long(retval, "ulDeviceError", sessionInfo.ulDeviceError);
 
     return rv;
 }

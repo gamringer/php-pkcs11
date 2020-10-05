@@ -716,7 +716,6 @@ PHP_METHOD(Module, C_InitToken) {
     RETURN_LONG(rv);
 }
 
-
 PHP_METHOD(Module, openSession) {
     CK_RV rv;
 
@@ -749,6 +748,7 @@ PHP_METHOD(Module, openSession) {
         return;
     }
     session_obj->session = phSession;
+    session_obj->slotID = slotid;
 }
 
 /*
@@ -767,9 +767,9 @@ PHP_METHOD(Module, C_OpenSession) {
     ZEND_PARSE_PARAMETERS_START(5, 5)
         Z_PARAM_LONG(php_slotID)
         Z_PARAM_LONG(php_flags)
-	Z_PARAM_RESOURCE_EX(php_pApplication_TODO, 1, 0)
-	Z_PARAM_FUNC_EX(php_fciNotify_TODO, fciNotify_cache_TODO, 1, 0)
-	Z_PARAM_ZVAL(php_hSession)
+    	Z_PARAM_RESOURCE_EX(php_pApplication_TODO, 1, 0)
+    	Z_PARAM_FUNC_EX(php_fciNotify_TODO, fciNotify_cache_TODO, 1, 0)
+    	Z_PARAM_ZVAL(php_hSession)
     ZEND_PARSE_PARAMETERS_END();
 	//Z_PARAM_OBJECT_EX(php_hSession, 1, 0)
 	//Z_PARAM_OBJECT_OF_CLASS_EX(php_hSession, ce_Pkcs11_Session, 1, 0)
@@ -800,6 +800,8 @@ PHP_METHOD(Module, C_OpenSession) {
     if (rv != CKR_OK) {
         RETURN_LONG(rv);
     }
+
+    session_objval->slotID = php_slotID;
 
     ZEND_TRY_ASSIGN_REF_VALUE(php_hSession, &zvhSession);
 
