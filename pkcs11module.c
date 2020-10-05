@@ -903,7 +903,7 @@ PHP_METHOD(Module, C_SeedRandom) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(php_session);
-    rv = php_C_SeedRandom(objval, php_pSeed, NULL);
+    rv = php_C_SeedRandom(objval, php_pSeed);
 
     RETURN_LONG(rv);
 }
