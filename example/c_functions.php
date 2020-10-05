@@ -33,21 +33,19 @@ var_dump($mechanismInfo);
 $rv = $module->C_InitToken(0, 'PHP slot', '123456');
 var_dump($rv);
 
-exit;
-
-$session = $module->C_OpenSession($slotList[0], Pkcs11\CKF_RW_SESSION);
+$rv = $module->C_OpenSession($slotList[0], Pkcs11\CKF_SERIAL_SESSION, null, null, $session);
+var_dump($rv);
 var_dump($session);
 
-$info = $module->C_GetSessionInfo($session);
+$rv = $module->C_GetSessionInfo($session, $info);
+var_dump($rv);
 var_dump($info);
 
-var_dump($session->getInfo()['state']);
-$module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
-var_dump($session->getInfo()['state']);
-$module->C_Logout($session);
-var_dump($session->getInfo()['state']);
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+var_dump($rv);
 
-$module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+exit;
+
 
 $key = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,

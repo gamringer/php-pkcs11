@@ -97,9 +97,11 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_openSession, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, slotid, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, application, IS_STRING, 1)
+    ZEND_ARG_TYPE_INFO(0, notify, IS_CALLABLE, 1)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 5)
     ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, pApplication_TODO, IS_RESOURCE, 1)
@@ -721,11 +723,16 @@ PHP_METHOD(Module, openSession) {
 
     zend_long      slotid;
     zend_long      flags;
+    zend_string    *application;
+    zend_fcall_info php_fciNotify_TODO;
+    zend_fcall_info_cache fciNotify_cache_TODO;
 
-    ZEND_PARSE_PARAMETERS_START(1, 2)
+    ZEND_PARSE_PARAMETERS_START(1, 4)
         Z_PARAM_LONG(slotid)
         Z_PARAM_OPTIONAL
         Z_PARAM_LONG(flags)
+        Z_PARAM_STR(application)
+        Z_PARAM_FUNC(php_fciNotify_TODO, fciNotify_cache_TODO)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
@@ -930,13 +937,6 @@ PHP_METHOD(Module, C_Login) {
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-#ifdef notyet
-#error missing rv
-    zval params[] = {*userType, *pin};
-
-    call_obj_func(&sessionobjval->std, "login", return_value, 2, params);
-#endif
-
     rv = sessionobjval->pkcs11->functionList->C_Login(sessionobjval->session, userType, ZSTR_VAL(pin), ZSTR_LEN(pin));
 
     RETURN_LONG(rv);
@@ -957,11 +957,6 @@ PHP_METHOD(Module, C_Logout) {
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
-
-#ifdef notyet
-#error missing rv
-    call_obj_func(&sessionobjval->std, "logout", return_value, 0, NULL);
-#endif
 
     rv = sessionobjval->pkcs11->functionList->C_Logout(sessionobjval->session);
 
