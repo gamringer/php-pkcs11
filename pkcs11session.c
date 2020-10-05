@@ -21,6 +21,13 @@
 zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
 
+#if 0
+ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, module, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+#endif
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -79,25 +86,87 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
     ZEND_ARG_INFO(0, object)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo___debugInfo, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+#if 0
+#error use C_OpenSession()
+extern zend_class_entry *ce_Pkcs11_Module;
+PHP_METHOD(Session, __construct) {
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+    objval->session = 0; /* not initialized yet */
+
+    CK_SLOT_ID slotid;
+    CK_FLAGS flags;
+    CK_RV rv;
+
+    zval *php_pkcs11;
+    zend_long php_slotid = 0;
+    zend_long php_flags = 0;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+      Z_PARAM_OBJECT_OF_CLASS(php_pkcs11, ce_Pkcs11_Module)
+      Z_PARAM_LONG(php_slotid)
+      Z_PARAM_LONG(php_flags)
+    ZEND_PARSE_PARAMETERS_END();
+
+    objval->pkcs11 = Z_PKCS11_P(php_pkcs11);
+    slotid = (CK_SLOT_ID)php_slotid;
+    flags = (CK_FLAGS)php_flags;
+
+    if (flags &
+        (CKF_RW_SESSION || CKF_SERIAL_SESSION)) {
+      ; /* nope */
+    } else {
+      ; /* nope */
+    }
+
+    CK_SESSION_HANDLE hSession;
+    if (ZEND_NUM_ARGS() > 4)
+        rv = objval->pkcs11->functionList->C_OpenSession(slotid, flags, NULL, NULL, &hSession); /* TODO: add callbacks */
+    else
+        rv = objval->pkcs11->functionList->C_OpenSession(slotid, flags, NULL, NULL, &hSession); /* TODO: add callbacks */
+
+    if (rv != CKR_OK) {
+          pkcs11_error(rv, "Unable to instanciate a session");
+          return;
+    }
+    objval->session = hSession;
+}
+#endif
+
+CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval) {
+    CK_SESSION_INFO sessionInfo = {};
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    if (rv != CKR_OK)
+        return rv;
+
+    array_init(retval);
+#   define RL(f) add_assoc_long(retval, #f, sessionInfo.f);
+        RL(slotID);
+        RL(state);
+        RL(flags);
+        RL(ulDeviceError);
+#   undef RL
+
+    return rv;
+}
+
 PHP_METHOD(Session, getInfo) {
 
     CK_RV rv;
-    CK_SESSION_INFO sessionInfo;
 
     ZEND_PARSE_PARAMETERS_NONE();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_GetSessionInfo(objval->session, &sessionInfo);
+    rv = php_C_GetSessionInfo(objval, return_value);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get session info");
         return;
     }
-
-    array_init(return_value);
-    add_assoc_long(return_value, "state", sessionInfo.state);
-    add_assoc_long(return_value, "flags", sessionInfo.flags);
-    add_assoc_long(return_value, "device_error", sessionInfo.ulDeviceError);
 }
 
 PHP_METHOD(Session, login) {
@@ -132,6 +201,38 @@ PHP_METHOD(Session, logout) {
         pkcs11_error(rv, "Unable to logout");
         return;
     }
+}
+
+CK_RV php_C_SeedRandom(const pkcs11_session_object * const objval, zend_string *php_pSeed, zval *retval) {
+    CK_BYTE_PTR pSeed = (CK_BYTE_PTR)ZSTR_VAL(php_pSeed);
+    CK_ULONG ulSeedLen = (CK_ULONG)ZSTR_LEN(php_pSeed);
+    CK_RV rv;
+
+    rv = objval->pkcs11->functionList->C_SeedRandom(objval->session, pSeed, ulSeedLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    return rv;
+}
+
+CK_RV php_C_GenerateRandom(const pkcs11_session_object * const objval, zend_long php_RandomLen, zval *retval) {
+    CK_BYTE_PTR pRandomData;
+    CK_ULONG ulRandomLen = (CK_ULONG)php_RandomLen;
+    CK_RV rv;
+
+    if (ulRandomLen < 1)
+        return CKR_ARGUMENTS_BAD;
+
+    pRandomData = (CK_BYTE_PTR)ecalloc(sizeof(*pRandomData), ulRandomLen);
+
+    rv = objval->pkcs11->functionList->C_GenerateRandom(objval->session, pRandomData, ulRandomLen);
+    if (rv != CKR_OK)
+        return rv;
+
+    ZVAL_STRINGL(retval, (char *)pRandomData, ulRandomLen);
+    efree(pRandomData);
+
+    return rv;
 }
 
 PHP_METHOD(Session, initPin) {
@@ -558,14 +659,29 @@ PHP_METHOD(Session, destroyObject) {
     }
 }
 
+PHP_METHOD(Session, __debugInfo) {
+    ZEND_PARSE_PARAMETERS_NONE();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+
+    array_init(return_value);
+    add_assoc_long(return_value, "hSession", objval->session);
+    add_assoc_long(return_value, "slotID", objval->slotID);
+    /* TODO: add $module objval->std */
+}
+
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     // called before the pkcs11_session_object is freed
+    // TBC: is it called before pkcs11_shutdown() ? It has to.
     if (obj->pkcs11->functionList != NULL) {
         obj->pkcs11->functionList->C_CloseSession(obj->session);
     }
 }
 
 static zend_function_entry session_class_functions[] = {
+#if 0
+    PHP_ME(Session, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+#endif
     PHP_ME(Session, login,            arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Session, logout,           arginfo_logout,           ZEND_ACC_PUBLIC)
@@ -579,6 +695,9 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, initializeDigest, arginfo_initializeDigest, ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKey,      arginfo_generateKey,      ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
+
+    PHP_ME(Session, __debugInfo,      arginfo___debugInfo,        ZEND_ACC_PUBLIC)
+
     PHP_FE_END
 };
 
