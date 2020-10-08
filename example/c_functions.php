@@ -7,42 +7,81 @@ require 'helper.php';
 $module = new Pkcs11\Module($modulePath);
 
 $rv = $module->C_GetInfo($info);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($info);
 
 $rv = $module->C_GetSlotList(true, $slotList);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($slotList);
 
 $rv = $module->C_GetSlotInfo($slotList[0], $slotInfo);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($slotInfo);
 
 $rv = $module->C_GetTokenInfo($slotList[0], $tokenInfo);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($tokenInfo);
 
 $rv = $module->C_GetMechanismList($slotList[0], $mechanismList);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($mechanismList);
 
 $rv = $module->C_GetMechanismInfo($slotList[0], Pkcs11\CKM_AES_GCM, $mechanismInfo);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($mechanismInfo);
 
 $rv = $module->C_InitToken(0, 'PHP slot', '123456');
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 
-$rv = $module->C_OpenSession($slotList[0], Pkcs11\CKF_SERIAL_SESSION, null, null, $session);
-var_dump($rv);
+$rv = $module->C_OpenSession($slotList[0], Pkcs11\CKF_SERIAL_SESSION | Pkcs11\CKF_RW_SESSION, null, null, $session);
+var_dump('RV: ' . dechex($rv));
 var_dump($session);
 
 $rv = $module->C_GetSessionInfo($session, $info);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
 var_dump($info);
 
+$rv = $module->C_Login($session, Pkcs11\CKU_SO, $sopinCode);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_InitPIN($session, $pinCodeReplaced);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Logout($session);
+var_dump('RV: ' . dechex($rv));
+
 $rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
-var_dump($rv);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Login($session, Pkcs11\CKU_SO, $sopinCode);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_InitPIN($session, $pinCode);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Logout($session);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_SetPIN($session, $pinCode, $pinCodeReplaced);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Logout($session);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCodeReplaced);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_SetPIN($session, $pinCodeReplaced, $pinCode);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Logout($session);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
+var_dump('RV: ' . dechex($rv));
 
 exit;
 

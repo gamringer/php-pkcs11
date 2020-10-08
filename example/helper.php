@@ -15,6 +15,10 @@ else
   $pinCode = getenv('PHP11_PINCODE');
 
 
+$sopinCode = '12345678';
+$sopinCodeReplaced = '11111111';
+$pinCodeReplaced = '111111';
+
 function rawToRsaPem($modulus, $exponent){
 	$der = hex2bin('30820122300d06092a864886f70d01010105000382010f003082010a0282010100')
 		 . $modulus
