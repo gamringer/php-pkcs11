@@ -1433,6 +1433,11 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_InitToken,        arginfo_C_InitToken,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SetPIN,           arginfo_C_SetPIN,           ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_InitPIN,          arginfo_C_InitPIN,          ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_OpenSession,             arginfo_C_OpenSession,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_CloseSession,            arginfo_C_CloseSession,            ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Login,                   arginfo_C_Login,                   ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
 
     //PHP_MALIAS(Module, C_GetInfo,          getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_GetSlotList,      getSlotList,      arginfo_getSlotList,      ZEND_ACC_PUBLIC)
@@ -1442,11 +1447,6 @@ static zend_function_entry module_class_functions[] = {
     //PHP_MALIAS(Module, C_GetMechanismInfo, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     //PHP_MALIAS(Module, C_InitToken,        initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
 
-    PHP_ME(Module, C_OpenSession,             arginfo_C_OpenSession,             ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_CloseSession,            arginfo_C_CloseSession,            ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_GetSessionInfo,          arginfo_C_GetSessionInfo,          ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_Login,                   arginfo_C_Login,                   ZEND_ACC_PUBLIC)
-    PHP_ME(Module, C_Logout,                  arginfo_C_Logout,                  ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKey,             arginfo_C_GenerateKey,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestInit,              arginfo_C_DigestInit,              ZEND_ACC_PUBLIC)

@@ -322,6 +322,37 @@ PHP_METHOD(Session, setPin) {
     }
 }
 
+CK_RV php_C_GenerateKey(pkcs11_session_object *objval, zval *mechanism, HashTable *template, zval *retval) {
+    CK_RV rv;
+
+    CK_OBJECT_HANDLE hKey;
+    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
+
+    int templateItemCount;
+    CK_ATTRIBUTE_PTR templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
+
+    rv = objval->pkcs11->functionList->C_GenerateKey(
+        objval->session,
+        &mechanismObjval->mechanism,
+        templateObj, templateItemCount, &hKey
+    );
+    freeTemplate(templateObj);
+
+    if (rv != CKR_OK) {
+        return rv;
+    }
+
+    pkcs11_key_object* key_obj;
+
+    object_init_ex(retval, ce_Pkcs11_Key);
+    key_obj = Z_PKCS11_KEY_P(retval);
+    key_obj->session = objval;
+    key_obj->key = hKey;
+
+    return rv;
+}
+
 PHP_METHOD(Session, generateKey) {
 
     CK_RV rv;
@@ -333,32 +364,13 @@ PHP_METHOD(Session, generateKey) {
         Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
-    CK_OBJECT_HANDLE hKey;
-    pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
-
-    int templateItemCount;
-    CK_ATTRIBUTE_PTR templateObj;
-    parseTemplate(&template, &templateObj, &templateItemCount);
-
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_GenerateKey(
-        objval->session,
-        &mechanismObjval->mechanism,
-        templateObj, templateItemCount, &hKey
-    );
-    freeTemplate(templateObj);
+    rv = php_C_GenerateKey(objval, mechanism, template, return_value);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to generate key");
         return;
     }
-
-    pkcs11_key_object* key_obj;
-
-    object_init_ex(return_value, ce_Pkcs11_Key);
-    key_obj = Z_PKCS11_KEY_P(return_value);
-    key_obj->session = objval;
-    key_obj->key = hKey;
 }
 
 PHP_METHOD(Session, generateKeyPair) {
