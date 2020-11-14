@@ -1322,30 +1322,111 @@ PHP_METHOD(Module, C_CreateObject) {
     call_obj_func(&sessionobjval->std, "createObject", return_value, 1, params);
 }
 
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsInit, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-
-PHP_METHOD(Module, C_FindObjects) {
+PHP_METHOD(Module, C_FindObjectsInit) {
     CK_RV rv;
 
     zval *session;
-    zval *template;
+    zval *template = NULL; /* PHP array */
 
-    ZEND_PARSE_PARAMETERS_START(2, 2)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(template)
+    CK_ULONG ulCount = 0; /* number of attributes in the search template */
+    CK_ATTRIBUTE_PTR pTemplate = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY(template)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*template};
+    if (template) {
+        ulCount = zend_hash_num_elements(Z_ARRVAL_P(template));
 
-    call_obj_func(&sessionobjval->std, "findObjects", return_value, 1, params);
+        pTemplate = (CK_ATTRIBUTE_PTR)ecalloc(sizeof(*pTemplate), ulCount);
+        /* TODO */
+    }
+
+    rv = objval->functionList->C_FindObjectsInit(sessionobjval->session, pTemplate, ulCount);
+    if (pTemplate)
+      efree(pTemplate);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_INFO(1, Objects)
+    ZEND_ARG_TYPE_INFO(0, MaxObjectCount, IS_LONG, 0) // Default 32
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_FindObjects) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE_PTR phObject = NULL;
+    CK_ULONG ulMaxObjectCount = 32; /* default is a batch of 32 */
+    CK_ULONG ulObjectCount;
+
+    zval *session;
+    zend_long MaxObjectCount = ulMaxObjectCount;
+    zval *Objects;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_ZVAL(Objects)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(MaxObjectCount)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    if (MaxObjectCount < 1) {
+        zend_throw_exception(zend_ce_exception, "Invalid MaxObjectCount argument", 0);
+        return ;
+    }
+    ulMaxObjectCount = (CK_ULONG)MaxObjectCount;
+
+    phObject = (CK_OBJECT_HANDLE_PTR)ecalloc(sizeof(*phObject), ulMaxObjectCount);
+
+    rv = objval->functionList->C_FindObjects(sessionobjval->session,
+                                             phObject, ulMaxObjectCount, &ulObjectCount);
+
+    zval O;
+    array_init(&O);
+    for(CK_ULONG i = 0; i < ulObjectCount; i++)
+        add_next_index_long(&O, phObject[i]);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(Objects, &O);
+
+    efree(phObject);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsFinal, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_FindObjectsFinal) {
+    CK_RV rv;
+
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(session)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    rv = objval->functionList->C_FindObjectsFinal(sessionobjval->session);
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
@@ -1459,7 +1540,9 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
     
     PHP_ME(Module, C_CreateObject,            arginfo_C_CreateObject,            ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_FindObjectsInit,         arginfo_C_FindObjectsInit,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_FindObjects,             arginfo_C_FindObjects,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_FindObjectsFinal,        arginfo_C_FindObjectsFinal,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_CopyObject,              arginfo_C_CopyObject,              ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DestroyObject,           arginfo_C_DestroyObject,           ZEND_ACC_PUBLIC)
 
