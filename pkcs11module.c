@@ -1429,6 +1429,128 @@ PHP_METHOD(Module, C_FindObjectsFinal) {
     RETURN_LONG(rv);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetAttributeValue, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, object, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(1, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_GetAttributeValue) {
+    CK_RV rv = 0;
+    CK_OBJECT_HANDLE hObject;
+    CK_ATTRIBUTE_PTR pTemplate = NULL;
+    CK_ULONG ulCount = 0;
+
+    char **infos = NULL;
+
+    zval *session;
+    zend_long object;
+    HashTable *template = NULL; /* PHP array */
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_LONG(object)
+        Z_PARAM_ARRAY_HT_EX2(template, 0, 1 /* deref*/, 0) // &$template is a reference
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hObject = (CK_OBJECT_HANDLE)object;
+
+    parseTemplate(&template, &pTemplate, (int *)&ulCount);
+
+    if (ulCount < 1) {
+        zend_throw_exception(zend_ce_exception, "Invalid Template size", 0);
+        freeTemplate(pTemplate);
+        return ;
+    }
+
+    /* first step: fetch the length of each entry */
+    rv = objval->functionList->C_GetAttributeValue(sessionobjval->session,
+                                                   hObject, pTemplate, ulCount);
+    /*
+     * Note that the error codes CKR_ATTRIBUTE_SENSITIVE, CKR_ATTRIBUTE_TYPE_INVALID,
+     * and CKR_BUFFER_TOO_SMALL do not denote true errors for C_GetAttributeValue.
+     * If a call to C_GetAttributeValue returns any of these three values, then the
+     * call MUST nonetheless have processed every attribute in the template supplied
+     * to C_GetAttributeValue.
+     * Each attribute in the template whose value can be returned by the call to
+     * C_GetAttributeValue will be returned by the call to C_GetAttributeValue.
+     */
+    switch(rv) {
+        case CKR_ATTRIBUTE_SENSITIVE:
+        case CKR_ATTRIBUTE_TYPE_INVALID: /* one of the requested attributed does not exist */
+        case CKR_BUFFER_TOO_SMALL:
+        case CKR_OK:
+            break; /* ok */
+        default:
+            zend_throw_exception(zend_ce_exception, "error get size C_GetAttributeValue(): ", rv);
+            freeTemplate(pTemplate);
+            return ;
+    }
+
+    for (CK_ULONG k = 0; k < ulCount; k++) {
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1))
+            continue;
+        pTemplate[k].pValue = (CK_BYTE_PTR)ecalloc(1, pTemplate[k].ulValueLen);
+    }
+
+    /* fetch the content */
+    rv = objval->functionList->C_GetAttributeValue(sessionobjval->session,
+                                                   hObject, pTemplate, ulCount);
+    /*
+     * Note that the error codes CKR_ATTRIBUTE_SENSITIVE, CKR_ATTRIBUTE_TYPE_INVALID,
+     * and CKR_BUFFER_TOO_SMALL do not denote true errors for C_GetAttributeValue.
+     * If a call to C_GetAttributeValue returns any of these three values, then the
+     * call MUST nonetheless have processed every attribute in the template supplied
+     * to C_GetAttributeValue.
+     * Each attribute in the template whose value can be returned by the call to
+     * C_GetAttributeValue will be returned by the call to C_GetAttributeValue.
+     */
+    switch(rv) {
+        case CKR_ATTRIBUTE_SENSITIVE:
+        case CKR_ATTRIBUTE_TYPE_INVALID: /* one of the requested attributed does not exist */
+        case CKR_BUFFER_TOO_SMALL:
+        case CKR_OK:
+            break; /* ok */
+        default:
+            goto fini; /* free pTemplate, pTemplate[x].pValue */
+            RETURN_LONG(rv); // placeholder, will be performed into the fini section
+    }
+
+    zval O;
+    array_init(&O);
+    for(CK_ULONG k = 0; k < ulCount; k++) {
+        zval zva;
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1))
+            continue;
+        array_init(&zva);
+        add_assoc_long(&zva, "type", pTemplate[k].type);
+        add_assoc_stringl(&zva, "Value", pTemplate[k].pValue, pTemplate[k].ulValueLen);
+
+        add_next_index_zval(&O, &zva);
+    }
+    zval k;
+    ZVAL_STR(&k, zend_string_init("Object", strlen("Object"), 0));
+    array_set_zval_key(template, &k, &O);
+
+fini: /* memory free section */
+    for(CK_ULONG k = 0; k < ulCount; k++) {
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1)) {
+            continue;
+        }
+        efree(pTemplate[k].pValue);
+    }
+
+    freeTemplate(pTemplate);
+
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, object, IS_OBJECT, 0)
@@ -1543,6 +1665,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_FindObjectsInit,         arginfo_C_FindObjectsInit,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_FindObjects,             arginfo_C_FindObjects,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_FindObjectsFinal,        arginfo_C_FindObjectsFinal,        ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetAttributeValue,       arginfo_C_GetAttributeValue,       ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_CopyObject,              arginfo_C_CopyObject,              ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DestroyObject,           arginfo_C_DestroyObject,           ZEND_ACC_PUBLIC)
 
