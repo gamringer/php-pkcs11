@@ -1408,6 +1408,77 @@ PHP_METHOD(Module, C_CreateObject) {
     call_obj_func(&sessionobjval->std, "createObject", return_value, 1, params);
 }
 
+static int
+AssertAttributeCKA(const CK_ATTRIBUTE_PTR pAttribute) {
+    switch(pAttribute->type) {
+        case CKA_KEY_TYPE:
+            return !(pAttribute->ulValueLen == sizeof(CK_KEY_TYPE));
+        case CKA_CLASS:
+            return !(pAttribute->ulValueLen == sizeof(CK_OBJECT_CLASS));
+        case CKA_CERTIFICATE_TYPE:
+            return !(pAttribute->ulValueLen == sizeof(CK_CERTIFICATE_TYPE));
+        case CKA_TOKEN:
+        case CKA_PRIVATE:
+        case CKA_TRUSTED:
+        case CKA_SENSITIVE:
+        case CKA_ENCRYPT:
+        case CKA_DECRYPT:
+        case CKA_WRAP:
+        case CKA_UNWRAP:
+        case CKA_SIGN:
+        case CKA_SIGN_RECOVER:
+        case CKA_VERIFY:
+        case CKA_VERIFY_RECOVER:
+        case CKA_DERIVE:
+        case CKA_EXTRACTABLE:
+        case CKA_LOCAL:
+        case CKA_NEVER_EXTRACTABLE:
+        case CKA_ALWAYS_SENSITIVE:
+        case CKA_ALWAYS_AUTHENTICATE:
+        case CKA_WRAP_WITH_TRUSTED:
+        case CKA_RESET_ON_INIT:
+        case CKA_HAS_RESET:
+        case CKA_COLOR:
+            return !(pAttribute->ulValueLen == sizeof(CK_BBOOL));
+        case CKA_CERTIFICATE_CATEGORY:
+        case CKA_JAVA_MIDP_SECURITY_DOMAIN:
+        case CKA_MODULUS_BITS:
+        case CKA_PRIME_BITS:
+        case CKA_SUB_PRIME_BITS:
+        case CKA_VALUE_BITS:
+        case CKA_VALUE_LEN:
+        case CKA_PIXEL_X:
+        case CKA_PIXEL_Y:
+        case CKA_RESOLUTION:
+        case CKA_CHAR_ROWS:
+        case CKA_CHAR_COLUMNS:
+        case CKA_BITS_PER_PIXEL:
+            return !(pAttribute->ulValueLen == sizeof(CK_ULONG));
+        case CKA_VALUE:
+        case CKA_OBJECT_ID:
+        case CKA_SERIAL_NUMBER:
+        case CKA_ATTR_TYPES:
+        case CKA_HASH_OF_SUBJECT_PUBLIC_KEY:
+        case CKA_HASH_OF_ISSUER_PUBLIC_KEY:
+        case CKA_CHECK_VALUE:
+        case CKA_ECDSA_PARAMS:
+        case CKA_LABEL:
+        case CKA_EC_POINT:
+        case CKA_REQUIRED_CMS_ATTRIBUTES:
+        case CKA_DEFAULT_CMS_ATTRIBUTES:
+        case CKA_SUPPORTED_CMS_ATTRIBUTES:
+        case CKA_ID:
+        case CKA_APPLICATION:
+        case CKA_URL:
+        case CKA_CHAR_SETS:
+        case CKA_ENCODING_METHODS:
+        case CKA_MIME_TYPES:
+        default: /* TBD */
+            return 0; /* any length */
+    }
+    return 0;
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsInit, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -1417,7 +1488,7 @@ PHP_METHOD(Module, C_FindObjectsInit) {
     CK_RV rv;
 
     zval *session;
-    zval *template = NULL; /* PHP array */
+    HashTable *template = NULL; /* PHP array */
 
     CK_ULONG ulCount = 0; /* number of attributes in the search template */
     CK_ATTRIBUTE_PTR pTemplate = NULL;
@@ -1425,22 +1496,26 @@ PHP_METHOD(Module, C_FindObjectsInit) {
     ZEND_PARSE_PARAMETERS_START(1, 2)
         Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
         Z_PARAM_OPTIONAL
-        Z_PARAM_ARRAY(template)
+        Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    if (template) {
-        ulCount = zend_hash_num_elements(Z_ARRVAL_P(template));
+    if (template)
+        parseTemplate(&template, &pTemplate, (int *)&ulCount);
 
-        pTemplate = (CK_ATTRIBUTE_PTR)ecalloc(sizeof(*pTemplate), ulCount);
-        /* TODO */
+    for(int i = 0; i < ulCount; i++) {
+        if (AssertAttributeCKA(&pTemplate[i])) {
+            zend_throw_exception(zend_ce_exception, "sizeof('value') invalid for requested type", 0);
+            freeTemplate(pTemplate);
+            return ;
+        }
     }
 
     rv = objval->functionList->C_FindObjectsInit(sessionobjval->session, pTemplate, ulCount);
     if (pTemplate)
-      efree(pTemplate);
+        freeTemplate(pTemplate);
 
     RETURN_LONG(rv);
 }
