@@ -1297,6 +1297,92 @@ PHP_METHOD(Module, C_DigestFinal) {
     efree(digest);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SignInit, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_SignInit) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE hKey;
+
+    zval *mechanism;
+    zend_long key;
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_mechanism_object * const oMechanism = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (oMechanism->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hKey = (CK_OBJECT_HANDLE)key;
+
+    rv = objval->functionList->C_SignInit(sessionobjval->session, &oMechanism->mechanism, hKey);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Sign, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(1, signature, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Sign) {
+    CK_RV rv;
+    CK_BYTE_PTR pData;
+    CK_ULONG ulDataLen;
+    CK_BYTE_PTR pSignature = NULL;
+    CK_ULONG ulSignatureLen = 0;
+
+    zval *session;
+    zend_string *data = NULL;
+    zval *signature = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_STR(data)
+        Z_PARAM_ZVAL(signature)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pData = (CK_BYTE_PTR)ZSTR_VAL(data);
+    ulDataLen = (CK_ULONG)ZSTR_LEN(data);
+
+    /* first, get the length of the Signature */
+    rv = objval->functionList->C_Sign(sessionobjval->session, pData, ulDataLen, NULL, &ulSignatureLen);
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return ;
+    }
+
+    pSignature = ecalloc(sizeof(*pSignature), ulSignatureLen);
+
+    rv = objval->functionList->C_Sign(sessionobjval->session, pData, ulDataLen, pSignature, &ulSignatureLen);
+
+    zval retval;
+    ZVAL_STRINGL(&retval, (char *)pSignature, ulSignatureLen);
+    efree(pSignature);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(signature, &retval);
+
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -1657,6 +1743,9 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_DigestUpdate,            arginfo_C_DigestUpdate,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestKey,               arginfo_C_DigestKey,               ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestFinal,             arginfo_C_DigestFinal,             ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_SignInit,                arginfo_C_SignInit,                ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Sign,                    arginfo_C_Sign,                    ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
