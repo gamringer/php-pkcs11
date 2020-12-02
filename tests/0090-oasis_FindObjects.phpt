@@ -74,18 +74,22 @@ foreach($o as $handle) {
     case Pkcs11\CKR_OK:
       printf("Pkcs11\CKR_OK %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
+      // break 1;
       continue 2;
     case Pkcs11\CKR_ATTRIBUTE_SENSITIVE:
       printf("Pkcs11\CKR_ATTRIBUTE_SENSITIVE %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
+      // break 1;
       continue 2;
     case Pkcs11\CKR_ATTRIBUTE_TYPE_INVALID:
       printf("Pkcs11\CKR_ATTRIBUTE_TYPE_INVALID %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
+      // break 1;
       continue 2;
     case Pkcs11\CKR_BUFFER_TOO_SMALL:
       printf("Pkcs11\CKR_BUFFER_TOO_SMALL %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
+      // break 1;
       continue 2;
     default:
       printf("error %d", $rv);
