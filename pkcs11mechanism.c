@@ -76,12 +76,26 @@ PHP_METHOD(Mechanism, __construct) {
     }
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo___debugInfo, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Mechanism, __debugInfo) {
+
+  const pkcs11_mechanism_object * const o = Z_PKCS11_MECHANISM_P(ZEND_THIS);
+
+  ZEND_PARSE_PARAMETERS_NONE();
+
+  array_init(return_value);
+  add_assoc_long(return_value, "mechanism", o->mechanism.mechanism);
+  add_assoc_stringl(return_value, "Parameter", o->mechanism.pParameter, o->mechanism.ulParameterLen);
+}
 
 void pkcs11_mechanism_shutdown(pkcs11_mechanism_object *obj) {
 }
 
 static zend_function_entry mechanism_class_functions[] = {
     PHP_ME(Mechanism, __construct, arginfo___construct, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+    PHP_ME(Mechanism, __debugInfo, arginfo___debugInfo, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
