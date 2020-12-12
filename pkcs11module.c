@@ -1297,6 +1297,165 @@ PHP_METHOD(Module, C_DigestFinal) {
     efree(digest);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SignInit, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_SignInit) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE hKey;
+
+    zval *mechanism;
+    zend_long key;
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_mechanism_object * const oMechanism = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (oMechanism->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hKey = (CK_OBJECT_HANDLE)key;
+
+    rv = objval->functionList->C_SignInit(sessionobjval->session, &oMechanism->mechanism, hKey);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Sign, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(1, signature, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Sign) {
+    CK_RV rv;
+    CK_BYTE_PTR pData;
+    CK_ULONG ulDataLen;
+    CK_BYTE_PTR pSignature = NULL;
+    CK_ULONG ulSignatureLen = 0;
+
+    zval *session;
+    zend_string *data = NULL;
+    zval *signature = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_STR(data)
+        Z_PARAM_ZVAL(signature)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pData = (CK_BYTE_PTR)ZSTR_VAL(data);
+    ulDataLen = (CK_ULONG)ZSTR_LEN(data);
+
+    /* first, get the length of the Signature */
+    rv = objval->functionList->C_Sign(sessionobjval->session, pData, ulDataLen, NULL, &ulSignatureLen);
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return ;
+    }
+
+    pSignature = ecalloc(sizeof(*pSignature), ulSignatureLen);
+
+    rv = objval->functionList->C_Sign(sessionobjval->session, pData, ulDataLen, pSignature, &ulSignatureLen);
+
+    zval retval;
+    ZVAL_STRINGL(&retval, (char *)pSignature, ulSignatureLen);
+    efree(pSignature);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(signature, &retval);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_VerifyInit, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_VerifyInit) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE hKey;
+
+    zval *mechanism;
+    zend_long key;
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_mechanism_object * const oMechanism = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (oMechanism->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hKey = (CK_OBJECT_HANDLE)key;
+
+    rv = objval->functionList->C_VerifyInit(sessionobjval->session, &oMechanism->mechanism, hKey);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Verify, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, signature, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Verify) {
+    CK_RV rv;
+    CK_BYTE_PTR pData;
+    CK_ULONG ulDataLen;
+    CK_BYTE_PTR pSignature = NULL;
+    CK_ULONG ulSignatureLen = 0;
+
+    zval *session;
+    zend_string *data = NULL;
+    zend_string *signature = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_STR(data)
+        Z_PARAM_STR(signature)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pData = (CK_BYTE_PTR)ZSTR_VAL(data);
+    ulDataLen = (CK_ULONG)ZSTR_LEN(data);
+    pSignature = (CK_BYTE_PTR)ZSTR_VAL(signature);
+    ulSignatureLen = (CK_ULONG)ZSTR_LEN(signature);
+
+    rv = objval->functionList->C_Verify(sessionobjval->session, pData, ulDataLen, pSignature, ulSignatureLen);
+
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -1322,30 +1481,308 @@ PHP_METHOD(Module, C_CreateObject) {
     call_obj_func(&sessionobjval->std, "createObject", return_value, 1, params);
 }
 
+static int
+AssertAttributeCKA(const CK_ATTRIBUTE_PTR pAttribute) {
+    switch(pAttribute->type) {
+        case CKA_KEY_TYPE:
+            return !(pAttribute->ulValueLen == sizeof(CK_KEY_TYPE));
+        case CKA_CLASS:
+            return !(pAttribute->ulValueLen == sizeof(CK_OBJECT_CLASS));
+        case CKA_CERTIFICATE_TYPE:
+            return !(pAttribute->ulValueLen == sizeof(CK_CERTIFICATE_TYPE));
+        case CKA_TOKEN:
+        case CKA_PRIVATE:
+        case CKA_TRUSTED:
+        case CKA_SENSITIVE:
+        case CKA_ENCRYPT:
+        case CKA_DECRYPT:
+        case CKA_WRAP:
+        case CKA_UNWRAP:
+        case CKA_SIGN:
+        case CKA_SIGN_RECOVER:
+        case CKA_VERIFY:
+        case CKA_VERIFY_RECOVER:
+        case CKA_DERIVE:
+        case CKA_EXTRACTABLE:
+        case CKA_LOCAL:
+        case CKA_NEVER_EXTRACTABLE:
+        case CKA_ALWAYS_SENSITIVE:
+        case CKA_ALWAYS_AUTHENTICATE:
+        case CKA_WRAP_WITH_TRUSTED:
+        case CKA_RESET_ON_INIT:
+        case CKA_HAS_RESET:
+        case CKA_COLOR:
+            return !(pAttribute->ulValueLen == sizeof(CK_BBOOL));
+        case CKA_CERTIFICATE_CATEGORY:
+        case CKA_JAVA_MIDP_SECURITY_DOMAIN:
+        case CKA_MODULUS_BITS:
+        case CKA_PRIME_BITS:
+        case CKA_SUB_PRIME_BITS:
+        case CKA_VALUE_BITS:
+        case CKA_VALUE_LEN:
+        case CKA_PIXEL_X:
+        case CKA_PIXEL_Y:
+        case CKA_RESOLUTION:
+        case CKA_CHAR_ROWS:
+        case CKA_CHAR_COLUMNS:
+        case CKA_BITS_PER_PIXEL:
+            return !(pAttribute->ulValueLen == sizeof(CK_ULONG));
+        case CKA_VALUE:
+        case CKA_OBJECT_ID:
+        case CKA_SERIAL_NUMBER:
+        case CKA_ATTR_TYPES:
+        case CKA_HASH_OF_SUBJECT_PUBLIC_KEY:
+        case CKA_HASH_OF_ISSUER_PUBLIC_KEY:
+        case CKA_CHECK_VALUE:
+        case CKA_ECDSA_PARAMS:
+        case CKA_LABEL:
+        case CKA_EC_POINT:
+        case CKA_REQUIRED_CMS_ATTRIBUTES:
+        case CKA_DEFAULT_CMS_ATTRIBUTES:
+        case CKA_SUPPORTED_CMS_ATTRIBUTES:
+        case CKA_ID:
+        case CKA_APPLICATION:
+        case CKA_URL:
+        case CKA_CHAR_SETS:
+        case CKA_ENCODING_METHODS:
+        case CKA_MIME_TYPES:
+        default: /* TBD */
+            return 0; /* any length */
+    }
+    return 0;
+}
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsInit, 0, 0, 2)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-
-PHP_METHOD(Module, C_FindObjects) {
+PHP_METHOD(Module, C_FindObjectsInit) {
     CK_RV rv;
 
     zval *session;
-    zval *template;
+    HashTable *template = NULL; /* PHP array */
 
-    ZEND_PARSE_PARAMETERS_START(2, 2)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(template)
+    CK_ULONG ulCount = 0; /* number of attributes in the search template */
+    CK_ATTRIBUTE_PTR pTemplate = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT(template)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*template};
+    if (template)
+        parseTemplate(&template, &pTemplate, (int *)&ulCount);
 
-    call_obj_func(&sessionobjval->std, "findObjects", return_value, 1, params);
+    for(int i = 0; i < ulCount; i++) {
+        if (AssertAttributeCKA(&pTemplate[i])) {
+            zend_throw_exception(zend_ce_exception, "sizeof('value') invalid for requested type", 0);
+            freeTemplate(pTemplate);
+            return ;
+        }
+    }
+
+    rv = objval->functionList->C_FindObjectsInit(sessionobjval->session, pTemplate, ulCount);
+    if (pTemplate)
+        freeTemplate(pTemplate);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_INFO(1, Objects)
+    ZEND_ARG_TYPE_INFO(0, MaxObjectCount, IS_LONG, 0) // Default 32
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_FindObjects) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE_PTR phObject = NULL;
+    CK_ULONG ulMaxObjectCount = 32; /* default is a batch of 32 */
+    CK_ULONG ulObjectCount;
+
+    zval *session;
+    zend_long MaxObjectCount = ulMaxObjectCount;
+    zval *Objects;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_ZVAL(Objects)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(MaxObjectCount)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    if (MaxObjectCount < 1) {
+        zend_throw_exception(zend_ce_exception, "Invalid MaxObjectCount argument", 0);
+        return ;
+    }
+    ulMaxObjectCount = (CK_ULONG)MaxObjectCount;
+
+    phObject = (CK_OBJECT_HANDLE_PTR)ecalloc(sizeof(*phObject), ulMaxObjectCount);
+
+    rv = objval->functionList->C_FindObjects(sessionobjval->session,
+                                             phObject, ulMaxObjectCount, &ulObjectCount);
+
+    zval O;
+    array_init(&O);
+    for(CK_ULONG i = 0; i < ulObjectCount; i++)
+        add_next_index_long(&O, phObject[i]);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(Objects, &O);
+
+    efree(phObject);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsFinal, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_FindObjectsFinal) {
+    CK_RV rv;
+
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(session)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    rv = objval->functionList->C_FindObjectsFinal(sessionobjval->session);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetAttributeValue, 0, 0, 3)
+    ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
+    ZEND_ARG_TYPE_INFO(0, object, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(1, template, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_GetAttributeValue) {
+    CK_RV rv = 0;
+    CK_OBJECT_HANDLE hObject;
+    CK_ATTRIBUTE_PTR pTemplate = NULL;
+    CK_ULONG ulCount = 0;
+
+    char **infos = NULL;
+
+    zval *session;
+    zend_long object;
+    HashTable *template = NULL; /* PHP array */
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_LONG(object)
+        Z_PARAM_ARRAY_HT_EX2(template, 0, 1 /* deref*/, 0) // &$template is a reference
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hObject = (CK_OBJECT_HANDLE)object;
+
+    parseTemplate(&template, &pTemplate, (int *)&ulCount);
+
+    if (ulCount < 1) {
+        zend_throw_exception(zend_ce_exception, "Invalid Template size", 0);
+        freeTemplate(pTemplate);
+        return ;
+    }
+
+    /* first step: fetch the length of each entry */
+    rv = objval->functionList->C_GetAttributeValue(sessionobjval->session,
+                                                   hObject, pTemplate, ulCount);
+    /*
+     * Note that the error codes CKR_ATTRIBUTE_SENSITIVE, CKR_ATTRIBUTE_TYPE_INVALID,
+     * and CKR_BUFFER_TOO_SMALL do not denote true errors for C_GetAttributeValue.
+     * If a call to C_GetAttributeValue returns any of these three values, then the
+     * call MUST nonetheless have processed every attribute in the template supplied
+     * to C_GetAttributeValue.
+     * Each attribute in the template whose value can be returned by the call to
+     * C_GetAttributeValue will be returned by the call to C_GetAttributeValue.
+     */
+    switch(rv) {
+        case CKR_ATTRIBUTE_SENSITIVE:
+        case CKR_ATTRIBUTE_TYPE_INVALID: /* one of the requested attributed does not exist */
+        case CKR_BUFFER_TOO_SMALL:
+        case CKR_OK:
+            break; /* ok */
+        default:
+            zend_throw_exception(zend_ce_exception, "error get size C_GetAttributeValue(): ", rv);
+            freeTemplate(pTemplate);
+            return ;
+    }
+
+    for (CK_ULONG k = 0; k < ulCount; k++) {
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1))
+            continue;
+        pTemplate[k].pValue = (CK_BYTE_PTR)ecalloc(1, pTemplate[k].ulValueLen);
+    }
+
+    /* fetch the content */
+    rv = objval->functionList->C_GetAttributeValue(sessionobjval->session,
+                                                   hObject, pTemplate, ulCount);
+    /*
+     * Note that the error codes CKR_ATTRIBUTE_SENSITIVE, CKR_ATTRIBUTE_TYPE_INVALID,
+     * and CKR_BUFFER_TOO_SMALL do not denote true errors for C_GetAttributeValue.
+     * If a call to C_GetAttributeValue returns any of these three values, then the
+     * call MUST nonetheless have processed every attribute in the template supplied
+     * to C_GetAttributeValue.
+     * Each attribute in the template whose value can be returned by the call to
+     * C_GetAttributeValue will be returned by the call to C_GetAttributeValue.
+     */
+    switch(rv) {
+        case CKR_ATTRIBUTE_SENSITIVE:
+        case CKR_ATTRIBUTE_TYPE_INVALID: /* one of the requested attributed does not exist */
+        case CKR_BUFFER_TOO_SMALL:
+        case CKR_OK:
+            break; /* ok */
+        default:
+            goto fini; /* free pTemplate, pTemplate[x].pValue */
+            RETURN_LONG(rv); // placeholder, will be performed into the fini section
+    }
+
+    zval O;
+    array_init(&O);
+    for(CK_ULONG k = 0; k < ulCount; k++) {
+        zval zva;
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1))
+            continue;
+        array_init(&zva);
+        add_assoc_long(&zva, "type", pTemplate[k].type);
+        add_assoc_stringl(&zva, "Value", pTemplate[k].pValue, pTemplate[k].ulValueLen);
+
+        add_next_index_zval(&O, &zva);
+    }
+    zval k;
+    ZVAL_STR(&k, zend_string_init("Object", strlen("Object"), 0));
+    array_set_zval_key(template, &k, &O);
+
+fini: /* memory free section */
+    for(CK_ULONG k = 0; k < ulCount; k++) {
+        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
+            (pTemplate[k].ulValueLen < 1)) {
+            continue;
+        }
+        efree(pTemplate[k].pValue);
+    }
+
+    freeTemplate(pTemplate);
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
@@ -1455,11 +1892,20 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_DigestKey,               arginfo_C_DigestKey,               ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DigestFinal,             arginfo_C_DigestFinal,             ZEND_ACC_PUBLIC)
 
+    PHP_ME(Module, C_SignInit,                arginfo_C_SignInit,                ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Sign,                    arginfo_C_Sign,                    ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_VerifyInit,              arginfo_C_VerifyInit,              ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Verify,                  arginfo_C_Verify,                  ZEND_ACC_PUBLIC)
+
     PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
     
     PHP_ME(Module, C_CreateObject,            arginfo_C_CreateObject,            ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_FindObjectsInit,         arginfo_C_FindObjectsInit,         ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_FindObjects,             arginfo_C_FindObjects,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_FindObjectsFinal,        arginfo_C_FindObjectsFinal,        ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_GetAttributeValue,       arginfo_C_GetAttributeValue,       ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_CopyObject,              arginfo_C_CopyObject,              ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DestroyObject,           arginfo_C_DestroyObject,           ZEND_ACC_PUBLIC)
 

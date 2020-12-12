@@ -157,6 +157,9 @@ void parseTemplate(HashTable **template, CK_ATTRIBUTE_PTR *templateObj, int *tem
         } else if (Z_TYPE_P(templateValue) == IS_FALSE) {
             (*templateObj)[i] = (CK_ATTRIBUTE){templateValueKey, &bfalse, sizeof(bfalse)};
 
+        } else if (Z_TYPE_P(templateValue) == IS_NULL) {
+            (*templateObj)[i] = (CK_ATTRIBUTE){.type = templateValueKey, .pValue = NULL, .ulValueLen = 0};
+
         } else {
             general_error("Unable to parse template", "Unsupported parameter type");
         }
