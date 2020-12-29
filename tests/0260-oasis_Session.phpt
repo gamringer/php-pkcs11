@@ -10,7 +10,7 @@ if (getenv('PHP11_MODULE') === false) {
   echo 'skip';
 }
 
-if (getenv('PHP11_PINCODE') === false) {
+if (getenv('PHP11_PIN') === false) {
   echo 'skip';
 }
 ?>
@@ -59,7 +59,7 @@ object(Pkcs11\Session)#2 (2) {
   ["hSession"]=>
   int(%d)
   ["slotID"]=>
-  int(0)
+  int(%d)
 }
 int(0)
 int(0)

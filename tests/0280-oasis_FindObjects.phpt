@@ -69,7 +69,7 @@ object(Pkcs11\Session)#2 (2) {
   ["hSession"]=>
   int(1)
   ["slotID"]=>
-  int(0)
+  int(%d)
 }
 int(0)
 int(0)
