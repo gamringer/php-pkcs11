@@ -223,7 +223,6 @@ int call_obj_func(zend_object *object, char *function_name, zval *retval_ptr, ui
     fci.retval = retval_ptr;
     fci.param_count = param_count;
     fci.params = params;
-    fci.no_separation = 1;
 
     return zend_call_function(&fci, NULL);
 }

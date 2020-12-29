@@ -1088,9 +1088,10 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     zval *retval = emalloc(sizeof(zval));
     call_obj_func(&sessionobjval->std, "generateKeyPair", retval, 3, params);
 
+    zend_object *retvalzobj = Z_OBJ_P(retval);
     zval *rvpr;
-    zval *zpkey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "pkey", sizeof("pkey") - 1, 0, rvpr);
-    zval *zskey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retval, "skey", sizeof("skey") - 1, 0, rvpr);
+    zval *zpkey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retvalzobj, "pkey", sizeof("pkey") - 1, 0, rvpr);
+    zval *zskey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retvalzobj, "skey", sizeof("skey") - 1, 0, rvpr);
     efree(retval);
 
     ZEND_TRY_ASSIGN_REF_VALUE(phPublicKey, zpkey);
