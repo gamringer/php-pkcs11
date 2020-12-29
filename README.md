@@ -4,6 +4,38 @@ Tested with the following HSMs:
 * SafeNET Luna SA 4
 * SoftHSM 2.6
 
+## Compile
+```
+phpize
+./configure
+make
+```
+
+## Running tests
+To make tests, ensure that SoftHSM2 is installed, configured and initialized.
+
+* Install from [source](https://github.com/opendnssec/SoftHSMv2)
+* Create a directory where HSM files will be stored `/home/user/.softhsm`
+* Create a configuration file in your home directory `~/.config/softhsm2/softhsm2.conf`
+* Initialize token `softhsm2-util --init-token --slot 0 --label "My token 1"`
+
+Example configuration file
+```
+directories.tokendir = /home/user/.softhsm
+objectstore.backend = file
+log.level = INFO
+slots.removable = false
+slots.mechanisms = ALL
+```
+
+Running tests
+```
+export PHP11_MODULE=/usr/local/lib/softhsm/libsofthsm2.so
+export PHP11_SLOT=575024709
+export PHP11_PIN=123456
+make test
+```
+
 ## How to use
 
 _All examples assume the use of a locally compiled installation of SoftHSM, but it will work with other modules as well._
