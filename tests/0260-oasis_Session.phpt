@@ -10,7 +10,7 @@ if (getenv('PHP11_MODULE') === false) {
   echo 'skip';
 }
 
-if (getenv('PHP11_PIN') === false) {
+if (getenv('PHP11_PINCODE') === false) {
   echo 'skip';
 }
 ?>
