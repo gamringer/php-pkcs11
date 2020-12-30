@@ -104,7 +104,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 5)
     ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(0, pApplication_TODO, IS_RESOURCE, 1)
+    ZEND_ARG_TYPE_INFO(0, pApplication_TODO, IS_STRING, 1)
     ZEND_ARG_TYPE_INFO(0, Notify_TODO, IS_CALLABLE, 1)
     ZEND_ARG_INFO(1, hSession)
 ZEND_END_ARG_INFO()
@@ -766,7 +766,7 @@ PHP_METHOD(Module, C_OpenSession) {
 
     zend_long      php_slotID;
     zend_long      php_flags;
-    zval           *php_pApplication_TODO = NULL;
+    zend_string    *php_pApplication_TODO = NULL;
     zend_fcall_info php_fciNotify_TODO;
     zend_fcall_info_cache fciNotify_cache_TODO;
     zval           *php_hSession;
@@ -774,7 +774,7 @@ PHP_METHOD(Module, C_OpenSession) {
     ZEND_PARSE_PARAMETERS_START(5, 5)
         Z_PARAM_LONG(php_slotID)
         Z_PARAM_LONG(php_flags)
-    	Z_PARAM_RESOURCE_EX(php_pApplication_TODO, 1, 0)
+    	Z_PARAM_STR_EX(php_pApplication_TODO, 1, 0)
     	Z_PARAM_FUNC_EX(php_fciNotify_TODO, fciNotify_cache_TODO, 1, 0)
     	Z_PARAM_ZVAL(php_hSession)
     ZEND_PARSE_PARAMETERS_END();
