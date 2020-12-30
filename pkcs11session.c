@@ -21,14 +21,6 @@
 zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
 
-#if 0
-ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, module, IS_OBJECT, 0)
-    ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
-ZEND_END_ARG_INFO()
-#endif
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_getInfo, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -96,52 +88,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generateRandom, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, length, IS_LONG, 0)
 ZEND_END_ARG_INFO()
-
-#if 0
-#error use C_OpenSession()
-extern zend_class_entry *ce_Pkcs11_Module;
-PHP_METHOD(Session, __construct) {
-    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    objval->session = 0; /* not initialized yet */
-
-    CK_SLOT_ID slotid;
-    CK_FLAGS flags;
-    CK_RV rv;
-
-    zval *php_pkcs11;
-    zend_long php_slotid = 0;
-    zend_long php_flags = 0;
-
-    ZEND_PARSE_PARAMETERS_START(3, 3)
-      Z_PARAM_OBJECT_OF_CLASS(php_pkcs11, ce_Pkcs11_Module)
-      Z_PARAM_LONG(php_slotid)
-      Z_PARAM_LONG(php_flags)
-    ZEND_PARSE_PARAMETERS_END();
-
-    objval->pkcs11 = Z_PKCS11_P(php_pkcs11);
-    slotid = (CK_SLOT_ID)php_slotid;
-    flags = (CK_FLAGS)php_flags;
-
-    if (flags &
-        (CKF_RW_SESSION || CKF_SERIAL_SESSION)) {
-      ; /* nope */
-    } else {
-      ; /* nope */
-    }
-
-    CK_SESSION_HANDLE hSession;
-    if (ZEND_NUM_ARGS() > 4)
-        rv = objval->pkcs11->functionList->C_OpenSession(slotid, flags, NULL, NULL, &hSession); /* TODO: add callbacks */
-    else
-        rv = objval->pkcs11->functionList->C_OpenSession(slotid, flags, NULL, NULL, &hSession); /* TODO: add callbacks */
-
-    if (rv != CKR_OK) {
-          pkcs11_error(rv, "Unable to instanciate a session");
-          return;
-    }
-    objval->session = hSession;
-}
-#endif
 
 CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval) {
     CK_SESSION_INFO sessionInfo = {};
@@ -734,9 +680,6 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
 }
 
 static zend_function_entry session_class_functions[] = {
-#if 0
-    PHP_ME(Session, __construct,      arginfo___construct,      ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-#endif
     PHP_ME(Session, login,            arginfo_login,            ZEND_ACC_PUBLIC)
     PHP_ME(Session, getInfo,          arginfo_getInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Session, logout,           arginfo_logout,           ZEND_ACC_PUBLIC)

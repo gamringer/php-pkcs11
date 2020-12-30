@@ -43,8 +43,8 @@ PHP_METHOD(ChaCha20Params, __construct) {
     objval->params.pNonce = ZSTR_VAL(nonce);
     objval->params.ulNonceBits = ZSTR_LEN(nonce) * 8;
     if (blockCounter) {
-      objval->params.pBlockCounter = ZSTR_VAL(blockCounter);
-      objval->params.blockCounterBits = ZSTR_LEN(blockCounter) * 8;
+        objval->params.pBlockCounter = ZSTR_VAL(blockCounter);
+        objval->params.blockCounterBits = ZSTR_LEN(blockCounter) * 8;
     }
 }
 
