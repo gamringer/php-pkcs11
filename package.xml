@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package version="2.1"
+         xmlns="http://pear.php.net/dtd/package-2.1"
+         xmlns:tasks="http://pear.php.net/dtd/tasks-1.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+           http://pear.php.net/dtd/tasks-1.0.xsd
+           http://pear.php.net/dtd/package-2.1
+           http://pear.php.net/dtd/package-2.1.xsd">
+  <name>pkcs11</name>
+  <channel>pecl.php.net</channel>
+  <summary>PHP Bindings for PKCS11 modules</summary>
+  <description>This extension provides an Object Oriented API for PKCS11 C_* functions to interact with a Hardware Security Module.</description>
+  <lead>
+    <name>Guillaume Amringer</name>
+    <user>gamr</user>
+    <email>g.amringer@gmail.com</email>
+    <active>yes</active>
+  </lead>
+  <contributor>
+    <name>Vincent Jardin</name>
+    <user>vjardin</user>
+    <email>vjardin@free.fr</email>
+    <active>yes</active>
+  </contributor>
+  <date>2020-12-30</date>
+  <version>
+    <release>0.1</release>
+    <api>0.1</api>
+  </version>
+  <stability>
+    <release>beta</release>
+    <api>beta</api>
+  </stability>
+  <license uri="https://www.php.net/license/">PHP License</license>
+  <notes>Initial Release</notes>
+  <contents>
+    <dir name="/">
+      <file role="doc" name="README.md"/>
+      <file role="doc" name="LICENSE"/>
+      <file role="src" name="config.m4"/>
+      <file role="src" name="php_pkcs11.h"/>
+      <file role="src" name="pkcs11.c"/>
+      <file role="src" name="pkcs11chacha20params.c"/>
+      <file role="src" name="pkcs11decryptioncontext.c"/>
+      <file role="src" name="pkcs11digestcontext.c"/>
+      <file role="src" name="pkcs11ecdh1deriveparams.c"/>
+      <file role="src" name="pkcs11encryptioncontext.c"/>
+      <file role="src" name="pkcs11gcmparams.c"/>
+      <file role="src" name="pkcs11int.h"/>
+      <file role="src" name="pkcs11key.c"/>
+      <file role="src" name="pkcs11keypair.c"/>
+      <file role="src" name="pkcs11mechanism.c"/>
+      <file role="src" name="pkcs11module.c"/>
+      <file role="src" name="pkcs11object.c"/>
+      <file role="src" name="pkcs11rsaoaepparams.c"/>
+      <file role="src" name="pkcs11rsapssparams.c"/>
+      <file role="src" name="pkcs11salsa20chacha20poly1305params.c"/>
+      <file role="src" name="pkcs11salsa20params.c"/>
+      <file role="src" name="pkcs11session.c"/>
+      <file role="src" name="pkcs11signaturecontext.c"/>
+      <file role="src" name="pkcs11verificationcontext.c"/>
+      <dir name="oasis">
+        <file role="src" name="pkcs11.h"/>
+        <file role="src" name="pkcs11f.h"/>
+        <file role="src" name="pkcs11t.h"/>
+      </dir>
+      <dir name="tests">
+        <file role="test" name="0001-checkmodule.phpt"/>
+        <file role="test" name="0102-get-info.phpt"/>
+        <file role="test" name="0103-get-slot-list.phpt"/>
+        <file role="test" name="0104-get-token-info.phpt"/>
+        <file role="test" name="0105-get-mechanism-list.phpt"/>
+        <file role="test" name="0210-oasis_C_GetInfo.phpt"/>
+        <file role="test" name="0220-oasis-C_GetSlotList.phpt"/>
+        <file role="test" name="0230-oasis-C_GetSlotInfo.phpt"/>
+        <file role="test" name="0240-oasis-C_GetTokenInfo.phpt"/>
+        <file role="test" name="0250-oasis-C_GetMechanismList.phpt"/>
+        <file role="test" name="0260-oasis_Session.phpt"/>
+        <file role="test" name="0270-oasis_Random.phpt"/>
+        <file role="test" name="0280-oasis_FindObjects.phpt"/>
+        <file role="test" name="0290-oasis_FindObjects.phpt"/>
+      </dir>
+    </dir>
+  </contents>
+  <dependencies>
+    <required>
+      <php>
+        <min>7.0.0</min>
+        <max>8.0.99</max>
+      </php>
+      <pearinstaller>
+        <min>1.4.8</min>
+      </pearinstaller>
+    </required>
+  </dependencies>
+  <providesextension>pkcs11</providesextension>
+  <extsrcrelease/>
+</package>
