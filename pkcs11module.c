@@ -1029,6 +1029,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKey, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, session, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, mechanism, IS_OBJECT, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+    ZEND_ARG_INFO(1, phKey)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GenerateKey) {
@@ -1036,20 +1037,25 @@ PHP_METHOD(Module, C_GenerateKey) {
 
     zval *session;
     zval *mechanism;
-    zval *template;
+    HashTable *template;
+    zval *phKey;
+    zval retval;
 
-    ZEND_PARSE_PARAMETERS_START(3, 3)
+    ZEND_PARSE_PARAMETERS_START(4, 4)
         Z_PARAM_ZVAL(session)
         Z_PARAM_ZVAL(mechanism)
-        Z_PARAM_ZVAL(template)
+        Z_PARAM_ARRAY_HT(template)
+        Z_PARAM_ZVAL(phKey)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*mechanism, *template};
+    rv = php_C_GenerateKey(sessionobjval, mechanism, template, &retval);
 
-    call_obj_func(&sessionobjval->std, "generateKey", return_value, 2, params);
+    ZEND_TRY_ASSIGN_REF_VALUE(phKey, &retval);
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKeyPair, 0, 0, 4)
@@ -1066,16 +1072,18 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
 
     zval *session;
     zval *mechanism;
-    zval *pkTemplate;
-    zval *skTemplate;
+    HashTable *pkTemplate;
+    HashTable *skTemplate;
     zval *phPublicKey;
     zval *phPrivateKey;
+    zval retvalpk;
+    zval retvalsk;
 
     ZEND_PARSE_PARAMETERS_START(6, 6)
         Z_PARAM_ZVAL(session)
         Z_PARAM_ZVAL(mechanism)
-        Z_PARAM_ZVAL(pkTemplate)
-        Z_PARAM_ZVAL(skTemplate)
+        Z_PARAM_ARRAY_HT(pkTemplate)
+        Z_PARAM_ARRAY_HT(skTemplate)
         Z_PARAM_ZVAL(phPublicKey)
         Z_PARAM_ZVAL(phPrivateKey)
     ZEND_PARSE_PARAMETERS_END();
@@ -1083,20 +1091,11 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*mechanism, *pkTemplate, *skTemplate};
+    rv = php_C_GenerateKeyPair(sessionobjval, mechanism, pkTemplate, skTemplate, &retvalpk, &retvalsk);
+    ZEND_TRY_ASSIGN_REF_VALUE(phPublicKey, &retvalpk);
+    ZEND_TRY_ASSIGN_REF_VALUE(phPrivateKey, &retvalsk);
 
-    zval *retval = emalloc(sizeof(zval));
-    call_obj_func(&sessionobjval->std, "generateKeyPair", retval, 3, params);
-
-    zend_object *retvalzobj = Z_OBJ_P(retval);
-    zval *rvpr;
-    zval *zpkey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retvalzobj, "pkey", sizeof("pkey") - 1, 0, rvpr);
-    zval *zskey = zend_read_property(Z_PKCS11_KEYPAIR_P(retval)->std.ce, retvalzobj, "skey", sizeof("skey") - 1, 0, rvpr);
-    efree(retval);
-
-    ZEND_TRY_ASSIGN_REF_VALUE(phPublicKey, zpkey);
-    ZEND_TRY_ASSIGN_REF_VALUE(phPrivateKey, zskey);
-
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestInit, 0, 0, 2)

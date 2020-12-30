@@ -319,24 +319,13 @@ PHP_METHOD(Session, generateKey) {
     }
 }
 
-PHP_METHOD(Session, generateKeyPair) {
 
+CK_RV php_C_GenerateKeyPair(pkcs11_session_object *objval, zval *mechanism, HashTable *pkTemplate, HashTable *skTemplate, zval *retvalPk, zval *retvalSk) {
     CK_RV rv;
-    zval *mechanism;
-    HashTable *pkTemplate;
-    HashTable *skTemplate;
-
-    ZEND_PARSE_PARAMETERS_START(3,3)
-        Z_PARAM_ZVAL(mechanism)
-        Z_PARAM_ARRAY_HT(pkTemplate)
-        Z_PARAM_ARRAY_HT(skTemplate)
-    ZEND_PARSE_PARAMETERS_END();
-
-    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
 
     CK_OBJECT_HANDLE pKey, sKey;
-
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
+
     int skTemplateItemCount;
     CK_ATTRIBUTE_PTR skTemplateObj;
     parseTemplate(&skTemplate, &skTemplateObj, &skTemplateItemCount);
@@ -356,30 +345,52 @@ PHP_METHOD(Session, generateKeyPair) {
     freeTemplate(pkTemplateObj);
 
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to generate key pair");
-        return;
+        return rv;
     }
 
-    zval zskeyobj;
     pkcs11_key_object* skey_obj;
-    object_init_ex(&zskeyobj, ce_Pkcs11_Key);
-    skey_obj = Z_PKCS11_KEY_P(&zskeyobj);
+    object_init_ex(retvalSk, ce_Pkcs11_Key);
+    skey_obj = Z_PKCS11_KEY_P(retvalSk);
     skey_obj->session = objval;
     skey_obj->key = sKey;
 
-    zval zpkeyobj;
     pkcs11_key_object* pkey_obj;
-    object_init_ex(&zpkeyobj, ce_Pkcs11_Key);
-    pkey_obj = Z_PKCS11_KEY_P(&zpkeyobj);
+    object_init_ex(retvalPk, ce_Pkcs11_Key);
+    pkey_obj = Z_PKCS11_KEY_P(retvalPk);
     pkey_obj->session = objval;
     pkey_obj->key = pKey;
 
-    pkcs11_keypair_object* keypair_obj;
+    return rv;
+}
+
+PHP_METHOD(Session, generateKeyPair) {
+
+    CK_RV rv;
+    zval *mechanism;
+    HashTable *pkTemplate;
+    HashTable *skTemplate;
+
+    ZEND_PARSE_PARAMETERS_START(3,3)
+        Z_PARAM_ZVAL(mechanism)
+        Z_PARAM_ARRAY_HT(pkTemplate)
+        Z_PARAM_ARRAY_HT(skTemplate)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
+
+    zval zpkeyobj;
+    zval zskeyobj;
+
+    rv = php_C_GenerateKeyPair(objval, mechanism, pkTemplate, skTemplate, &zpkeyobj, &zskeyobj);
 
     object_init_ex(return_value, ce_Pkcs11_KeyPair);
-    add_property_zval(return_value, "skey", &zskeyobj);
     add_property_zval(return_value, "pkey", &zpkeyobj);
+    add_property_zval(return_value, "skey", &zskeyobj);
 
+    pkcs11_key_object* skey_obj = Z_PKCS11_KEY_P(&zskeyobj);
+    pkcs11_key_object* pkey_obj = Z_PKCS11_KEY_P(&zpkeyobj);
+
+    pkcs11_keypair_object* keypair_obj;
     keypair_obj = Z_PKCS11_KEYPAIR_P(return_value);
     keypair_obj->pkey = pkey_obj;
     keypair_obj->skey = skey_obj;

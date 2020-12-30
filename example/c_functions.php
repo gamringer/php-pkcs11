@@ -83,12 +83,10 @@ var_dump('RV: ' . dechex($rv));
 $rv = $module->C_Login($session, Pkcs11\CKU_USER, $pinCode);
 var_dump('RV: ' . dechex($rv));
 
-exit;
 
 
-$key = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
+$rv = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
-	Pkcs11\CKA_TOKEN => false,
 	Pkcs11\CKA_SENSITIVE => true,
 	Pkcs11\CKA_ENCRYPT => true,
 	Pkcs11\CKA_DECRYPT => true,
@@ -96,8 +94,11 @@ $key = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_
 	Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_AES,
 	Pkcs11\CKA_LABEL => "Test AES",
 	Pkcs11\CKA_PRIVATE => true,
-]);
+], $key);
+var_dump('RV: ' . dechex($rv));
+var_dump($key);
 
+/*
 $module->C_DigestInit($session, new Pkcs11\Mechanism(Pkcs11\CKM_SHA256));
 $digest = $module->C_Digest($session, "allo");
 var_dump($digest);
@@ -159,7 +160,8 @@ $found = $module->C_FindObjects($session, [
 ]);
 var_dump($found);
 
-/*list($pkey, $skey) = */$module->C_GenerateKeyPair(
+*/
+$rv = $module->C_GenerateKeyPair(
 	$session,
 	new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN),
 	[
@@ -177,4 +179,5 @@ var_dump($found);
 	]
 	,$pkey,$skey
 );
+var_dump('RV: ' . dechex($rv));
 var_dump($pkey, $skey);
