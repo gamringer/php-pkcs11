@@ -1764,15 +1764,11 @@ PHP_METHOD(Module, C_GetAttributeValue) {
         if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
             (pTemplate[k].ulValueLen < 1))
             continue;
-        array_init(&zva);
-        add_assoc_long(&zva, "type", pTemplate[k].type);
-        add_assoc_stringl(&zva, "Value", pTemplate[k].pValue, pTemplate[k].ulValueLen);
 
-        add_next_index_zval(&O, &zva);
+        ZVAL_STR(&zva, zend_string_init(pTemplate[k].pValue, pTemplate[k].ulValueLen, 0));
+
+        zend_hash_index_update(template, pTemplate[k].type, &zva);
     }
-    zval k;
-    ZVAL_STR(&k, zend_string_init("Object", strlen("Object"), 0));
-    array_set_zval_key(template, &k, &O);
 
 fini: /* memory free section */
     for(CK_ULONG k = 0; k < ulCount; k++) {

@@ -59,7 +59,16 @@ if (strlen($pin) === 0)
 $rv = $module->C_Login($session, Pkcs11\CKU_USER, $pin);
 var_dump($rv);
 
-$rv = $module->C_FindObjectsInit($session);
+$rnd = random_bytes(24);
+$objTemplate = [
+  Pkcs11\CKA_CLASS => Pkcs11\CKO_DATA,
+  Pkcs11\CKA_APPLICATION => "PHP Test",
+  Pkcs11\CKA_VALUE => 'Hello World!',
+  Pkcs11\CKA_LABEL => "Test Label - $rnd",
+];
+$session->createObject($objTemplate);
+
+$rv = $module->C_FindObjectsInit($session, $objTemplate);
 var_dump($rv);
 
 $rv = $module->C_FindObjects($session, $o);
@@ -67,9 +76,14 @@ var_dump($rv);
 var_dump(count($o));
 
 foreach($o as $handle) {
-  unset($Attributes['Object']); /* avoid unsupported contents by parseTemplate() */
+  $Attributes = [
+    Pkcs11\CKA_APPLICATION => null,
+    Pkcs11\CKA_VALUE => null,
+    Pkcs11\CKA_LABEL => null,
+  ];
   printf("dump object %d: ", $handle);
   $rv = $module->C_GetAttributeValue($session, $handle, $Attributes);
+  var_dump($Attributes);
   switch($rv) {
     case Pkcs11\CKR_OK:
       printf("Pkcs11\CKR_OK %d".PHP_EOL, $rv);
@@ -127,10 +141,16 @@ int(0)
 int(0)
 int(0)
 int(0)
-int(%d)
-dump object 1: %s %d
-dump DONE
-%A
+int(1)
+dump object %d: array(3) {
+  [16]=>
+  string(8) "PHP Test"
+  [17]=>
+  string(12) "Hello World!"
+  [3]=>
+  string(37) "Test Label - %A"
+}
+Pkcs11\CKR_OK 0
 dump DONE
 int(0)
 int(0)
