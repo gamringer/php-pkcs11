@@ -104,8 +104,8 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 5)
     ZEND_ARG_TYPE_INFO(0, slotID, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(0, pApplication_TODO, IS_STRING, 1)
-    ZEND_ARG_TYPE_INFO(0, Notify_TODO, IS_CALLABLE, 1)
+    ZEND_ARG_TYPE_INFO(0, pApplication, IS_STRING, 1)
+    ZEND_ARG_TYPE_INFO(0, notify, IS_CALLABLE, 1)
     ZEND_ARG_OBJ_INFO(1, hSession, "Pkcs11\\Session", 1)
 ZEND_END_ARG_INFO()
 
@@ -727,15 +727,15 @@ PHP_METHOD(Module, openSession) {
     zend_long      slotid;
     zend_long      flags;
     zend_string    *application;
-    zend_fcall_info php_fciNotify_TODO;
-    zend_fcall_info_cache fciNotify_cache_TODO;
+    zend_fcall_info php_fciNotify;
+    zend_fcall_info_cache fciNotify_cache;
 
     ZEND_PARSE_PARAMETERS_START(1, 4)
         Z_PARAM_LONG(slotid)
         Z_PARAM_OPTIONAL
         Z_PARAM_LONG(flags)
         Z_PARAM_STR(application)
-        Z_PARAM_FUNC(php_fciNotify_TODO, fciNotify_cache_TODO)
+        Z_PARAM_FUNC(php_fciNotify, fciNotify_cache)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
@@ -769,16 +769,16 @@ PHP_METHOD(Module, C_OpenSession) {
 
     zend_long      php_slotID;
     zend_long      php_flags;
-    zend_string    *php_pApplication_TODO = NULL;
-    zend_fcall_info php_fciNotify_TODO;
-    zend_fcall_info_cache fciNotify_cache_TODO;
+    zend_string    *php_pApplication = NULL;
+    zend_fcall_info php_fciNotify;
+    zend_fcall_info_cache fciNotify_cache;
     zval           *php_hSession;
 
     ZEND_PARSE_PARAMETERS_START(5, 5)
         Z_PARAM_LONG(php_slotID)
         Z_PARAM_LONG(php_flags)
-    	Z_PARAM_STR_EX(php_pApplication_TODO, 1, 0)
-    	Z_PARAM_FUNC_EX(php_fciNotify_TODO, fciNotify_cache_TODO, 1, 0)
+    	Z_PARAM_STR_EX(php_pApplication, 1, 0)
+    	Z_PARAM_FUNC_EX(php_fciNotify, fciNotify_cache, 1, 0)
     	Z_PARAM_ZVAL(php_hSession)
     ZEND_PARSE_PARAMETERS_END();
 	//Z_PARAM_OBJECT_EX(php_hSession, 1, 0)
