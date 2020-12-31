@@ -30,9 +30,6 @@ foreach($c as $k => $v) {
   }
 }
 
-// var_dump($Attributes);
-// var_dump($AttributesInfo);
-
 $modulePath = getenv('PHP11_MODULE');
 $module = new Pkcs11\Module($modulePath);
 
@@ -66,7 +63,7 @@ $objTemplate = [
   Pkcs11\CKA_VALUE => 'Hello World!',
   Pkcs11\CKA_LABEL => "Test Label - $rnd",
 ];
-$session->createObject($objTemplate);
+$module->C_CreateObject($session, $objTemplate, $objObj);
 
 $rv = $module->C_FindObjectsInit($session, $objTemplate);
 var_dump($rv);

@@ -1459,9 +1459,10 @@ PHP_METHOD(Module, C_Verify) {
     RETURN_LONG(rv);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+    ZEND_ARG_OBJ_INFO(1, phPrivateKey, "Pkcs11\\Object", 1)
 ZEND_END_ARG_INFO()
 
 
@@ -1469,23 +1470,27 @@ PHP_METHOD(Module, C_CreateObject) {
     CK_RV rv;
 
     zval *session;
-    zval *template;
+    zval *phObject;
+    HashTable *template;
+    zval retval;
 
-    ZEND_PARSE_PARAMETERS_START(2, 2)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(template)
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_ARRAY_HT(template)
+        Z_PARAM_ZVAL(phObject)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*template};
+    rv = php_C_CreateObject(sessionobjval, template, &retval);
 
-    call_obj_func(&sessionobjval->std, "createObject", return_value, 1, params);
+    ZEND_TRY_ASSIGN_REF_VALUE(phObject, &retval);
+
+    RETURN_LONG(rv);
 }
 
-static int
-AssertAttributeCKA(const CK_ATTRIBUTE_PTR pAttribute) {
+static int AssertAttributeCKA(const CK_ATTRIBUTE_PTR pAttribute) {
     switch(pAttribute->type) {
         case CKA_KEY_TYPE:
             return !(pAttribute->ulValueLen == sizeof(CK_KEY_TYPE));

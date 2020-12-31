@@ -224,5 +224,6 @@ extern CK_RV php_C_SeedRandom(const pkcs11_session_object * const objval, zend_s
 extern CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval);
 extern CK_RV php_C_GenerateKey(pkcs11_session_object *objval, zval *mechanism, HashTable *template, zval *retval);
 extern CK_RV php_C_GenerateKeyPair(pkcs11_session_object *objval, zval *mechanism, HashTable *pkTemplate, HashTable *skTemplate, zval *retvalPk, zval *retvalSk);
+extern CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *template, zval *retval);
 
 #endif
