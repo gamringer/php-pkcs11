@@ -98,13 +98,35 @@ $rv = $module->C_GenerateKey($session, new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_G
 var_dump('RV: ' . dechex($rv));
 var_dump($key);
 
-$object = $module->C_CreateObject($session, [
+$rv = $module->C_CreateObject($session, [
 	Pkcs11\CKA_CLASS => Pkcs11\CKO_DATA,
 	Pkcs11\CKA_APPLICATION => "Some App",
 	Pkcs11\CKA_VALUE => 'Hello World!',
 	Pkcs11\CKA_LABEL => "Original Label",
-]);
+], $object);
+var_dump('RV: ' . dechex($rv));
 var_dump($object);
+
+$rv = $module->C_CopyObject($session, $object, [
+	Pkcs11\CKA_LABEL => "New Label",
+], $copy);
+var_dump('RV: ' . dechex($rv));
+var_dump($copy);
+
+$attributes = $copy->getAttributeValue([
+	Pkcs11\CKA_LABEL,
+	Pkcs11\CKA_VALUE,
+	Pkcs11\CKA_APPLICATION,
+]);
+var_dump($attributes);
+
+
+$rv = $module->C_DestroyObject($session, $object);
+var_dump('RV: ' . dechex($rv));
+
+$rv = $module->C_DestroyObject($session, $copy);
+var_dump('RV: ' . dechex($rv));
+
 
 /*
 $module->C_DigestInit($session, new Pkcs11\Mechanism(Pkcs11\CKM_SHA256));

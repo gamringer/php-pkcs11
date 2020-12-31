@@ -210,23 +210,6 @@ void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject
     efree(template[0].pValue);
 }
 
-int call_obj_func(zend_object *object, char *function_name, zval *retval_ptr, uint32_t param_count, zval params[]) /* {{{ */
-{
-    zend_fcall_info fci;
-
-    zval *zfn;
-    ZVAL_STRING(zfn, function_name);
-
-    fci.size = sizeof(fci);
-    fci.object = object;
-    ZVAL_COPY_VALUE(&fci.function_name, zfn);
-    fci.retval = retval_ptr;
-    fci.param_count = param_count;
-    fci.params = params;
-
-    return zend_call_function(&fci, NULL);
-}
-
 PHP_MINIT_FUNCTION(pkcs11)
 {
     register_pkcs11();

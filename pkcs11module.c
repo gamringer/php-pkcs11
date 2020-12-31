@@ -1462,7 +1462,7 @@ PHP_METHOD(Module, C_Verify) {
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phPrivateKey, "Pkcs11\\Object", 1)
+    ZEND_ARG_OBJ_INFO(1, phObject, "Pkcs11\\Object", 1)
 ZEND_END_ARG_INFO()
 
 
@@ -1789,10 +1789,11 @@ fini: /* memory free section */
     RETURN_LONG(rv);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 4)
     ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
     ZEND_ARG_OBJ_INFO(0, object, "Pkcs11\\Object", 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+    ZEND_ARG_OBJ_INFO(1, phNewObject, "Pkcs11\\Object", 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_CopyObject) {
@@ -1800,20 +1801,25 @@ PHP_METHOD(Module, C_CopyObject) {
 
     zval *session;
     zval *object;
-    zval *template;
+    zval *phNewObject;
+    HashTable *template;
+    zval retval;
 
-    ZEND_PARSE_PARAMETERS_START(3, 3)
-        Z_PARAM_ZVAL(session)
-        Z_PARAM_ZVAL(object)
-        Z_PARAM_ZVAL(template)
+    ZEND_PARSE_PARAMETERS_START(4, 4)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(object, ce_Pkcs11_P11Object)
+        Z_PARAM_ARRAY_HT(template)
+        Z_PARAM_ZVAL(phNewObject)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*object, *template};
+    rv = php_C_CopyObject(sessionobjval, object, template, &retval);
 
-    call_obj_func(&sessionobjval->std, "copyObject", return_value, 2, params);
+    ZEND_TRY_ASSIGN_REF_VALUE(phNewObject, &retval);
+
+    RETURN_LONG(rv);
 }
 
 
@@ -1836,9 +1842,9 @@ PHP_METHOD(Module, C_DestroyObject) {
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
-    zval params[] = {*object};
+    rv = php_C_DestroyObject(sessionobjval, object);
 
-    call_obj_func(&sessionobjval->std, "destroyObject", return_value, 1, params);
+    RETURN_LONG(rv);
 }
 
 void pkcs11_shutdown(pkcs11_object *obj) {
