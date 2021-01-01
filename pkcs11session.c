@@ -42,23 +42,23 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_setPin, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generateKey, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generateKeyPair, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, pkTemplate, IS_ARRAY, 0)
     ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_digest, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_initializeDigest, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_findObjects, 0, 0, 1)
@@ -70,12 +70,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_createObject, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_copyObject, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, object, "Pkcs11\\Object", 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, object, "Pkcs11\\Object", 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo___debugInfo, 0, 0, 0)

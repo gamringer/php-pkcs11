@@ -106,7 +106,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 5)
     ZEND_ARG_TYPE_INFO(0, flags, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, pApplication, IS_STRING, 1)
     ZEND_ARG_TYPE_INFO(0, notify, IS_CALLABLE, 1)
-    ZEND_ARG_OBJ_INFO(1, hSession, "Pkcs11\\Session", 1)
+    ZEND_ARG_OBJ_INFO(1, hSession, Pkcs11\\Session, 1)
 ZEND_END_ARG_INFO()
 
 
@@ -819,7 +819,7 @@ PHP_METHOD(Module, C_OpenSession) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CloseSession, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_CloseSession) {
@@ -842,7 +842,7 @@ PHP_METHOD(Module, C_CloseSession) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetSessionInfo, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(1, pInfo, IS_ARRAY, 1)
 ZEND_END_ARG_INFO()
 
@@ -868,7 +868,7 @@ PHP_METHOD(Module, C_GetSessionInfo) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateRandom, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, RandomLen, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(1, pRandomData, IS_STRING, 1)
 ZEND_END_ARG_INFO()
@@ -896,7 +896,7 @@ PHP_METHOD(Module, C_GenerateRandom) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SeedRandom, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, Seed, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
@@ -919,7 +919,7 @@ PHP_METHOD(Module, C_SeedRandom) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Login, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, loginType, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(0, pin, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -946,7 +946,7 @@ PHP_METHOD(Module, C_Login) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Logout, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_Logout) {
@@ -968,7 +968,7 @@ PHP_METHOD(Module, C_Logout) {
 
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SetPIN, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, oldPin, IS_STRING, 0)
     ZEND_ARG_TYPE_INFO(0, newPin, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -1001,7 +1001,7 @@ PHP_METHOD(Module, C_SetPIN) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_InitPIN, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, newPin, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
@@ -1029,10 +1029,10 @@ PHP_METHOD(Module, C_InitPIN) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKey, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phKey, "Pkcs11\\Key", 1)
+    ZEND_ARG_OBJ_INFO(1, phKey, Pkcs11\\Key, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GenerateKey) {
@@ -1062,12 +1062,12 @@ PHP_METHOD(Module, C_GenerateKey) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKeyPair, 0, 0, 4)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, pkTemplate, IS_ARRAY, 0)
     ZEND_ARG_TYPE_INFO(0, skTemplate, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phPublicKey, "Pkcs11\\Key", 1)
-    ZEND_ARG_OBJ_INFO(1, phPrivateKey, "Pkcs11\\Key", 1)
+    ZEND_ARG_OBJ_INFO(1, phPublicKey, Pkcs11\\Key, 1)
+    ZEND_ARG_OBJ_INFO(1, phPrivateKey, Pkcs11\\Key, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GenerateKeyPair) {
@@ -1102,8 +1102,8 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestInit, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DigestInit) {
@@ -1134,7 +1134,7 @@ PHP_METHOD(Module, C_DigestInit) {
 
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Digest, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
@@ -1191,7 +1191,7 @@ PHP_METHOD(Module, C_Digest) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestUpdate, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, part, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
@@ -1221,8 +1221,8 @@ PHP_METHOD(Module, C_DigestUpdate) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestKey, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, key, "Pkcs11\\Key", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, key, Pkcs11\\Key, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DigestKey) {
@@ -1251,7 +1251,7 @@ PHP_METHOD(Module, C_DigestKey) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestFinal, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DigestFinal) {
@@ -1301,8 +1301,8 @@ PHP_METHOD(Module, C_DigestFinal) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SignInit, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
@@ -1338,7 +1338,7 @@ PHP_METHOD(Module, C_SignInit) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Sign, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
     ZEND_ARG_TYPE_INFO(1, signature, IS_STRING, 1)
 ZEND_END_ARG_INFO()
@@ -1387,8 +1387,8 @@ PHP_METHOD(Module, C_Sign) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_VerifyInit, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, mechanism, "Pkcs11\\Mechanism", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
@@ -1424,7 +1424,7 @@ PHP_METHOD(Module, C_VerifyInit) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Verify, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
     ZEND_ARG_TYPE_INFO(0, signature, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -1460,9 +1460,9 @@ PHP_METHOD(Module, C_Verify) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phObject, "Pkcs11\\Object", 1)
+    ZEND_ARG_OBJ_INFO(1, phObject, Pkcs11\\Object, 1)
 ZEND_END_ARG_INFO()
 
 
@@ -1561,7 +1561,7 @@ static int AssertAttributeCKA(const CK_ATTRIBUTE_PTR pAttribute) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsInit, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
@@ -1602,7 +1602,7 @@ PHP_METHOD(Module, C_FindObjectsInit) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjects, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(1, Objects, IS_ARRAY, 1)
     ZEND_ARG_TYPE_INFO(0, MaxObjectCount, IS_LONG, 0) // Default 32
 ZEND_END_ARG_INFO()
@@ -1651,7 +1651,7 @@ PHP_METHOD(Module, C_FindObjects) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_FindObjectsFinal, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_FindObjectsFinal) {
@@ -1672,7 +1672,7 @@ PHP_METHOD(Module, C_FindObjectsFinal) {
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GetAttributeValue, 0, 0, 3)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, object, IS_LONG, 0)
     ZEND_ARG_TYPE_INFO(1, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -1790,10 +1790,10 @@ fini: /* memory free section */
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 4)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, object, "Pkcs11\\Object", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phNewObject, "Pkcs11\\Object", 1)
+    ZEND_ARG_OBJ_INFO(1, phNewObject, Pkcs11\\Object, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_CopyObject) {
@@ -1824,8 +1824,8 @@ PHP_METHOD(Module, C_CopyObject) {
 
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DestroyObject, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, session, "Pkcs11\\Session", 0)
-    ZEND_ARG_OBJ_INFO(0, object, "Pkcs11\\Object", 0)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DestroyObject) {
