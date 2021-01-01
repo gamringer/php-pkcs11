@@ -40,7 +40,7 @@ jobs:
           pwd
           phpize
           ./configure
-          make
+          make -j $(nproc)
 
       - name: Tests using SoftHSM2
         run: |
