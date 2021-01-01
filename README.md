@@ -14,12 +14,31 @@ make
 ## Running tests
 To make tests, ensure that SoftHSM2 is installed, configured and initialized.
 
-### From Source Code
+### Install SoftHSM2
 
-* Install from [source](https://github.com/opendnssec/SoftHSMv2)
-* Create a directory where HSM files will be stored `/home/user/.softhsm`
-* Create a configuration file in your home directory `~/.config/softhsm2/softhsm2.conf`
-* Initialize token `softhsm2-util --init-token --slot 0 --label "My token 1"`
+#### From Source
+1. Get the [source](https://github.com/opendnssec/SoftHSMv2)
+1. Extract Archive
+1. `cd /path/to/extracted/archive`
+1. `./configure`
+1. `make`
+1. `make install`
+
+Module will be located in `/usr/local/lib/softhsm/libsofthsm2.so`
+
+#### From Ubuntu package repository
+
+_As of this writing, Ubuntu 20.04 provides v2.2 of SoftHSM2 in which not all mechanisms will be available_
+
+1. `sudo apt install softhsm2`
+
+Module will be located in `/usr/lib/softhsm/libsofthsm2.so`
+
+### Configure and initialize SoftHSM2
+1. Create a directory where HSM files will be stored `/home/user/.softhsm`
+1. Create a configuration file in your home directory `~/.config/softhsm2/softhsm2.conf`
+1. Initialize token `softhsm2-util --init-token --slot 0 --label "My token 1" --pin 123456 --so-pin 12345678`
+1. Grab the resulting slot ID `softhsm2-util --show-slots`
 
 Example configuration file
 ```
@@ -30,35 +49,10 @@ slots.removable = false
 slots.mechanisms = ALL
 ```
 
-Running tests
-```
-export PHP11_MODULE=/usr/local/lib/softhsm/libsofthsm2.so
-export PHP11_SLOT=575024709
-export PHP11_PIN=123456
-make test
-```
-
-### From Ubuntu packages
-
-```
-# use bash
-sudo apt install libsofthsm2-dev libsofthsm2 softhsm2-common softhsm2 pkcs11-dump locate
-sudo updatedb
-
-export SOFTHSM2_CONF=/tmp/php-pkcs11-softhsm2.conf
-mkdir -p /tmp/php-pkcs11-softhsm
-cat <<EOFCONF >> $SOFTHSM2_CONF
-directories.tokendir = /tmp/php-pkcs11-softhsm
-objectstore.backend = file
-log.level = INFO
-slots.removable = false
-slots.mechanisms = ALL
-EOFCONF
-
-softhsm2-util --init-token --slot 0 --label "My token 1" --pin 123456 --so-pin 123456
-
-export PHP11_MODULE=$(locate libsofthsm2.so | head -1)
-export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1)
+### Run tests
+```bash
+export PHP11_MODULE=/path/to/libsofthsm2.so
+export PHP11_SLOT={SLOT_ID_FROM_INITIALIZATION}
 export PHP11_PIN=123456
 
 make test
@@ -72,7 +66,7 @@ _All examples assume the use of a locally compiled installation of SoftHSM, but 
 To load a PKCS11 module, create a new PKCS11\Module object.
 
 ```php
-$modulePath = '/usr/local/lib/softhsm/libsofthsm2.so';
+$modulePath = '/path/to/libsofthsm2.so';
 $module = new Pkcs11\Module($modulePath);
 ```
 
