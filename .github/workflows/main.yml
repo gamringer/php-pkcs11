@@ -1,10 +1,9 @@
 name: php-pkcs11 using SoftHSM2 CI
 
 on:
+  # Triggers the workflow on push or pull requests events for any branch
   push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
   # Everey night of from Monday to Friday
   schedule:
     - cron: "0 2 * * 1-5"
