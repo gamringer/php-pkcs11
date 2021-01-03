@@ -15,52 +15,81 @@ env:
   SOFTHSM2_TOKENDIR: /tmp/php-pkcs11-softhsm
   SOFTHSM2_CONF: /tmp/php-pkcs11-softhsm2.conf
   PHP11_PIN: 123456
+  PHP11_SOPIN: 12345678
 
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  test-with-php7.4:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup Ubuntu PHP dev environment
-        run: sudo apt-get install php-cli php-dev
+      - name: Installing packages
+        run: sudo apt-get install php7.4-dev softhsm2 pkcs11-dump 
 
       - name: Setup Ubuntu SoftHSM2
-        run: sudo apt-get install libsofthsm2 softhsm2 softhsm2-common libsofthsm2-dev
-
-      - name: Setup Ubuntu tools for running the tests
-        run: sudo apt-get install pkcs11-dump locate
+        run: |
+        mkdir -p $SOFTHSM2_TOKENDIR
+        cat <<EOFCONF >> $SOFTHSM2_CONF
+        directories.tokendir = $SOFTHSM2_TOKENDIR
+        objectstore.backend = file
+        log.level = INFO
+        slots.removable = false
+        slots.mechanisms = ALL
+        EOFCONF
+        softhsm2-util --init-token --slot 0 --label "Test Token" --pin $PHP11_PIN --so-pin $PHP11_SOPIN
+        pkcs11-dump info $PHP11_MODULE
+        pkcs11-dump slotlist $PHP11_MODULE
 
       - name: Compile
         run: |
-          ls -la
-          pwd
           phpize
           ./configure
           make -j $(nproc)
 
       - name: Tests using SoftHSM2
         run: |
-          # updatedb is too slow, let's assume the path
-          # sudo updatedb
-          # export PHP11_MODULE=$(locate libsofthsm2.so | head -1)
           export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
           echo "PHP11_MODULE $PHP11_MODULE"
-          mkdir -p $SOFTHSM2_TOKENDIR
-          cat <<EOFCONF >> $SOFTHSM2_CONF
-          directories.tokendir = $SOFTHSM2_TOKENDIR
-          objectstore.backend = file
-          log.level = INFO
-          slots.removable = false
-          slots.mechanisms = ALL
-          EOFCONF
-          cat $SOFTHSM2_CONF
-          softhsm2-util --init-token --slot 0 --label "My token 1" --pin $PHP11_PIN --so-pin $PHP11_PIN
-          ls -la $SOFTHSM2_TOKENDIR
-          pkcs11-dump info $PHP11_MODULE
-          pkcs11-dump slotlist $PHP11_MODULE
+          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1)
+          echo "PHP11_SLOT $PHP11_SLOT"
+          export NO_INTERACTION=1
+          make test
+
+  test-with-php8.0:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Installing packages
+        run: sudo apt-get install php8.0-dev softhsm2 pkcs11-dump 
+
+      - name: Setup Ubuntu SoftHSM2
+        run: |
+        mkdir -p $SOFTHSM2_TOKENDIR
+        cat <<EOFCONF >> $SOFTHSM2_CONF
+        directories.tokendir = $SOFTHSM2_TOKENDIR
+        objectstore.backend = file
+        log.level = INFO
+        slots.removable = false
+        slots.mechanisms = ALL
+        EOFCONF
+        softhsm2-util --init-token --slot 0 --label "Test Token" --pin $PHP11_PIN --so-pin $PHP11_SOPIN
+        pkcs11-dump info $PHP11_MODULE
+        pkcs11-dump slotlist $PHP11_MODULE
+
+      - name: Compile
+        run: |
+          phpize
+          ./configure
+          make -j $(nproc)
+
+      - name: Tests using SoftHSM2
+        run: |
+          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
+          echo "PHP11_MODULE $PHP11_MODULE"
           export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1)
           echo "PHP11_SLOT $PHP11_SLOT"
           export NO_INTERACTION=1
