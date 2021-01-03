@@ -35,21 +35,14 @@ var_dump($slots);
 
 ?>
 --EXPECTF--
-OK: 2 slots
+OK: %d slots
 bool(true)
-array(2) {
+array(%d) {
   [%d]=>
   array(2) {
     ["id"]=>
     int(%d)
     ["slotDescription"]=>
-    string(64) "SoftHSM slot ID 0x%x%r\s*%r"
-  }
-  [1]=>
-  array(2) {
-    ["id"]=>
-    int(1)
-    ["slotDescription"]=>
-    string(64) "SoftHSM slot ID 0x1%r\s*%r"
-  }
+    string(64) "%s"
+  }%A
 }
