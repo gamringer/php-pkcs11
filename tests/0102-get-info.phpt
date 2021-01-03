@@ -4,7 +4,7 @@ Get information about cryptoki
 <?php
 
 if (!extension_loaded('pkcs11')) {
-	echo 'skip';
+    echo 'skip';
 }
 
 if (getenv('PHP11_MODULE') === false) {
