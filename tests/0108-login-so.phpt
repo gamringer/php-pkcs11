@@ -1,5 +1,5 @@
 --TEST--
-Open Session
+Login as SO
 --SKIPIF--
 <?php
 
@@ -15,7 +15,7 @@ if (getenv('PHP11_SLOT') === false) {
     echo 'skip';
 }
 
-if (getenv('PHP11_PIN') === false) {
+if (getenv('PHP11_SOPIN') === false) {
     echo 'skip';
 }
 

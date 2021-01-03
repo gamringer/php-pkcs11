@@ -1,5 +1,5 @@
 --TEST--
-Open Session
+Login as User
 --SKIPIF--
 <?php
 
