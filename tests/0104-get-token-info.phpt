@@ -3,13 +3,7 @@ OASIS C_GetTokenInfo() Basic test
 --SKIPIF--
 <?php
 
-if (!extension_loaded('pkcs11')) {
-    echo 'skip';
-}
-
-if (getenv('PHP11_MODULE') === false) {
-    echo 'skip';
-}
+require_once 'require-module-load.skipif.inc';
 
 if (getenv('PHP11_SLOT') === false) {
     echo 'skip';

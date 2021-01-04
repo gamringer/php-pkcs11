@@ -3,36 +3,7 @@ Change User PIN as SO
 --SKIPIF--
 <?php
 
-if (!extension_loaded('pkcs11')) {
-    echo 'skip';
-}
-
-if (getenv('PHP11_MODULE') === false) {
-    echo 'skip';
-}
-
-if (getenv('PHP11_SLOT') === false) {
-    echo 'skip';
-}
-
-if (getenv('PHP11_PIN') === false) {
-    echo 'skip';
-}
-
-if (getenv('PHP11_SOPIN') === false) {
-    echo 'skip';
-}
-
-try {
-    $module = new Pkcs11\Module(getenv('PHP11_MODULE'));
-    $session = $module->openSession((int)getenv('PHP11_SLOT'), Pkcs11\CKF_RW_SESSION);
-	$session->login(Pkcs11\CKU_USER, getenv('PHP11_PIN'));
-	$session->logout();
-	$session->login(Pkcs11\CKU_SO, getenv('PHP11_SOPIN'));
-	$session->logout();
-} catch (\Throwable $e) {
-    echo 'skip';
-}
+require_once 'require-sopin-login.skipif.inc';
 
 ?>
 --FILE--

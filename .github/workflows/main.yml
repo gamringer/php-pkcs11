@@ -53,7 +53,7 @@ jobs:
         run: |
           export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
           echo "PHP11_MODULE $PHP11_MODULE"
-          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1)
+          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1 | cut -f 1)
           echo "PHP11_SLOT $PHP11_SLOT"
           export NO_INTERACTION=1
           export REPORT_EXIT_STATUS=1
