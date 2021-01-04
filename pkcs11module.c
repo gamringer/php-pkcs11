@@ -1770,10 +1770,15 @@ PHP_METHOD(Module, C_GetAttributeValue) {
             (pTemplate[k].ulValueLen < 1))
             continue;
 
-        ZVAL_STR(&zva, zend_string_init(pTemplate[k].pValue, pTemplate[k].ulValueLen, 0));
+        array_init(&zva);
+        add_assoc_long(&zva, "type", pTemplate[k].type);
+        add_assoc_stringl(&zva, "Value", pTemplate[k].pValue, pTemplate[k].ulValueLen);
 
-        zend_hash_index_update(template, pTemplate[k].type, &zva);
+        add_next_index_zval(&O, &zva);
     }
+    zval k;
+    ZVAL_STR(&k, zend_string_init("Object", strlen("Object"), 0));
+    array_set_zval_key(template, &k, &O);
 
 fini: /* memory free section */
     for(CK_ULONG k = 0; k < ulCount; k++) {

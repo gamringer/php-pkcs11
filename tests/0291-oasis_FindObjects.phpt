@@ -61,16 +61,7 @@ if (strlen($pin) === 0)
 $rv = $module->C_Login($session, Pkcs11\CKU_USER, $pin);
 var_dump($rv);
 
-$rnd = random_bytes(24);
-$objTemplate = [
-  Pkcs11\CKA_CLASS => Pkcs11\CKO_DATA,
-  Pkcs11\CKA_APPLICATION => "PHP Test",
-  Pkcs11\CKA_VALUE => 'Hello World!',
-  Pkcs11\CKA_LABEL => "Test Label - $rnd",
-];
-$module->C_CreateObject($session, $objTemplate, $objObj);
-
-$rv = $module->C_FindObjectsInit($session, $objTemplate);
+$rv = $module->C_FindObjectsInit($session);
 var_dump($rv);
 
 $rv = $module->C_FindObjects($session, $o);
@@ -78,14 +69,9 @@ var_dump($rv);
 var_dump(count($o));
 
 foreach($o as $handle) {
-  $Attributes = [
-    Pkcs11\CKA_APPLICATION => null,
-    Pkcs11\CKA_VALUE => null,
-    Pkcs11\CKA_LABEL => null,
-  ];
+  unset($Attributes['Object']); /* avoid unsupported contents by parseTemplate() */
   printf("dump object %d: ", $handle);
   $rv = $module->C_GetAttributeValue($session, $handle, $Attributes);
-  var_dump($Attributes);
   switch($rv) {
     case Pkcs11\CKR_OK:
       printf("Pkcs11\CKR_OK %d".PHP_EOL, $rv);
@@ -145,5 +131,4 @@ int(0)
 int(0)
 int(%d)
 %A
-int(0)
 OK
