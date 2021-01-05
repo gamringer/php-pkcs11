@@ -1762,23 +1762,25 @@ PHP_METHOD(Module, C_GetAttributeValue) {
             RETURN_LONG(rv); // placeholder, will be performed into the fini section
     }
 
-    zval O;
-    array_init(&O);
     for(CK_ULONG k = 0; k < ulCount; k++) {
         zval zva;
-        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
-            (pTemplate[k].ulValueLen < 1))
-            continue;
+        zval tmp;
 
-        array_init(&zva);
-        add_assoc_long(&zva, "type", pTemplate[k].type);
-        add_assoc_stringl(&zva, "Value", pTemplate[k].pValue, pTemplate[k].ulValueLen);
-
-        add_next_index_zval(&O, &zva);
+        switch(pTemplate[k].ulValueLen) {
+          case CK_UNAVAILABLE_INFORMATION:
+            zend_hash_index_del(template, pTemplate[k].type);
+          break;
+          case 0:
+            ZVAL_NULL(&tmp);
+            zend_hash_index_update(template, pTemplate[k].type, &tmp);
+          break;
+          default:
+            /* add_index_stringl(&template, k, pTemplate[k].pValue, pTemplate[k].ulValueLen); */
+            ZVAL_STRINGL(&tmp, pTemplate[k].pValue, pTemplate[k].ulValueLen);
+            zend_hash_index_update(template, pTemplate[k].type, &tmp);
+          break;
+        }
     }
-    zval k;
-    ZVAL_STR(&k, zend_string_init("Object", strlen("Object"), 0));
-    array_set_zval_key(template, &k, &O);
 
 fini: /* memory free section */
     for(CK_ULONG k = 0; k < ulCount; k++) {

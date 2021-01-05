@@ -68,10 +68,26 @@ $rv = $module->C_FindObjects($session, $o);
 var_dump($rv);
 var_dump(count($o));
 
+/*
+ * Oasis' C_GetAttributeValue() will fill the return'd values
+ * into the same array as the input list, so we need to clone
+ * the content in order to reuse them for each iteration
+ * of the loop.
+ */
+function AttributeClone(array $Attributes): array {
+  $r = array();
+
+  foreach($Attributes as $k => $v) {
+    $r[$k] = $v;
+  }
+
+  return $r;
+}
+
 foreach($o as $handle) {
-  unset($Attributes['Object']); /* avoid unsupported contents by parseTemplate() */
+  $Values = AttributeClone($Attributes);
   printf("dump object %d: ", $handle);
-  $rv = $module->C_GetAttributeValue($session, $handle, $Attributes);
+  $rv = $module->C_GetAttributeValue($session, $handle, $Values);
   switch($rv) {
     case Pkcs11\CKR_OK:
       printf("Pkcs11\CKR_OK %d".PHP_EOL, $rv);
@@ -97,9 +113,9 @@ foreach($o as $handle) {
       printf("error %d", $rv);
       break 1;
   }
-  if ($verbose) var_dump($Attributes['Object']);
-  foreach($Attributes['Object'] as $v) {
-    printf("%s : %s".PHP_EOL, $AttributesInfo[$v['type']], $v['Value']);
+  if ($verbose) {
+    foreach($Values as $t => $v)
+      printf("%s : (%d)%s".PHP_EOL, $AttributesInfo[$t], strlen($v ?? ''), $v);
   }
   printf(PHP_EOL);
 }
