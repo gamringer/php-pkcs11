@@ -1,5 +1,8 @@
 --TEST--
 Change own PIN as User
+--DESCRIPTION--
+This test scenario detects that a wrong PIN is used, then it
+sets the proper PIN to PHP11_PIN once again.
 --SKIPIF--
 <?php
 
@@ -11,10 +14,10 @@ require_once 'require-userpin-login.skipif.inc';
 
 declare(strict_types=1);
 
-$newPin = '654321';
-
-
 $module = new Pkcs11\Module(getenv('PHP11_MODULE'));
+$tokenInfo = $module->getTokenInfo((int)getenv('PHP11_SLOT'));
+$newPin = str_repeat('0', $tokenInfo['ulMaxPinLen']);
+
 $session = $module->openSession((int)getenv('PHP11_SLOT'), Pkcs11\CKF_RW_SESSION);
 
 try {
