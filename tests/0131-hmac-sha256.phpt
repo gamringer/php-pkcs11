@@ -1,5 +1,5 @@
 --TEST--
-Generate generic key
+HMAC using SHA-256
 --SKIPIF--
 <?php
 
