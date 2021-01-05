@@ -1851,6 +1851,7 @@ void pkcs11_shutdown(pkcs11_object *obj) {
     // called before the pkcs11_object is freed
     if (obj->functionList != NULL) {
         obj->functionList->C_Finalize(NULL_PTR);
+        obj->functionList = NULL;
     }
 
     if (obj->pkcs11module != NULL) {
