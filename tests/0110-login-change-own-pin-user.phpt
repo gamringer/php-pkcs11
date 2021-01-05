@@ -1,5 +1,8 @@
 --TEST--
 Change own PIN as User
+--DESCRIPTION--
+This test scenario detects that a wrong PIN is used, then it
+sets the proper PIN to PHP11_PIN once again.
 --SKIPIF--
 <?php
 
@@ -34,7 +37,7 @@ try {
 
 declare(strict_types=1);
 
-$newPin = '654321';
+$newPin = '4321';
 
 
 $module = new Pkcs11\Module(getenv('PHP11_MODULE'));
