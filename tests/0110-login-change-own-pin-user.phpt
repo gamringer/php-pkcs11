@@ -37,10 +37,10 @@ try {
 
 declare(strict_types=1);
 
-$newPin = '4321';
-
-
 $module = new Pkcs11\Module(getenv('PHP11_MODULE'));
+$tokenInfo = $module->getTokenInfo((int)getenv('PHP11_SLOT'));
+$newPin = str_repeat('0', $tokenInfo['ulMaxPinLen']);
+
 $session = $module->openSession((int)getenv('PHP11_SLOT'), Pkcs11\CKF_RW_SESSION);
 
 try {
