@@ -966,6 +966,43 @@ PHP_METHOD(Module, C_Logout) {
     RETURN_LONG(rv);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_WaitForSlotEvent, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, php_flags, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(1, php_slotID, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_WaitForSlotEvent) {
+    CK_RV rv;
+    CK_SLOT_ID slotID = -1;
+
+    zend_long php_flags = CKF_DONT_BLOCK;
+    zend_bool php_slotIDnull = false;
+    zend_long php_slotID = -1;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_LONG(php_flags)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG_EX2(php_slotID, php_slotIDnull, 1, 1, 0)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    if (!php_slotIDnull)
+      slotID = (CK_SLOT_ID)php_slotID;
+
+    rv = objval->functionList->C_WaitForSlotEvent((CK_FLAGS)php_flags, &slotID, NULL);
+
+    switch(rv) {
+      case CKR_OK:
+        // php_slotID = slotID; TODO
+        break;
+      case CKR_NO_EVENT:
+      default:
+        break;
+    }
+
+    RETURN_LONG(rv);
+}
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SetPIN, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
@@ -1886,6 +1923,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_GetSessionInfo,   arginfo_C_GetSessionInfo,   ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Login,            arginfo_C_Login,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Logout,           arginfo_C_Logout,           ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_WaitForSlotEvent, arginfo_C_WaitForSlotEvent, ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateKey,             arginfo_C_GenerateKey,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
