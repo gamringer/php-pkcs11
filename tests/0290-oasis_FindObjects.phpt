@@ -17,7 +17,6 @@ if (getenv('PHP11_PIN') === false) {
 --FILE--
 <?php declare(strict_types=1);
 
-$verbose = false;
 
 /* Initialize the list of attribtues */
 $c = get_defined_constants(TRUE)['pkcs11'];
@@ -32,8 +31,6 @@ foreach($c as $k => $v) {
   }
 }
 
-if ($verbose) var_dump($Attributes);
-if ($verbose) var_dump($AttributesInfo);
 
 $modulePath = getenv('PHP11_MODULE');
 $module = new Pkcs11\Module($modulePath);
@@ -90,28 +87,23 @@ foreach($o as $handle) {
     case Pkcs11\CKR_OK:
       printf("Pkcs11\CKR_OK %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
-      if ($verbose) break 1;
       continue 2;
     case Pkcs11\CKR_ATTRIBUTE_SENSITIVE:
       printf("Pkcs11\CKR_ATTRIBUTE_SENSITIVE %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
-      if ($verbose) break 1;
       continue 2;
     case Pkcs11\CKR_ATTRIBUTE_TYPE_INVALID:
       printf("Pkcs11\CKR_ATTRIBUTE_TYPE_INVALID %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
-      if ($verbose) break 1;
       continue 2;
     case Pkcs11\CKR_BUFFER_TOO_SMALL:
       printf("Pkcs11\CKR_BUFFER_TOO_SMALL %d".PHP_EOL, $rv);
       printf("dump DONE".PHP_EOL);
-      if ($verbose) break 1;
       continue 2;
     default:
       printf("error %d", $rv);
       break 1;
   }
-  if ($verbose) var_dump($Attributes['Object']);
   foreach($Attributes['Object'] as $v) {
     printf("%s : %s".PHP_EOL, $AttributesInfo[$v['type']], $v['Value']);
   }
