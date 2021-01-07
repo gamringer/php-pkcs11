@@ -83,6 +83,16 @@ PHP_METHOD(Object, getAttributeValue) {
 
     array_init(return_value);
     for (i=0; i<attributeIdCount; i++) {
+
+        if (template[i].ulValueLen == CK_UNAVAILABLE_INFORMATION) {
+            continue;
+        }
+
+        if (template[i].ulValueLen == 0) {
+            add_index_null(return_value, template[i].type);
+            continue;
+        }
+
         zend_string *foo;
         foo = zend_string_alloc(template[i].ulValueLen, 0);
         memcpy(
