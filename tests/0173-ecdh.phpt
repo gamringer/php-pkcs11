@@ -9,6 +9,14 @@ if (!in_array(Pkcs11\CKM_ECDH1_DERIVE, $module->getMechanismList((int)getenv('PH
 	echo 'skip: CKM_ECDH1_DERIVE not supported ';
 }
 
+$info = $module->getInfo();
+if (trim($info["manufacturerID"]) == 'SoftHSM'
+ && $info["libraryVersion"]["major"] == 2
+ && $info["libraryVersion"]["minor"] == 2
+) {
+	echo 'skip: Known bug in this version of SoftHSM';
+}
+
 ?>
 --FILE--
 <?php

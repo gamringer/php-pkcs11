@@ -9,6 +9,10 @@ if (!in_array(Pkcs11\CKM_ECDH1_DERIVE, $module->getMechanismList((int)getenv('PH
 	echo 'skip: CKM_ECDH1_DERIVE not supported ';
 }
 
+if (!in_array(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
+	echo 'skip: CKM_EC_EDWARDS_KEY_PAIR_GEN not supported ';
+}
+
 ?>
 --FILE--
 <?php
