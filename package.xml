@@ -71,15 +71,54 @@
         <file role="test" name="0103-get-slot-list.phpt"/>
         <file role="test" name="0104-get-token-info.phpt"/>
         <file role="test" name="0105-get-mechanism-list.phpt"/>
-        <file role="test" name="0210-oasis_C_GetInfo.phpt"/>
-        <file role="test" name="0220-oasis-C_GetSlotList.phpt"/>
-        <file role="test" name="0230-oasis-C_GetSlotInfo.phpt"/>
-        <file role="test" name="0240-oasis-C_GetTokenInfo.phpt"/>
-        <file role="test" name="0250-oasis-C_GetMechanismList.phpt"/>
-        <file role="test" name="0260-oasis_Session.phpt"/>
-        <file role="test" name="0270-oasis_Random.phpt"/>
-        <file role="test" name="0280-oasis_FindObjects.phpt"/>
-        <file role="test" name="0290-oasis_FindObjects.phpt"/>
+        <file role="test" name="0106-open-session.phpt" />
+        <file role="test" name="0107-login-user.phpt" />
+        <file role="test" name="0108-login-so.phpt" />
+        <file role="test" name="0109-login-reset-user-pin.phpt" />
+        <file role="test" name="0110-login-change-own-pin-user.phpt" />
+        <file role="test" name="0111-login-change-own-pin-so.phpt" />
+        <file role="test" name="0112-create-object.phpt" />
+        <file role="test" name="0113-copy-object.phpt" />
+        <file role="test" name="0114-destroy-object.phpt" />
+        <file role="test" name="0115-find-object.phpt" />
+        <file role="test" name="0116-generate-key.phpt" />
+        <file role="test" name="0130-hmac-sha1.phpt" />
+        <file role="test" name="0131-hmac-sha256.phpt" />
+        <file role="test" name="0132-hmac-sha384.phpt" />
+        <file role="test" name="0133-hmac-sha512.phpt" />
+        <file role="test" name="0140-sym-encrypt-aes.phpt" />
+        <file role="test" name="0141-sym-encrypt-aes-gcm.phpt" />
+        <file role="test" name="0142-sym-encrypt-chacha20-poly.phpt" />
+        <file role="test" name="0144-sym-wrap-aes.phpt" />
+        <file role="test" name="0145-sym-encrypt-aes-gcm-update.phpt" />
+        <file role="test" name="0150-sha256.phpt" />
+        <file role="test" name="0151-sha256-update.phpt" />
+        <file role="test" name="0160-rsa-encrypt-pkcs.phpt" />
+        <file role="test" name="0161-rsa-encrypt-oaep.phpt" />
+        <file role="test" name="0162-rsa-sign-pkcs.phpt" />
+        <file role="test" name="0163-rsa-sign-pss.phpt" />
+        <file role="test" name="0164-rsa-sign-pss-update.phpt" />
+        <file role="test" name="0165-rsa-encrypt-oaep-wrap.phpt" />
+        <file role="test" name="0170-ecdsa.phpt" />
+        <file role="test" name="0171-eddsa-25519.phpt" />
+        <file role="test" name="0172-eddsa-448.phpt" />
+        <file role="test" name="0173-ecdh.phpt" />
+        <file role="test" name="0174-X25519.phpt" />
+        <file role="test" name="0175-X448.phpt" />
+        <file role="test" name="0210-oasis_C_GetInfo.phpt" />
+        <file role="test" name="0220-oasis-C_GetSlotList.phpt" />
+        <file role="test" name="0230-oasis-C_GetSlotInfo.phpt" />
+        <file role="test" name="0240-oasis-C_GetTokenInfo.phpt" />
+        <file role="test" name="0250-oasis-C_GetMechanismList.phpt" />
+        <file role="test" name="0260-oasis_Session.phpt" />
+        <file role="test" name="0270-oasis_Random.phpt" />
+        <file role="test" name="0280-oasis_FindObjects.phpt" />
+        <file role="test" name="0290-oasis_FindObjects.phpt" />
+        <file role="test" name="0291-oasis_FindObjects.phpt" />
+        <file role="test" name="require-module-load.skipif.inc" />
+        <file role="test" name="require-open-session.skipif.inc" />
+        <file role="test" name="require-sopin-login.skipif.inc" />
+        <file role="test" name="require-userpin-login.skipif.inc" />
       </dir>
     </dir>
   </contents>
