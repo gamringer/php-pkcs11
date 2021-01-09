@@ -19,10 +19,12 @@ $module = new Pkcs11\Module(getenv('PHP11_MODULE'));
 $session = $module->openSession((int)getenv('PHP11_SLOT'), Pkcs11\CKF_RW_SESSION);
 $session->login(Pkcs11\CKU_USER, getenv('PHP11_PIN'));
 
-$key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_GENERIC_SECRET_KEY_GEN), [
-	Pkcs11\CKA_VALUE_LEN => 48,
+$key = $session->createObject([
+	Pkcs11\CKA_CLASS => Pkcs11\CKO_SECRET_KEY,
 	Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_GENERIC_SECRET,
-	Pkcs11\CKA_LABEL => "Test Generic Key",
+	Pkcs11\CKA_VALUE => str_repeat(chr(0), 48),
+	Pkcs11\CKA_PRIVATE => true,
+	Pkcs11\CKA_SIGN => true,
 ]);
 
 $data = "Hello World!";
