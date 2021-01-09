@@ -1,13 +1,23 @@
+--TEST--
+Encrypt/Decrypt using RSA OAEP
+--SKIPIF--
+<?php
+
+require_once 'require-userpin-login.skipif.inc';
+
+if (!in_array(Pkcs11\CKM_RSA_PKCS_OAEP, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
+	echo 'skip: CKM_RSA_PKCS_OAEP not supported ';
+}
+
+?>
+--FILE--
 <?php
 
 declare(strict_types=1);
 
-require 'helper.php';
-
-$module = new Pkcs11\Module($modulePath);
-$slotList = $module->getSlotList();
-$session = $module->openSession($slotList[0], Pkcs11\CKF_RW_SESSION);
-$session->login(Pkcs11\CKU_USER, $pinCode);
+$module = new Pkcs11\Module(getenv('PHP11_MODULE'));
+$session = $module->openSession((int)getenv('PHP11_SLOT'), Pkcs11\CKF_RW_SESSION);
+$session->login(Pkcs11\CKU_USER, getenv('PHP11_PIN'));
 
 $keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN), [
 	Pkcs11\CKA_ENCRYPT => true,
@@ -62,9 +72,14 @@ $uwkey = $keypair->skey->unwrap($mechanism, $ciphertext, [
 	Pkcs11\CKA_LABEL => "Test unwrapped",
 ]);
 
-var_dump($uwkey);
-
 $plaintext = $uwkey->decrypt($mechanismEnc, $ciphertextData);
 var_dump($plaintext);
 
 $session->logout();
+
+?>
+--EXPECTF--
+string(12) "Hello World!"
+string(56) "%x"
+string(512) "%x"
+string(12) "Hello World!"
