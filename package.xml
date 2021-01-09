@@ -23,9 +23,9 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2020-12-30</date>
+  <date>2021-01-09</date>
   <version>
-    <release>0.1</release>
+    <release>0.1.1</release>
     <api>0.1</api>
   </version>
   <stability>
@@ -33,7 +33,10 @@
     <api>beta</api>
   </stability>
   <license uri="https://www.php.net/license/">PHP License</license>
-  <notes>Initial Release</notes>
+  <notes>
+  - Added a lot of new test cases
+  - Refactored some Object related functions
+  </notes>
   <contents>
     <dir name="/">
       <file role="doc" name="README.md"/>
@@ -134,4 +137,19 @@
   </dependencies>
   <providesextension>pkcs11</providesextension>
   <extsrcrelease/>
+  <changelog>
+    <release>
+      <date>2020-12-30</date>
+      <version>
+        <release>0.1</release>
+        <api>0.1</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>beta</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP</license>
+      <notes>Initial Release</notes>
+    </release>
+  </changelog>
 </package>
