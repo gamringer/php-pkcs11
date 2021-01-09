@@ -1,5 +1,5 @@
 --TEST--
-Encrypt/Decrypt using RSA OAEP
+Wrapping/Unrapping using RSA OAEP
 --SKIPIF--
 <?php
 
@@ -7,6 +7,10 @@ require_once 'require-userpin-login.skipif.inc';
 
 if (!in_array(Pkcs11\CKM_RSA_PKCS_OAEP, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
 	echo 'skip: CKM_RSA_PKCS_OAEP not supported ';
+}
+
+if (!in_array(Pkcs11\CKM_AES_GCM, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
+	echo 'skip: CKM_AES_GCM not supported ';
 }
 
 ?>
