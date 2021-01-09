@@ -20,8 +20,6 @@ PHP_ARG_ENABLE([pkcs11],
 
 if test "$PHP_PKCS11" != "no"; then
 
-  PHP_ADD_INCLUDE(oasis)
-
   dnl Write more examples of tests here...
 
   dnl Remove this code block if the library does not support pkg-config.

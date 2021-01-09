@@ -37,6 +37,6 @@ ZEND_TSRMLS_CACHE_EXTERN()
 #define NULL_PTR 0
 #endif
 
-#include "pkcs11.h"
+#include "oasis/pkcs11.h"
 
 #endif	/* PHP_PKCS11_H */

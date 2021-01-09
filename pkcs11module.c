@@ -1762,17 +1762,24 @@ PHP_METHOD(Module, C_GetAttributeValue) {
             RETURN_LONG(rv); // placeholder, will be performed into the fini section
     }
 
-    zval O;
-    array_init(&O);
     for(CK_ULONG k = 0; k < ulCount; k++) {
         zval zva;
-        if ((pTemplate[k].ulValueLen == CK_UNAVAILABLE_INFORMATION) ||
-            (pTemplate[k].ulValueLen < 1))
-            continue;
+        zval tmp;
 
-        ZVAL_STR(&zva, zend_string_init(pTemplate[k].pValue, pTemplate[k].ulValueLen, 0));
-
-        zend_hash_index_update(template, pTemplate[k].type, &zva);
+        switch(pTemplate[k].ulValueLen) {
+          case CK_UNAVAILABLE_INFORMATION:
+            zend_hash_index_del(template, pTemplate[k].type);
+          break;
+          case 0:
+            ZVAL_NULL(&tmp);
+            zend_hash_index_update(template, pTemplate[k].type, &tmp);
+          break;
+          default:
+            /* add_index_stringl(&template, k, pTemplate[k].pValue, pTemplate[k].ulValueLen); */
+            ZVAL_STRINGL(&tmp, pTemplate[k].pValue, pTemplate[k].ulValueLen);
+            zend_hash_index_update(template, pTemplate[k].type, &tmp);
+          break;
+        }
     }
 
 fini: /* memory free section */
