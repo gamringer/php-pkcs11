@@ -1,5 +1,5 @@
 --TEST--
-Encrypt/Decrypt using AES-CBC
+Digesting using SHA256 with updates
 --SKIPIF--
 <?php
 

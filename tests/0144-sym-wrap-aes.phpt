@@ -1,12 +1,12 @@
 --TEST--
-Encrypt/Decrypt using AES-CBC
+Wraping using AES-KEY-WRAP
 --SKIPIF--
 <?php
 
 require_once 'require-userpin-login.skipif.inc';
 
-if (!in_array(Pkcs11\CKM_AES_CBC_PAD, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
-	echo 'skip: CKM_AES_CBC_PAD not supported ';
+if (!in_array(Pkcs11\CKM_AES_KEY_WRAP, $module->getMechanismList((int)getenv('PHP11_SLOT')))) {
+	echo 'skip: CKM_AES_KEY_WRAP not supported ';
 }
 
 ?>
