@@ -382,8 +382,9 @@ PHP_METHOD(Session, generateKeyPair) {
     zval zskeyobj;
 
     rv = php_C_GenerateKeyPair(objval, mechanism, pkTemplate, skTemplate, &zpkeyobj, &zskeyobj);
+
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "C_GenerateKeyPair()");
+        pkcs11_error(rv, "Unable to generate key pair");
         return ;
     }
 
