@@ -9,13 +9,17 @@ of a smart card.
 When SoftHSM2 is used, CKR_NO_EVENT is currently the only supported case.
 --SKIPIF--
 <?php
-if (!extension_loaded('pkcs11')) {
-  echo 'skip';
+
+require_once 'require-module-load.skipif.inc';
+
+$info = $module->getInfo();
+if (trim($info["manufacturerID"]) == 'SoftHSM'
+ && $info["libraryVersion"]["major"] == 2
+ && $info["libraryVersion"]["minor"] == 2
+) {
+	echo 'skip: Known bug in this version of SoftHSM';
 }
 
-if (getenv('PHP11_MODULE') === false) {
-  echo 'skip';
-}
 ?>
 --FILE--
 <?php declare(strict_types=1);
