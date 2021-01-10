@@ -966,39 +966,31 @@ PHP_METHOD(Module, C_Logout) {
     RETURN_LONG(rv);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_WaitForSlotEvent, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, php_flags, IS_LONG, 0)
-    ZEND_ARG_TYPE_INFO(1, php_slotID, IS_LONG, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_WaitForSlotEvent, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, php_flags, IS_LONG, 1)
+    ZEND_ARG_TYPE_INFO(1, php_slotID, IS_LONG, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_WaitForSlotEvent) {
     CK_RV rv;
-    CK_SLOT_ID slotID = -1;
+    CK_SLOT_ID slotID;
 
-    zend_long php_flags = CKF_DONT_BLOCK;
-    zend_bool php_slotIDnull = false;
-    zend_long php_slotID = -1;
+    zend_long php_flags;
+    zval *php_slotID = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(1, 2)
+    ZEND_PARSE_PARAMETERS_START(2, 2)
         Z_PARAM_LONG(php_flags)
-        Z_PARAM_OPTIONAL
-        Z_PARAM_LONG_EX2(php_slotID, php_slotIDnull, 1, 1, 0)
+        Z_PARAM_ZVAL(php_slotID)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
-    if (!php_slotIDnull)
-      slotID = (CK_SLOT_ID)php_slotID;
+    rv = objval->functionList->C_WaitForSlotEvent((CK_FLAGS)php_flags, &slotID, NULL_PTR);
 
-    rv = objval->functionList->C_WaitForSlotEvent((CK_FLAGS)php_flags, &slotID, NULL);
-
-    switch(rv) {
-      case CKR_OK:
-        // php_slotID = slotID; TODO
-        break;
-      case CKR_NO_EVENT:
-      default:
-        break;
+    if (rv == CKR_OK) {
+        zval zva;
+        ZVAL_LONG(&zva, slotID);
+        ZEND_TRY_ASSIGN_REF_VALUE(php_slotID, &zva);
     }
 
     RETURN_LONG(rv);
