@@ -1462,7 +1462,7 @@ PHP_METHOD(Module, C_Verify) {
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phObject, Pkcs11\\Object, 1)
+    ZEND_ARG_OBJ_INFO(1, phObject, Pkcs11\\P11Object, 1)
 ZEND_END_ARG_INFO()
 
 
@@ -1798,9 +1798,9 @@ fini: /* memory free section */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CopyObject, 0, 0, 4)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
-    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\P11Object, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phNewObject, Pkcs11\\Object, 1)
+    ZEND_ARG_OBJ_INFO(1, phNewObject, Pkcs11\\P11Object, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_CopyObject) {
@@ -1832,7 +1832,7 @@ PHP_METHOD(Module, C_CopyObject) {
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DestroyObject, 0, 0, 2)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
-    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\P11Object, 0)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DestroyObject) {

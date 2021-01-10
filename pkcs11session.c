@@ -70,12 +70,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_createObject, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_copyObject, 0, 0, 2)
-    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\P11Object, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_destroyObject, 0, 0, 1)
-    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\Object, 0)
+    ZEND_ARG_OBJ_INFO(0, object, Pkcs11\\P11Object, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo___debugInfo, 0, 0, 0)
