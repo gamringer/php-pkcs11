@@ -9,6 +9,8 @@ if (!in_array(Pkcs11\CKM_SHA256, $module->getMechanismList((int)getenv('PHP11_SL
 	echo 'skip: CKM_SHA256 not supported ';
 }
 
+require_once 'require-create-object.skipif.inc';
+
 ?>
 --FILE--
 <?php

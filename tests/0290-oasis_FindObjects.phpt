@@ -13,6 +13,9 @@ if (getenv('PHP11_MODULE') === false) {
 if (getenv('PHP11_PIN') === false) {
   echo 'skip';
 }
+
+require_once 'require-create-object.skipif.inc';
+
 ?>
 --FILE--
 <?php declare(strict_types=1);

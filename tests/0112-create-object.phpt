@@ -5,6 +5,8 @@ Create object and retrieve attributes
 
 require_once 'require-userpin-login.skipif.inc';
 
+require_once 'require-create-object.skipif.inc';
+
 ?>
 --FILE--
 <?php
