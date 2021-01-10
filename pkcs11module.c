@@ -109,6 +109,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_OpenSession, 0, 0, 5)
     ZEND_ARG_OBJ_INFO(1, hSession, Pkcs11\\Session, 1)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_WaitForSlotEvent, 0, 0, 2)
+    ZEND_ARG_TYPE_INFO(0, php_flags, IS_LONG, 1)
+    ZEND_ARG_TYPE_INFO(1, php_slotID, IS_LONG, 1)
+ZEND_END_ARG_INFO()
+
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_waitForSlotEvent, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, php_flags, IS_LONG, 1)
+ZEND_END_ARG_INFO()
+
 
 PHP_METHOD(Module, __construct) {
     char *module_path;
@@ -761,6 +771,33 @@ PHP_METHOD(Module, openSession) {
     session_obj->slotID = slotid;
 }
 
+PHP_METHOD(Module, waitForSlotEvent) {
+    CK_RV rv;
+    CK_SLOT_ID slotID;
+
+    zend_long php_flags;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(php_flags)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    rv = objval->functionList->C_WaitForSlotEvent((CK_FLAGS)php_flags, &slotID, NULL_PTR);
+
+    if (rv == CKR_OK) {
+        RETURN_LONG(slotID);
+        return;
+    }
+
+    if (rv == CKR_NO_EVENT) {
+        RETURN_NULL();
+    }
+
+    zend_throw_exception(zend_ce_exception, "Error waiting for events", 0);
+    return ;
+}
+
 /*
  * fabric (__construct like) of a \Session thru a ref parameter
  */
@@ -966,6 +1003,30 @@ PHP_METHOD(Module, C_Logout) {
     RETURN_LONG(rv);
 }
 
+PHP_METHOD(Module, C_WaitForSlotEvent) {
+    CK_RV rv;
+    CK_SLOT_ID slotID;
+
+    zend_long php_flags;
+    zval *php_slotID = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(php_flags)
+        Z_PARAM_ZVAL(php_slotID)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+
+    rv = objval->functionList->C_WaitForSlotEvent((CK_FLAGS)php_flags, &slotID, NULL_PTR);
+
+    if (rv == CKR_OK) {
+        zval zva;
+        ZVAL_LONG(&zva, slotID);
+        ZEND_TRY_ASSIGN_REF_VALUE(php_slotID, &zva);
+    }
+
+    RETURN_LONG(rv);
+}
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SetPIN, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
@@ -1878,6 +1939,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, getMechanismInfo, arginfo_getMechanismInfo, ZEND_ACC_PUBLIC)
     PHP_ME(Module, initToken,        arginfo_initToken,        ZEND_ACC_PUBLIC)
     PHP_ME(Module, openSession,      arginfo_openSession,      ZEND_ACC_PUBLIC)
+    PHP_ME(Module, waitForSlotEvent, arginfo_waitForSlotEvent, ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GetInfo,          arginfo_C_GetInfo,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GetSlotList,      arginfo_C_GetSlotList,      ZEND_ACC_PUBLIC)
@@ -1893,6 +1955,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_GetSessionInfo,   arginfo_C_GetSessionInfo,   ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Login,            arginfo_C_Login,            ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Logout,           arginfo_C_Logout,           ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_WaitForSlotEvent, arginfo_C_WaitForSlotEvent, ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateKey,             arginfo_C_GenerateKey,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_GenerateKeyPair,         arginfo_C_GenerateKeyPair,         ZEND_ACC_PUBLIC)
