@@ -9,6 +9,8 @@ if (!in_array(Pkcs11\CKM_SHA384_HMAC, $module->getMechanismList((int)getenv('PHP
 	echo 'skip: CKM_SHA384_HMAC not supported ';
 }
 
+require_once 'require-create-object.skipif.inc';
+
 ?>
 --FILE--
 <?php

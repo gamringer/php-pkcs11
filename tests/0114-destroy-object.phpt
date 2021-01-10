@@ -5,6 +5,8 @@ Destroy object and try to retrieve attributes
 
 require_once 'require-userpin-login.skipif.inc';
 
+require_once 'require-create-object.skipif.inc';
+
 ?>
 --FILE--
 <?php
