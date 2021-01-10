@@ -9,6 +9,8 @@ if (!in_array(Pkcs11\CKM_SHA256_RSA_PKCS_PSS, $module->getMechanismList((int)get
 	echo 'skip: CKM_SHA256_RSA_PKCS_PSS not supported ';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php

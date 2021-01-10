@@ -13,6 +13,8 @@ if (!in_array(Pkcs11\CKM_AES_GCM, $module->getMechanismList((int)getenv('PHP11_S
 	echo 'skip: CKM_AES_GCM not supported ';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php

@@ -9,6 +9,8 @@ if (!in_array(Pkcs11\CKM_ECDSA, $module->getMechanismList((int)getenv('PHP11_SLO
 	echo 'skip: CKM_ECDSA not supported ';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php

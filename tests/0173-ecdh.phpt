@@ -17,6 +17,8 @@ if (trim($info["manufacturerID"]) == 'SoftHSM'
 	echo 'skip: Known bug in this version of SoftHSM';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php
