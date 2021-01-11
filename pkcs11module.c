@@ -1239,12 +1239,11 @@ PHP_METHOD(Module, C_Digest) {
     if (rv != CKR_OK)
         goto fini;
 
-    zval zva;
-    zend_string *digestval = zend_string_init(digest, digestLen, 0);
-    ZVAL_STR(&zva, digestval);
-    ZEND_TRY_ASSIGN_REF_VALUE(php_digest, &zva);
- 
-    efree(digest); /* TBC */
+    zval retval;
+    ZVAL_STRINGL(&retval, digest, digestLen);
+    efree(digest);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(php_digest, &retval);
 
 fini:
     RETURN_LONG(rv);
@@ -1346,12 +1345,11 @@ PHP_METHOD(Module, C_DigestFinal) {
     if (rv != CKR_OK)
         goto fini;
 
-    zval zva;
-    zend_string *digestval = zend_string_init(digest, digestLen, 0);
-    ZVAL_STR(&zva, digestval);
-    ZEND_TRY_ASSIGN_REF_VALUE(php_digest, &zva);
- 
-    efree(digest); /* TBC */
+    zval retval;
+    ZVAL_STRINGL(&retval, digest, digestLen);
+    efree(digest);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(php_digest, &retval);
 
 fini:
     RETURN_LONG(rv);
