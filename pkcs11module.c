@@ -1437,12 +1437,16 @@ PHP_METHOD(Module, C_Sign) {
 
     rv = objval->functionList->C_Sign(sessionobjval->session, pData, ulDataLen, pSignature, &ulSignatureLen);
 
+    if (rv != CKR_OK)
+        goto fini;
+
     zval retval;
     ZVAL_STRINGL(&retval, (char *)pSignature, ulSignatureLen);
-    efree(pSignature);
 
     ZEND_TRY_ASSIGN_REF_VALUE(signature, &retval);
 
+fini:
+    efree(pSignature);
     RETURN_LONG(rv);
 }
 
