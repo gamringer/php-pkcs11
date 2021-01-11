@@ -1443,11 +1443,11 @@ PHP_METHOD(Module, C_Sign) {
 
     zval retval;
     ZVAL_STRINGL(&retval, (char *)pSignature, ulSignatureLen);
-    efree(pSignature);
 
     ZEND_TRY_ASSIGN_REF_VALUE(signature, &retval);
 
 fini:
+    efree(pSignature);
     RETURN_LONG(rv);
 }
 
