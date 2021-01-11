@@ -1306,17 +1306,20 @@ PHP_METHOD(Module, C_DigestKey) {
     RETURN_LONG(rv);
 }
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestFinal, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestFinal, 0, 0, 2)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_TYPE_INFO(1, digest, IS_STRING, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_DigestFinal) {
     CK_RV rv;
 
     zval *session;
+    zval *php_digest = NULL;
 
-    ZEND_PARSE_PARAMETERS_START(1, 1)
+    ZEND_PARSE_PARAMETERS_START(2, 2)
         Z_PARAM_ZVAL(session)
+        Z_PARAM_ZVAL(php_digest)
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
@@ -1339,21 +1342,19 @@ PHP_METHOD(Module, C_DigestFinal) {
         digest,
         &digestLen
     );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to finalize digest");
-        return;
-    }
 
-    zend_string *returnval;
-    returnval = zend_string_alloc(digestLen, 0);
-    memcpy(
-        ZSTR_VAL(returnval),
-        digest,
-        digestLen
-    );
-    RETURN_STR(returnval);
+    if (rv != CKR_OK)
+        goto fini;
+
+    zval zva;
+    zend_string *digestval = zend_string_init(digest, digestLen, 0);
+    ZVAL_STR(&zva, digestval);
+    ZEND_TRY_ASSIGN_REF_VALUE(php_digest, &zva);
  
-    efree(digest);
+    efree(digest); /* TBC */
+
+fini:
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_SignInit, 0, 0, 3)
