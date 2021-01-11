@@ -1187,10 +1187,8 @@ PHP_METHOD(Module, C_DigestInit) {
         sessionobjval->session,
         &mechanismObjval->mechanism
     );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to initialize digest");
-        return;
-    }
+
+    RETURN_LONG(rv);
 }
 
 
@@ -1275,10 +1273,8 @@ PHP_METHOD(Module, C_DigestUpdate) {
         ZSTR_VAL(part),
         ZSTR_LEN(part)
     );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to update digest");
-        return;
-    }
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestKey, 0, 0, 2)
@@ -1305,10 +1301,8 @@ PHP_METHOD(Module, C_DigestKey) {
         sessionobjval->session,
         keyobjval->key
     );
-    if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to update digest");
-        return;
-    }
+
+    RETURN_LONG(rv);
 }
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DigestFinal, 0, 0, 1)
