@@ -13,6 +13,8 @@ if (!in_array(Pkcs11\CKM_EC_EDWARDS_KEY_PAIR_GEN, $module->getMechanismList((int
 	echo 'skip: CKM_EC_EDWARDS_KEY_PAIR_GEN not supported ';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php

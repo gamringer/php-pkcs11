@@ -1156,9 +1156,14 @@ PHP_METHOD(Module, C_GenerateKeyPair) {
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
 
     rv = php_C_GenerateKeyPair(sessionobjval, mechanism, pkTemplate, skTemplate, &retvalpk, &retvalsk);
+
+    if (rv != CKR_OK)
+        goto fini;
+
     ZEND_TRY_ASSIGN_REF_VALUE(phPublicKey, &retvalpk);
     ZEND_TRY_ASSIGN_REF_VALUE(phPrivateKey, &retvalsk);
 
+fini:
     RETURN_LONG(rv);
 }
 

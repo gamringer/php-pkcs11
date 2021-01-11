@@ -9,6 +9,8 @@ if (!in_array(Pkcs11\CKM_RSA_PKCS_OAEP, $module->getMechanismList((int)getenv('P
 	echo 'skip: CKM_RSA_PKCS_OAEP not supported ';
 }
 
+require_once 'require-generate-key-pair.skipif.inc';
+
 ?>
 --FILE--
 <?php
