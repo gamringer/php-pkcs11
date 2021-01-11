@@ -28,17 +28,17 @@ $rv = $module->C_DigestInit($session,
         new Pkcs11\Mechanism(Pkcs11\CKM_SHA_1));
 var_dump($rv);
 
-$rv = $module->C_Digest($session, "BonjourHello");
-//var_dump($rv);
-var_dump(strlen($rv));
+$rv = $module->C_Digest($session, "BonjourHello", $digest);
+var_dump($rv);
+var_dump(strlen($digest));
 
 $rv = $module->C_DigestInit($session,
         new Pkcs11\Mechanism(Pkcs11\CKM_SHA256));
 var_dump($rv);
 
-$rv = $module->C_Digest($session, "HelloBonsoir");
-//var_dump($rv);
-var_dump(strlen($rv));
+$rv = $module->C_Digest($session, "HelloBonsoir", $digest);
+var_dump($rv);
+var_dump(strlen($digest));
 
 $rv = $module->C_CloseSession($session);
 var_dump($rv);
@@ -54,7 +54,9 @@ object(Pkcs11\Session)#2 (2) {
   int(%d)
 }
 int(0)
+int(0)
 int(20)
+int(0)
 int(0)
 int(32)
 int(0)
