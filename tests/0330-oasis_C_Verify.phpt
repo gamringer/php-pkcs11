@@ -6,19 +6,22 @@ C_Sign() a data then let's C_Verify().
 --SKIPIF--
 <?php
 
-require_once 'require-module-load.skipif.inc';
+require_once 'require-userpin-login.skipif.inc';
 
-if (getenv('PHP11_MODULE') === false) {
-  echo 'skip';
-}
+$pin = getenv('PHP11_PIN');
+if (strlen($pin) === 0)
+  $pin = null; # Smart card without any pin code
 
-$info = $module->getInfo();
+$rv = $module->C_Login($session, Pkcs11\CKU_USER, $pin);
 
-if (trim($info["manufacturerID"]) == 'SoftHSM')
-  echo 'skip: CKO_PRIVATE_KEY/CKK_RSA, missing with SoftHSM';
-
-if (getenv('PHP11_PIN') === false) {
-  echo 'skip';
+$Template = [
+  Pkcs11\CKA_CLASS => Pkcs11\CKO_PRIVATE_KEY,
+  Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_RSA,
+];
+$rv = $module->C_FindObjectsInit($session, $Template);
+$rv = $module->C_FindObjects($session, $Objects);
+if (empty($Objects)) {
+  echo 'skip - Missing RSA key';
 }
 
 ?>
@@ -155,7 +158,7 @@ int(0)
 int(0)
 int(0)
 OK, got 1 Key
-int(1)
+int(%d)
 int(0)
 int(0)
 int(0)
