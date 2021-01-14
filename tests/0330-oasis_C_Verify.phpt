@@ -1,5 +1,8 @@
 --TEST--
-OASIS Sign Basic test - C_SignInit(), C_Sign()
+OASIS Verify Basic test - C_VerifyInit(), C_Verify()
+--DESCRIPTION--
+Based on the same design than C_Sign() tests, let's first
+C_Sign() a data then let's C_Verify().
 --SKIPIF--
 <?php
 
@@ -75,6 +78,66 @@ $rv = $module->C_Sign($session, "Cantina bar", $signature);
 var_dump($rv);
 var_dump(strlen($signature)); // expect 256 bytes
 
+/* - - - Verify it - - - */
+$Template = [
+  Pkcs11\CKA_CLASS => Pkcs11\CKO_PUBLIC_KEY,
+  Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_RSA,
+//  Pkcs11\CKA_LABEL => 'xyz_PUBLIC_SIG', # the label of your public key
+];
+
+$rv = $module->C_FindObjectsInit($session, $Template);
+
+var_dump($rv);
+
+$rv = $module->C_FindObjects($session, $Objects);
+var_dump($rv);
+if (count($Objects) >= 1) {
+  echo "OK, got 1 Key" . PHP_EOL;
+} else {
+  die("Missing public RSA key");
+}
+
+$key = $Objects[0];
+var_dump($key);
+
+$rv = $module->C_FindObjectsFinal($session);
+
+$rv = $module->C_VerifyInit($session,
+        new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
+        $key);
+var_dump($rv);
+
+$rv = $module->C_Verify($session, "Cantina barx", $signature);
+switch($rv) {
+  case Pkcs11\CKR_SIGNATURE_INVALID:
+    echo "CKR_SIGNATURE_INVALID".PHP_EOL;
+    break;
+  case Pkcs11\CKR_OK:
+    echo "Signature: CKR_OK".PHP_EOL;
+    break;
+  default:
+    var_dump($rv);
+    break;
+}
+
+$rv = $module->C_VerifyInit($session,
+        new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
+        $key);
+var_dump($rv);
+
+$rv = $module->C_Verify($session, "Cantina bar", $signature);
+switch($rv) {
+  case Pkcs11\CKR_SIGNATURE_INVALID:
+    echo "CKR_SIGNATURE_INVALID".PHP_EOL;
+    break;
+  case Pkcs11\CKR_OK:
+    echo "Signature: CKR_OK".PHP_EOL;
+    break;
+  default:
+    var_dump($rv);
+    break;
+}
+
 $rv = $module->C_Logout($session);
 var_dump($rv);
 
@@ -100,5 +163,13 @@ int(0)
 int(0)
 int(0)
 int(256)
+int(0)
+int(0)
+OK, got 1 Key
+int(3)
+int(0)
+CKR_SIGNATURE_INVALID
+int(0)
+Signature: CKR_OK
 int(0)
 int(0)
