@@ -1791,7 +1791,7 @@ PHP_METHOD(Module, C_GetAttributeValue) {
         case CKR_OK:
             break; /* ok */
         default:
-            zend_throw_exception(zend_ce_exception, "error get size C_GetAttributeValue(): ", rv);
+            pkcs11_error(rv, "C_GetAttributeValue(), get size");
             freeTemplate(pTemplate);
             return ;
     }
