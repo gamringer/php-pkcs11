@@ -27,7 +27,7 @@ $key = $session->generateKey(new Pkcs11\Mechanism(Pkcs11\CKM_AES_KEY_GEN), [
 ]);
 
 $iv = random_bytes(16);
-$aad = '';
+$aad = 'foo';
 $gcmParams = new Pkcs11\GcmParams($iv, $aad, 128);
 
 $data = 'Hello World!';

@@ -30,7 +30,7 @@ $key = $session->createObject([
 ]);
 
 $iv = str_repeat('0', 16);
-$aad = '';
+$aad = 'foo';
 $gcmParams = new Pkcs11\GcmParams($iv, $aad, 128);
 $mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_AES_GCM, $gcmParams);
 
@@ -61,7 +61,7 @@ $session->logout();
 --EXPECTF--
 string(32) "83541da26b31a09d92c1fe7994c545e0"
 string(64) "83541da26b31a09d92c1fe7994c545e020f6bf42face8af788a4dc6157fca675"
-string(96) "83541da26b31a09d92c1fe7994c545e020f6bf42face8af788a4dc6157fca675daf8d4b5731df66c12b2b806a64daa25"
+string(96) "83541da26b31a09d92c1fe7994c545e020f6bf42face8af788a4dc6157fca675478306d04bed85fdcca38052fb855b1c"
 string(0) ""
 string(0) ""
 string(64) "3030303030303030303030303030303031313131313131313131313131313131"
