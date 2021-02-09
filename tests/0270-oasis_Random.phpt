@@ -24,7 +24,8 @@ $rv = $module->C_OpenSession($s[0], Pkcs11\CKF_SERIAL_SESSION, null, null, $sess
 // TBC $session = new Pkcs11\Session($module, $s[0], Pkcs11\CKF_SERIAL_SESSION); # aka C_OpenSession()
 
 $rv = $module->C_SeedRandom($session, '1603soixantedix8');
-if ($rv === Pkcs11\CKR_RANDOM_SEED_NOT_SUPPORTED)
+if (($rv === Pkcs11\CKR_RANDOM_SEED_NOT_SUPPORTED) ||
+    ($rv === Pkcs11\CKR_FUNCTION_NOT_SUPPORTED))
   $rv = 0; # XXX fake, ignore any smart cards that do not support SeedRandom
 var_dump($rv);
 
