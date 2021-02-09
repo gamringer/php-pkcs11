@@ -1093,7 +1093,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_C_GenerateKey, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
-    ZEND_ARG_OBJ_INFO(1, phKey, Pkcs11\\Key, 1)
+    ZEND_ARG_OBJ_INFO(1, phKey, IS_LONG, 1)
 ZEND_END_ARG_INFO()
 
 PHP_METHOD(Module, C_GenerateKey) {
@@ -1117,8 +1117,12 @@ PHP_METHOD(Module, C_GenerateKey) {
 
     rv = php_C_GenerateKey(sessionobjval, mechanism, template, &retval);
 
-    ZEND_TRY_ASSIGN_REF_VALUE(phKey, &retval);
+    pkcs11_key_object* key_obj = Z_PKCS11_KEY_P(&retval);
 
+    zval zva;
+    ZVAL_LONG(&zva, key_obj->key);
+    ZEND_TRY_ASSIGN_REF_VALUE(phKey, &zva);
+    
     RETURN_LONG(rv);
 }
 
@@ -1882,31 +1886,8 @@ PHP_METHOD(Module, C_FindObjects) {
 
     zval O;
     array_init(&O);
-    for(CK_ULONG i = 0; i < ulObjectCount; i++) {
-        //add_next_index_long(&O, phObject[i]);
-
-        CK_ULONG classId;
-        getObjectClass(sessionobjval, &phObject[i], &classId);
-
-        if (classId == 2 || classId == 3 || classId == 4 || classId == 8) {
-            zval zkeyobj;
-            pkcs11_key_object* key_obj;
-            object_init_ex(&zkeyobj, ce_Pkcs11_Key);
-            key_obj = Z_PKCS11_KEY_P(&zkeyobj);
-            key_obj->session = sessionobjval;
-            key_obj->key = phObject[i];
-            zend_hash_next_index_insert(Z_ARRVAL_P(&O), &zkeyobj);
-            continue;
-        }
-
-        zval zp11objectobj;
-        pkcs11_object_object* object_obj;
-        object_init_ex(&zp11objectobj, ce_Pkcs11_P11Object);
-        object_obj = Z_PKCS11_OBJECT_P(&zp11objectobj);
-        object_obj->session = sessionobjval;
-        object_obj->object = phObject[i];
-        zend_hash_next_index_insert(Z_ARRVAL_P(&O), &zp11objectobj);
-    }
+    for(CK_ULONG i = 0; i < ulObjectCount; i++)
+        add_next_index_long(&O, phObject[i]);
 
     ZEND_TRY_ASSIGN_REF_VALUE(Objects, &O);
 

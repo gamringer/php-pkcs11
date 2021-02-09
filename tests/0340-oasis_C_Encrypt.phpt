@@ -65,11 +65,7 @@ object(Pkcs11\Session)#2 (2) {
 int(0)
 int(0)
 int(0)
-OK, got 1 Key
-int(%d)
 int(0)
-int(0)
-int(0)
-int(256)
+int(16)
 int(0)
 int(0)
