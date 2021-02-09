@@ -46,6 +46,13 @@ $rv = $module->C_Encrypt($session, "Hello World!", $ciphertext);
 var_dump($rv);
 var_dump(strlen($ciphertext)); // expect 256 bytes
 
+$rv = $module->C_DecryptInit($session, $mechanism, $key);
+var_dump($rv);
+
+$rv = $module->C_Decrypt($session, $ciphertext, $plaintext);
+var_dump($rv);
+var_dump($plaintext);
+
 $rv = $module->C_Logout($session);
 var_dump($rv);
 
@@ -67,5 +74,8 @@ int(0)
 int(0)
 int(0)
 int(16)
+int(0)
+int(0)
+string(12) "Hello World!"
 int(0)
 int(0)
