@@ -1523,6 +1523,184 @@ PHP_METHOD(Module, C_Verify) {
     RETURN_LONG(rv);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_EncryptInit, 0, 0, 3)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_EncryptInit) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE hKey;
+
+    zval *mechanism;
+    zend_long key;
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_mechanism_object * const oMechanism = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (oMechanism->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hKey = (CK_OBJECT_HANDLE)key;
+
+    rv = objval->functionList->C_EncryptInit(sessionobjval->session, &oMechanism->mechanism, hKey);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Encrypt, 0, 0, 3)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(1, encryptedData, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Encrypt) {
+    CK_RV rv;
+    CK_BYTE_PTR pData;
+    CK_ULONG ulDataLen;
+    CK_BYTE_PTR pEncryptedData = NULL;
+    CK_ULONG ulEncryptedDataLen = 0;
+
+    zval *session;
+    zend_string *data = NULL;
+    zval *encryptedData = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_STR(data)
+        Z_PARAM_ZVAL(encryptedData)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pData = (CK_BYTE_PTR)ZSTR_VAL(data);
+    ulDataLen = (CK_ULONG)ZSTR_LEN(data);
+
+    rv = objval->functionList->C_Encrypt(sessionobjval->session, pData, ulDataLen, NULL, &ulEncryptedDataLen);
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return ;
+    }
+
+    pEncryptedData = ecalloc(sizeof(*pEncryptedData), ulEncryptedDataLen);
+
+    rv = objval->functionList->C_Encrypt(sessionobjval->session, pData, ulDataLen, pEncryptedData, &ulEncryptedDataLen);
+
+    if (rv != CKR_OK)
+        goto fini;
+
+    zval retval;
+    ZVAL_STRINGL(&retval, (char *)pEncryptedData, ulEncryptedDataLen);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(encryptedData, &retval);
+
+fini:
+    efree(pEncryptedData);
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_DecryptInit, 0, 0, 3)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
+    ZEND_ARG_TYPE_INFO(0, key, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_DecryptInit) {
+    CK_RV rv;
+    CK_OBJECT_HANDLE hKey;
+
+    zval *mechanism;
+    zend_long key;
+    zval *session;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_mechanism_object * const oMechanism = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (oMechanism->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    hKey = (CK_OBJECT_HANDLE)key;
+
+    rv = objval->functionList->C_DecryptInit(sessionobjval->session, &oMechanism->mechanism, hKey);
+
+    RETURN_LONG(rv);
+}
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Decrypt, 0, 0, 3)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_TYPE_INFO(0, encryptedData, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(1, data, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Decrypt) {
+    CK_RV rv;
+    CK_BYTE_PTR pEncryptedData;
+    CK_ULONG ulEncryptedDataLen;
+    CK_BYTE_PTR pData = NULL;
+    CK_ULONG ulDataLen = 0;
+
+    zval *session;
+    zend_string *encryptedData = NULL;
+    zval *data = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_STR(encryptedData)
+        Z_PARAM_ZVAL(data)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);
+
+    pEncryptedData = (CK_BYTE_PTR)ZSTR_VAL(encryptedData);
+    ulEncryptedDataLen = (CK_ULONG)ZSTR_LEN(encryptedData);
+
+    rv = objval->functionList->C_Decrypt(sessionobjval->session, pEncryptedData, ulEncryptedDataLen, NULL, &ulDataLen);
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return ;
+    }
+
+    pData = ecalloc(sizeof(*pData), ulDataLen);
+
+    rv = objval->functionList->C_Decrypt(sessionobjval->session, pEncryptedData, ulEncryptedDataLen, pData, &ulDataLen);
+
+    if (rv != CKR_OK)
+        goto fini;
+
+    zval retval;
+    ZVAL_STRINGL(&retval, (char *)pData, ulDataLen);
+
+    ZEND_TRY_ASSIGN_REF_VALUE(data, &retval);
+
+fini:
+    efree(pEncryptedData);
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -1704,8 +1882,31 @@ PHP_METHOD(Module, C_FindObjects) {
 
     zval O;
     array_init(&O);
-    for(CK_ULONG i = 0; i < ulObjectCount; i++)
-        add_next_index_long(&O, phObject[i]);
+    for(CK_ULONG i = 0; i < ulObjectCount; i++) {
+        //add_next_index_long(&O, phObject[i]);
+
+        CK_ULONG classId;
+        getObjectClass(sessionobjval, &phObject[i], &classId);
+
+        if (classId == 2 || classId == 3 || classId == 4 || classId == 8) {
+            zval zkeyobj;
+            pkcs11_key_object* key_obj;
+            object_init_ex(&zkeyobj, ce_Pkcs11_Key);
+            key_obj = Z_PKCS11_KEY_P(&zkeyobj);
+            key_obj->session = sessionobjval;
+            key_obj->key = phObject[i];
+            zend_hash_next_index_insert(Z_ARRVAL_P(&O), &zkeyobj);
+            continue;
+        }
+
+        zval zp11objectobj;
+        pkcs11_object_object* object_obj;
+        object_init_ex(&zp11objectobj, ce_Pkcs11_P11Object);
+        object_obj = Z_PKCS11_OBJECT_P(&zp11objectobj);
+        object_obj->session = sessionobjval;
+        object_obj->object = phObject[i];
+        zend_hash_next_index_insert(Z_ARRVAL_P(&O), &zp11objectobj);
+    }
 
     ZEND_TRY_ASSIGN_REF_VALUE(Objects, &O);
 
@@ -1973,6 +2174,11 @@ static zend_function_entry module_class_functions[] = {
 
     PHP_ME(Module, C_VerifyInit,              arginfo_C_VerifyInit,              ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Verify,                  arginfo_C_Verify,                  ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_EncryptInit,             arginfo_C_EncryptInit,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Encrypt,                 arginfo_C_Encrypt,                 ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_DecryptInit,             arginfo_C_DecryptInit,             ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Decrypt,                 arginfo_C_Decrypt,                 ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
