@@ -137,7 +137,7 @@ int(0)
 int(0)
 object(Pkcs11\Session)#2 (2) {
   ["hSession"]=>
-  int(1)
+  int(%d)
   ["slotID"]=>
   int(%d)
 }
