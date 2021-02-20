@@ -1705,6 +1705,79 @@ fini:
     RETURN_LONG(rv);
 }
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Wrap, 0, 0, 5)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
+    ZEND_ARG_TYPE_INFO(0, keyId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, targetKeyId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(1, ciphertext, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Wrap) {
+    CK_RV rv;
+
+    zval *session;
+    zval *mechanism;
+    zend_long key;
+    zend_long targetKey;
+    zval *ciphertext = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(5, 5)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+        Z_PARAM_LONG(targetKey)
+        Z_PARAM_ZVAL(ciphertext)
+    ZEND_PARSE_PARAMETERS_END();
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);    
+    pkcs11_mechanism_object *mechanismobjval = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (mechanismobjval->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    CK_OBJECT_HANDLE hKey = (CK_OBJECT_HANDLE)key;
+    CK_OBJECT_HANDLE hTargetKey = (CK_OBJECT_HANDLE)targetKey;
+
+    CK_ULONG ciphertextLen;
+    rv = objval->functionList->C_WrapKey(
+        sessionobjval->session,
+        &mechanismobjval->mechanism,
+        hKey,
+        hTargetKey,
+        NULL_PTR,
+        &ciphertextLen
+    );
+
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return;
+    }
+
+    CK_BYTE_PTR hCiphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
+    rv = objval->functionList->C_WrapKey(
+        sessionobjval->session,
+        &mechanismobjval->mechanism,
+        hKey,
+        hTargetKey,
+        hCiphertext,
+        &ciphertextLen
+    );
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to wrap");
+        return;
+    }
+
+    zval retval;
+    ZVAL_STRINGL(&retval, (char *)hCiphertext, ciphertextLen);
+    ZEND_TRY_ASSIGN_REF_VALUE(ciphertext, &retval);
+
+    efree(hCiphertext);
+    RETURN_LONG(rv);
+}
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -2160,6 +2233,8 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_Encrypt,                 arginfo_C_Encrypt,                 ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_DecryptInit,             arginfo_C_DecryptInit,             ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_Decrypt,                 arginfo_C_Decrypt,                 ZEND_ACC_PUBLIC)
+
+    PHP_ME(Module, C_Wrap,                    arginfo_C_Wrap,                    ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
