@@ -1772,6 +1772,7 @@ PHP_METHOD(Module, C_Wrap) {
         &ciphertextLen
     );
     if (rv != CKR_OK) {
+        efree(hCiphertext);
         pkcs11_error(rv, "Unable to wrap");
         return;
     }
@@ -1821,6 +1822,7 @@ PHP_METHOD(Module, C_Unwrap) {
     pkcs11_mechanism_object *mechanismobjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     if (mechanismobjval->mechanism.mechanism == 0) {
+        freeTemplate(templateObj);
         zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
         return ;
     }
