@@ -1758,6 +1758,11 @@ PHP_METHOD(Module, C_Wrap) {
     }
 
     CK_BYTE_PTR hCiphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
+    if (hCiphertext == NULL) {
+        RETURN_LONG(CKR_HOST_MEMORY);
+        return;
+    }
+
     rv = objval->functionList->C_WrapKey(
         sessionobjval->session,
         &mechanismobjval->mechanism,
