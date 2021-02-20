@@ -1778,6 +1778,75 @@ PHP_METHOD(Module, C_Wrap) {
     efree(hCiphertext);
     RETURN_LONG(rv);
 }
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_C_Unwrap, 0, 0, 6)
+    ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
+    ZEND_ARG_OBJ_INFO(0, mechanism, Pkcs11\\Mechanism, 0)
+    ZEND_ARG_TYPE_INFO(0, keyId, IS_LONG, 0)
+    ZEND_ARG_TYPE_INFO(0, encryptedData, IS_STRING, 0)
+    ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
+    ZEND_ARG_TYPE_INFO(1, keyId, IS_LONG, 1)
+ZEND_END_ARG_INFO()
+
+PHP_METHOD(Module, C_Unwrap) {
+    CK_RV rv;
+
+    zval *session;
+    zval *mechanism;
+    zend_long key;
+    zend_string *ciphertext;
+    HashTable *template;
+    zval *wkeyid = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(6, 6)
+        Z_PARAM_OBJECT_OF_CLASS(session, ce_Pkcs11_Session)
+        Z_PARAM_OBJECT_OF_CLASS(mechanism, ce_Pkcs11_Mechanism)
+        Z_PARAM_LONG(key)
+        Z_PARAM_STR(ciphertext)
+        Z_PARAM_ARRAY_HT(template)
+        Z_PARAM_ZVAL(wkeyid)
+    ZEND_PARSE_PARAMETERS_END();
+
+    int templateItemCount;
+    CK_ATTRIBUTE_PTR templateObj;
+    parseTemplate(&template, &templateObj, &templateItemCount);
+
+    pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
+    pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(session);    
+    pkcs11_mechanism_object *mechanismobjval = Z_PKCS11_MECHANISM_P(mechanism);
+
+    if (mechanismobjval->mechanism.mechanism == 0) {
+        zend_throw_exception(zend_ce_exception, "Invalid mechanism", 0);
+        return ;
+    }
+
+    CK_OBJECT_HANDLE hKey = (CK_OBJECT_HANDLE)key;
+    CK_OBJECT_HANDLE hUnwrappedKey;
+
+    rv = objval->functionList->C_UnwrapKey(
+        sessionobjval->session,
+        &mechanismobjval->mechanism,
+        hKey,
+        ZSTR_VAL(ciphertext),
+        ZSTR_LEN(ciphertext),
+        templateObj,
+        templateItemCount,
+        &hUnwrappedKey
+    );
+    freeTemplate(templateObj);
+
+    if (rv != CKR_OK) {
+        RETURN_LONG(rv);
+        return;
+    }
+
+    zval zva;
+    ZVAL_LONG(&zva, hUnwrappedKey);
+    ZEND_TRY_ASSIGN_REF_VALUE(wkeyid, &zva);
+    
+    RETURN_LONG(rv);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_C_CreateObject, 0, 0, 3)
     ZEND_ARG_OBJ_INFO(0, session, Pkcs11\\Session, 0)
     ZEND_ARG_TYPE_INFO(0, template, IS_ARRAY, 0)
@@ -2235,6 +2304,7 @@ static zend_function_entry module_class_functions[] = {
     PHP_ME(Module, C_Decrypt,                 arginfo_C_Decrypt,                 ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_Wrap,                    arginfo_C_Wrap,                    ZEND_ACC_PUBLIC)
+    PHP_ME(Module, C_Unwrap,                  arginfo_C_Unwrap,                  ZEND_ACC_PUBLIC)
 
     PHP_ME(Module, C_GenerateRandom,          arginfo_C_GenerateRandom,          ZEND_ACC_PUBLIC)
     PHP_ME(Module, C_SeedRandom,              arginfo_C_SeedRandom,              ZEND_ACC_PUBLIC)
