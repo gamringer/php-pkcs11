@@ -787,7 +787,6 @@ PHP_METHOD(Module, waitForSlotEvent) {
 
     if (rv == CKR_OK) {
         RETURN_LONG(slotID);
-        return;
     }
 
     if (rv == CKR_NO_EVENT) {
@@ -795,7 +794,6 @@ PHP_METHOD(Module, waitForSlotEvent) {
     }
 
     zend_throw_exception(zend_ce_exception, "Error waiting for events", 0);
-    return ;
 }
 
 /*
@@ -1754,13 +1752,11 @@ PHP_METHOD(Module, C_Wrap) {
 
     if (rv != CKR_OK) {
         RETURN_LONG(rv);
-        return;
     }
 
     CK_BYTE_PTR hCiphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
     if (hCiphertext == NULL) {
         RETURN_LONG(CKR_HOST_MEMORY);
-        return;
     }
 
     rv = objval->functionList->C_WrapKey(
@@ -1844,7 +1840,6 @@ PHP_METHOD(Module, C_Unwrap) {
 
     if (rv != CKR_OK) {
         RETURN_LONG(rv);
-        return;
     }
 
     zval zva;
