@@ -72,9 +72,9 @@ PHP_METHOD(EncryptionContext, update) {
         ciphertext,
         ciphertextLen
     );
-    RETURN_STR(returnval);
-
     efree(ciphertext);
+
+    RETURN_STR(returnval);
 }
 
 PHP_METHOD(EncryptionContext, finalize) {
@@ -115,9 +115,9 @@ PHP_METHOD(EncryptionContext, finalize) {
         ciphertext,
         ciphertextLen
     );
-    RETURN_STR(returnval);
-
     efree(ciphertext);
+
+    RETURN_STR(returnval);
 }
 
 void pkcs11_encryptioncontext_shutdown(pkcs11_encryptioncontext_object *obj) {

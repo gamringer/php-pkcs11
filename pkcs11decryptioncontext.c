@@ -72,9 +72,9 @@ PHP_METHOD(DecryptionContext, update) {
         plaintext,
         plaintextLen
     );
-    RETURN_STR(returnval);
-
     efree(plaintext);
+
+    RETURN_STR(returnval);
 }
 
 PHP_METHOD(DecryptionContext, finalize) {
@@ -115,9 +115,9 @@ PHP_METHOD(DecryptionContext, finalize) {
         plaintext,
         plaintextLen
     );
-    RETURN_STR(returnval);
-
     efree(plaintext);
+
+    RETURN_STR(returnval);
 }
 
 void pkcs11_decryptioncontext_shutdown(pkcs11_decryptioncontext_object *obj) {

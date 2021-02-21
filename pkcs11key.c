@@ -257,9 +257,9 @@ PHP_METHOD(Key, sign) {
         signature,
         signatureLen
     );
-    RETURN_STR(returnval);
- 
     efree(signature);
+
+    RETURN_STR(returnval);
 }
 
 
@@ -368,9 +368,9 @@ PHP_METHOD(Key, encrypt) {
         ciphertext,
         ciphertextLen
     );
-    RETURN_STR(returnval);
-
     efree(ciphertext);
+
+    RETURN_STR(returnval);
 }
 
 
@@ -431,9 +431,9 @@ PHP_METHOD(Key, decrypt) {
         plaintext,
         plaintextLen
     );
-    RETURN_STR(returnval);
-
     efree(plaintext);
+
+    RETURN_STR(returnval);
 }
 
 
@@ -487,9 +487,9 @@ PHP_METHOD(Key, wrap) {
         ciphertext,
         ciphertextLen
     );
-    RETURN_STR(returnval);
-
     efree(ciphertext);
+
+    RETURN_STR(returnval);
 }
 
 
