@@ -88,9 +88,9 @@ PHP_METHOD(SignatureContext, finalize) {
         signature,
         signatureLen
     );
-    RETURN_STR(returnval);
- 
     efree(signature);
+
+    RETURN_STR(returnval);
 }
 
 void pkcs11_signaturecontext_shutdown(pkcs11_signaturecontext_object *obj) {

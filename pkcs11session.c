@@ -457,9 +457,9 @@ PHP_METHOD(Session, digest) {
         digest,
         digestLen
     );
-    RETURN_STR(returnval);
- 
     efree(digest);
+
+    RETURN_STR(returnval);
 }
 
 

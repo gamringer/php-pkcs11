@@ -114,9 +114,9 @@ PHP_METHOD(DigestContext, finalize) {
         digest,
         digestLen
     );
-    RETURN_STR(returnval);
- 
     efree(digest);
+
+    RETURN_STR(returnval);
 }
 
 void pkcs11_digestcontext_shutdown(pkcs11_digestcontext_object *obj) {
