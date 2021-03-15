@@ -48,6 +48,7 @@ var_dump($rv);
 $Template = [
   Pkcs11\CKA_CLASS => Pkcs11\CKO_PRIVATE_KEY,
   Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_RSA,
+  //Pkcs11\CKA_ID => hex2bin("E828BD080F8025000001FF001002"),
 //  Pkcs11\CKA_LABEL => 'xyz_PRIV_SIG', # the label of your private key
 ];
 
@@ -63,14 +64,15 @@ if (count($Objects) >= 1) {
   die("Missing private RSA key");
 }
 
-$key = $Objects[0];
+$key = end($Objects);
 var_dump($key);
 
 $rv = $module->C_FindObjectsFinal($session);
 var_dump($rv);
 
 $rv = $module->C_SignInit($session,
-        new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
+        new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS),
+        //new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
         $key);
 var_dump($rv);
 
@@ -78,10 +80,14 @@ $rv = $module->C_Sign($session, "Cantina bar", $signature);
 var_dump($rv);
 var_dump(strlen($signature)); // expect 256 bytes
 
+$rv = $module->C_Logout($session);
+var_dump($rv);
+
 /* - - - Verify it - - - */
 $Template = [
   Pkcs11\CKA_CLASS => Pkcs11\CKO_PUBLIC_KEY,
   Pkcs11\CKA_KEY_TYPE => Pkcs11\CKK_RSA,
+  //Pkcs11\CKA_ID => hex2bin("E828BD080F8025000001FF001002"),
 //  Pkcs11\CKA_LABEL => 'xyz_PUBLIC_SIG', # the label of your public key
 ];
 
@@ -97,13 +103,13 @@ if (count($Objects) >= 1) {
   die("Missing public RSA key");
 }
 
-$key = $Objects[0];
+$key = end($Objects);
 var_dump($key);
 
 $rv = $module->C_FindObjectsFinal($session);
 
 $rv = $module->C_VerifyInit($session,
-        new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
+        new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS),
         $key);
 var_dump($rv);
 
@@ -121,7 +127,7 @@ switch($rv) {
 }
 
 $rv = $module->C_VerifyInit($session,
-        new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS),
+        new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS),
         $key);
 var_dump($rv);
 
@@ -137,9 +143,6 @@ switch($rv) {
     var_dump($rv);
     break;
 }
-
-$rv = $module->C_Logout($session);
-var_dump($rv);
 
 $rv = $module->C_CloseSession($session);
 var_dump($rv);
@@ -165,11 +168,11 @@ int(0)
 int(256)
 int(0)
 int(0)
+int(0)
 OK, got 1 Key
-int(3)
+int(%d)
 int(0)
 CKR_SIGNATURE_INVALID
 int(0)
 Signature: CKR_OK
-int(0)
 int(0)
