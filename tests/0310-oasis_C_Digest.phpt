@@ -30,6 +30,7 @@ var_dump($rv);
 
 $rv = $module->C_Digest($session, "BonjourHello", $digest);
 var_dump($rv);
+var_dump(bin2hex($digest));
 var_dump(strlen($digest));
 
 $rv = $module->C_DigestInit($session,
@@ -38,6 +39,7 @@ var_dump($rv);
 
 $rv = $module->C_Digest($session, "HelloBonsoir", $digest);
 var_dump($rv);
+var_dump(bin2hex($digest));
 var_dump(strlen($digest));
 
 $rv = $module->C_CloseSession($session);
@@ -55,8 +57,10 @@ object(Pkcs11\Session)#2 (2) {
 }
 int(0)
 int(0)
+string(40) "%s"
 int(20)
 int(0)
 int(0)
+string(64) "%s"
 int(32)
 int(0)
