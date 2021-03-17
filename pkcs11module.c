@@ -760,6 +760,7 @@ PHP_METHOD(Module, openSession) {
     object_init_ex(return_value, ce_Pkcs11_Session);
     session_obj = Z_PKCS11_SESSION_P(return_value);
     session_obj->pkcs11 = objval;
+    GC_ADDREF(&objval->std);
 
     CK_SESSION_HANDLE phSession;
     rv = objval->functionList->C_OpenSession(slotid, CKF_SERIAL_SESSION | flags, NULL_PTR, NULL_PTR, &phSession);

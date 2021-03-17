@@ -722,6 +722,8 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     if (obj->pkcs11->functionList != NULL) {
         obj->pkcs11->functionList->C_CloseSession(obj->session);
     }
+
+    GC_DELREF(&obj->pkcs11->std);
 }
 
 static zend_function_entry session_class_functions[] = {
