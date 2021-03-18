@@ -94,6 +94,7 @@ PHP_METHOD(SignatureContext, finalize) {
 }
 
 void pkcs11_signaturecontext_shutdown(pkcs11_signaturecontext_object *obj) {
+    GC_DELREF(&obj->key->std);
 }
 
 static zend_function_entry signaturecontext_class_functions[] = {

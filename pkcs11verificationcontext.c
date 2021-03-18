@@ -81,6 +81,7 @@ PHP_METHOD(VerificationContext, finalize) {
 }
 
 void pkcs11_verificationcontext_shutdown(pkcs11_verificationcontext_object *obj) {
+    GC_DELREF(&obj->key->std);
 }
 
 static zend_function_entry verificationcontext_class_functions[] = {

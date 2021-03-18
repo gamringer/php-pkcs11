@@ -107,6 +107,7 @@ PHP_METHOD(Key, initializeSignature) {
     object_init_ex(return_value, ce_Pkcs11_SignatureContext);
     context_obj = Z_PKCS11_SIGNATURECONTEXT_P(return_value);
     context_obj->key = objval;
+    GC_ADDREF(&objval->std);
 }
 
 
@@ -137,6 +138,7 @@ PHP_METHOD(Key, initializeVerification) {
     object_init_ex(return_value, ce_Pkcs11_VerificationContext);
     context_obj = Z_PKCS11_VERIFICATIONCONTEXT_P(return_value);
     context_obj->key = objval;
+    GC_ADDREF(&objval->std);
 }
 
 
@@ -167,6 +169,7 @@ PHP_METHOD(Key, initializeEncryption) {
     object_init_ex(return_value, ce_Pkcs11_EncryptionContext);
     context_obj = Z_PKCS11_ENCRYPTIONCONTEXT_P(return_value);
     context_obj->key = objval;
+    GC_ADDREF(&objval->std);
 }
 
 
@@ -197,6 +200,7 @@ PHP_METHOD(Key, initializeDecryption) {
     object_init_ex(return_value, ce_Pkcs11_DecryptionContext);
     context_obj = Z_PKCS11_DECRYPTIONCONTEXT_P(return_value);
     context_obj->key = objval;
+    GC_ADDREF(&objval->std);
 }
 
 
@@ -538,6 +542,7 @@ PHP_METHOD(Key, unwrap) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval->session;
     key_obj->key = uhKey;
+    GC_ADDREF(&objval->session->std);
 }
 
 
@@ -582,6 +587,7 @@ PHP_METHOD(Key, derive) {
     key_obj = Z_PKCS11_KEY_P(return_value);
     key_obj->session = objval->session;
     key_obj->key = phKey;
+    GC_ADDREF(&objval->session->std);
 }
 
 static zend_function_entry key_class_functions[] = {
