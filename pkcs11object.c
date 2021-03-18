@@ -130,6 +130,7 @@ PHP_METHOD(Object, getSize) {
 }
 
 void pkcs11_object_shutdown(pkcs11_object_object *obj) {
+    GC_DELREF(&obj->session->std);
 }
 
 static zend_function_entry object_class_functions[] = {

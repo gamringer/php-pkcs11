@@ -584,10 +584,6 @@ PHP_METHOD(Key, derive) {
     key_obj->key = phKey;
 }
 
-
-void pkcs11_key_shutdown(pkcs11_key_object *obj) {
-}
-
 static zend_function_entry key_class_functions[] = {
     PHP_ME(Key, initializeSignature,    arginfo_initializeSignature,    ZEND_ACC_PUBLIC)
     PHP_ME(Key, initializeVerification, arginfo_initializeVerification, ZEND_ACC_PUBLIC)
@@ -603,28 +599,12 @@ static zend_function_entry key_class_functions[] = {
     PHP_FE_END  
 };
 
-static zend_object *pkcs11_key_ctor(zend_class_entry *ce) {
-    pkcs11_key_object *objval = zend_object_alloc(sizeof(pkcs11_key_object), ce);
-
-    zend_object_std_init(&objval->std, ce);
-    object_properties_init(&objval->std, ce);
-    objval->std.handlers = &pkcs11_key_handlers;
-
-    return &objval->std;
-}
-static void pkcs11_key_dtor(zend_object *zobj) {
-    pkcs11_key_object *objval = pkcs11_key_from_zend_object(zobj);
-    pkcs11_key_shutdown(objval);
-    zend_object_std_dtor(&objval->std);
-}
 void register_pkcs11_key() {
     zend_class_entry ce;
     memcpy(&pkcs11_key_handlers, &std_object_handlers, sizeof(zend_object_handlers));
     INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Key", key_class_functions);
-    ce.create_object = pkcs11_key_ctor;
     pkcs11_key_handlers.offset = XtOffsetOf(pkcs11_key_object, std);
     pkcs11_key_handlers.clone_obj = NULL;
-    pkcs11_key_handlers.free_obj = pkcs11_key_dtor;
     ce_Pkcs11_Key = zend_register_internal_class_ex(&ce, ce_Pkcs11_P11Object);
     ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
     ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
