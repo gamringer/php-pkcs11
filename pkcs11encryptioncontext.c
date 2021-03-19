@@ -121,6 +121,7 @@ PHP_METHOD(EncryptionContext, finalize) {
 }
 
 void pkcs11_encryptioncontext_shutdown(pkcs11_encryptioncontext_object *obj) {
+    GC_DELREF(&obj->key->std);
 }
 
 static zend_function_entry encryptioncontext_class_functions[] = {

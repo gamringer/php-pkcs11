@@ -295,6 +295,7 @@ CK_RV php_C_GenerateKey(pkcs11_session_object *objval, zval *mechanism, HashTabl
     key_obj = Z_PKCS11_KEY_P(retval);
     key_obj->session = objval;
     key_obj->key = hKey;
+    GC_ADDREF(&objval->std);
 
     return rv;
 }
@@ -353,12 +354,14 @@ CK_RV php_C_GenerateKeyPair(pkcs11_session_object *objval, zval *mechanism, Hash
     skey_obj = Z_PKCS11_KEY_P(retvalSk);
     skey_obj->session = objval;
     skey_obj->key = sKey;
+    GC_ADDREF(&objval->std);
 
     pkcs11_key_object* pkey_obj;
     object_init_ex(retvalPk, ce_Pkcs11_Key);
     pkey_obj = Z_PKCS11_KEY_P(retvalPk);
     pkey_obj->session = objval;
     pkey_obj->key = pKey;
+    GC_ADDREF(&objval->std);
 
     return rv;
 }
@@ -489,6 +492,7 @@ PHP_METHOD(Session, initializeDigest) {
     object_init_ex(return_value, ce_Pkcs11_DigestContext);
     context_obj = Z_PKCS11_DIGESTCONTEXT_P(return_value);
     context_obj->session = objval;
+    GC_ADDREF(&objval->std);
 }
 
 
@@ -534,6 +538,7 @@ PHP_METHOD(Session, findObjects) {
             key_obj = Z_PKCS11_KEY_P(&zkeyobj);
             key_obj->session = objval;
             key_obj->key = hObject;
+            GC_ADDREF(&objval->std);
             zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zkeyobj);
             continue;
         }
@@ -544,6 +549,7 @@ PHP_METHOD(Session, findObjects) {
         object_obj = Z_PKCS11_OBJECT_P(&zp11objectobj);
         object_obj->session = objval;
         object_obj->object = hObject;
+        GC_ADDREF(&objval->std);
         zend_hash_next_index_insert(Z_ARRVAL_P(return_value), &zp11objectobj);
     }
 
@@ -581,6 +587,7 @@ CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *template, zva
         key_obj = Z_PKCS11_KEY_P(retval);
         key_obj->session = objval;
         key_obj->key = hObject;
+        GC_ADDREF(&objval->std);
         return rv;
     }
 
@@ -590,6 +597,7 @@ CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *template, zva
     object_obj = Z_PKCS11_OBJECT_P(retval);
     object_obj->session = objval;
     object_obj->object = hObject;
+    GC_ADDREF(&objval->std);
 
     return rv;
 }
@@ -642,6 +650,7 @@ CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTabl
         key_obj = Z_PKCS11_KEY_P(retval);
         key_obj->session = objval;
         key_obj->key = hObject;
+        GC_ADDREF(&objval->std);
         return rv;
     }
 
@@ -651,6 +660,7 @@ CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTabl
     object_obj = Z_PKCS11_OBJECT_P(retval);
     object_obj->session = objval;
     object_obj->object = hObject;
+    GC_ADDREF(&objval->std);
 
     return rv;
 }
@@ -722,6 +732,8 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     if (obj->pkcs11->functionList != NULL) {
         obj->pkcs11->functionList->C_CloseSession(obj->session);
     }
+
+    GC_DELREF(&obj->pkcs11->std);
 }
 
 static zend_function_entry session_class_functions[] = {

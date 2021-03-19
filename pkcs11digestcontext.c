@@ -120,6 +120,7 @@ PHP_METHOD(DigestContext, finalize) {
 }
 
 void pkcs11_digestcontext_shutdown(pkcs11_digestcontext_object *obj) {
+    GC_DELREF(&obj->session->std);
 }
 
 static zend_function_entry digestcontext_class_functions[] = {
