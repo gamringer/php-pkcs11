@@ -735,7 +735,7 @@ PHP_METHOD(Module, openSession) {
     CK_RV rv;
 
     zend_long      slotid;
-    zend_long      flags;
+    zend_long      flags = 0;
     zend_string    *application;
     zend_fcall_info php_fciNotify;
     zend_fcall_info_cache fciNotify_cache;
