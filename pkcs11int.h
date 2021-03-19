@@ -73,6 +73,8 @@ typedef struct _pkcs11_keypair_object {
 
 typedef struct _pkcs11_mechanism_object {
     CK_MECHANISM mechanism;
+    void *paramsObj;
+    char *paramsObjType;
     zend_object std;
 } pkcs11_mechanism_object;
 
