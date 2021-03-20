@@ -21,7 +21,6 @@
 zend_class_entry *ce_Pkcs11_Mechanism;
 static zend_object_handlers pkcs11_mechanism_handlers;
 
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_INFO(0, mechanismArgument)
@@ -51,7 +50,7 @@ PHP_METHOD(Mechanism, __construct) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
                 pkcs11_gcmparams_object *mechanismParamsObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
                 objval->paramsObj = &mechanismParamsObj;
-                objval->paramsObjType = "GcmParams";
+                objval->paramsObjType = GcmParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
                 GC_ADDREF(&mechanismParamsObj->std);
@@ -60,7 +59,7 @@ PHP_METHOD(Mechanism, __construct) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaOaepParams")) {
                 pkcs11_rsaoaepparams_object *mechanismParamsObj = Z_PKCS11_RSAOAEPPARAMS_P(mechanismArgument);
                 objval->paramsObj = &mechanismParamsObj;
-                objval->paramsObjType = "RsaOaepParams";
+                objval->paramsObjType = RsaOaepParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
                 GC_ADDREF(&mechanismParamsObj->std);
@@ -69,7 +68,7 @@ PHP_METHOD(Mechanism, __construct) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
                 pkcs11_rsapssparams_object *mechanismParamsObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
                 objval->paramsObj = &mechanismParamsObj;
-                objval->paramsObjType = "RsaPssParams";
+                objval->paramsObjType = RsaPssParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
                 GC_ADDREF(&mechanismParamsObj->std);
@@ -78,7 +77,7 @@ PHP_METHOD(Mechanism, __construct) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\Ecdh1DeriveParams")) {
                 pkcs11_ecdh1deriveparams_object *mechanismParamsObj = Z_PKCS11_ECDH1DERIVEPARAMS_P(mechanismArgument);
                 objval->paramsObj = &mechanismParamsObj;
-                objval->paramsObjType = "Ecdh1DeriveParams";
+                objval->paramsObjType = Ecdh1DeriveParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
                 GC_ADDREF(&mechanismParamsObj->std);
@@ -102,19 +101,19 @@ PHP_METHOD(Mechanism, __debugInfo) {
 }
 
 void pkcs11_mechanism_shutdown(pkcs11_mechanism_object *obj) {
-    if(strcmp(obj->paramsObjType, "GcmParams")) {
+    if(obj->paramsObjType == GcmParams) {
         GC_DELREF(&((pkcs11_gcmparams_object *) obj->paramsObj)->std);
     } else
   
-    if(strcmp(obj->paramsObjType, "RsaOaepParams")) {
+    if(obj->paramsObjType == RsaOaepParams) {
         GC_DELREF(&((pkcs11_rsaoaepparams_object *) obj->paramsObj)->std);
     } else
   
-    if(strcmp(obj->paramsObjType, "RsaPssParams")) {
+    if(obj->paramsObjType == RsaPssParams) {
         GC_DELREF(&((pkcs11_rsapssparams_object *) obj->paramsObj)->std);
     } else
   
-    if(strcmp(obj->paramsObjType, "Ecdh1DeriveParams")) {
+    if(obj->paramsObjType == Ecdh1DeriveParams) {
         GC_DELREF(&((pkcs11_ecdh1deriveparams_object *) obj->paramsObj)->std);
     }
 }

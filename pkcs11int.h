@@ -71,10 +71,17 @@ typedef struct _pkcs11_keypair_object {
     zend_object std;
 } pkcs11_keypair_object;
 
+enum knownParamTypes {
+    GcmParams,
+    RsaOaepParams,
+    RsaPssParams,
+    Ecdh1DeriveParams
+};
+
 typedef struct _pkcs11_mechanism_object {
     CK_MECHANISM mechanism;
     void *paramsObj;
-    char *paramsObjType;
+    enum knownParamTypes paramsObjType;
     zend_object std;
 } pkcs11_mechanism_object;
 
