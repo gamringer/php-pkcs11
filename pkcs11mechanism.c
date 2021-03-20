@@ -102,19 +102,19 @@ PHP_METHOD(Mechanism, __debugInfo) {
 }
 
 void pkcs11_mechanism_shutdown(pkcs11_mechanism_object *obj) {
-    if(obj->paramsObjType == "GcmParams") {
+    if(strcmp(obj->paramsObjType, "GcmParams")) {
         GC_DELREF(&((pkcs11_gcmparams_object *) obj->paramsObj)->std);
     } else
   
-    if(obj->paramsObjType == "RsaOaepParams") {
+    if(strcmp(obj->paramsObjType, "RsaOaepParams")) {
         GC_DELREF(&((pkcs11_rsaoaepparams_object *) obj->paramsObj)->std);
     } else
   
-    if(obj->paramsObjType == "RsaPssParams") {
+    if(strcmp(obj->paramsObjType, "RsaPssParams")) {
         GC_DELREF(&((pkcs11_rsapssparams_object *) obj->paramsObj)->std);
     } else
   
-    if(obj->paramsObjType == "Ecdh1DeriveParams") {
+    if(strcmp(obj->paramsObjType, "Ecdh1DeriveParams")) {
         GC_DELREF(&((pkcs11_ecdh1deriveparams_object *) obj->paramsObj)->std);
     }
 }
