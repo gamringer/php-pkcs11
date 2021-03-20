@@ -21,7 +21,6 @@
 zend_class_entry *ce_Pkcs11_Mechanism;
 static zend_object_handlers pkcs11_mechanism_handlers;
 
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 3)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_INFO(0, mechanismArgument)
@@ -50,27 +49,38 @@ PHP_METHOD(Mechanism, __construct) {
         } else if (Z_TYPE_P(mechanismArgument) == IS_OBJECT) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
                 pkcs11_gcmparams_object *mechanismParamsObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
+                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObjType = GcmParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
+                GC_ADDREF(&mechanismParamsObj->std);
             } else
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaOaepParams")) {
                 pkcs11_rsaoaepparams_object *mechanismParamsObj = Z_PKCS11_RSAOAEPPARAMS_P(mechanismArgument);
+                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObjType = RsaOaepParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
+                GC_ADDREF(&mechanismParamsObj->std);
             } else
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
                 pkcs11_rsapssparams_object *mechanismParamsObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
+                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObjType = RsaPssParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
+                GC_ADDREF(&mechanismParamsObj->std);
             } else
-
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\Ecdh1DeriveParams")) {
                 pkcs11_ecdh1deriveparams_object *mechanismParamsObj = Z_PKCS11_ECDH1DERIVEPARAMS_P(mechanismArgument);
+                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObjType = Ecdh1DeriveParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
+                GC_ADDREF(&mechanismParamsObj->std);
             }
         }
     }
@@ -81,16 +91,31 @@ ZEND_END_ARG_INFO()
 
 PHP_METHOD(Mechanism, __debugInfo) {
 
-  const pkcs11_mechanism_object * const o = Z_PKCS11_MECHANISM_P(ZEND_THIS);
+    const pkcs11_mechanism_object * const o = Z_PKCS11_MECHANISM_P(ZEND_THIS);
 
-  ZEND_PARSE_PARAMETERS_NONE();
+    ZEND_PARSE_PARAMETERS_NONE();
 
-  array_init(return_value);
-  add_assoc_long(return_value, "mechanism", o->mechanism.mechanism);
-  add_assoc_stringl(return_value, "Parameter", o->mechanism.pParameter, o->mechanism.ulParameterLen);
+    array_init(return_value);
+    add_assoc_long(return_value, "mechanism", o->mechanism.mechanism);
+    add_assoc_stringl(return_value, "Parameter", o->mechanism.pParameter, o->mechanism.ulParameterLen);
 }
 
 void pkcs11_mechanism_shutdown(pkcs11_mechanism_object *obj) {
+    if(obj->paramsObjType == GcmParams) {
+        GC_DELREF(&((pkcs11_gcmparams_object *) obj->paramsObj)->std);
+    } else
+  
+    if(obj->paramsObjType == RsaOaepParams) {
+        GC_DELREF(&((pkcs11_rsaoaepparams_object *) obj->paramsObj)->std);
+    } else
+  
+    if(obj->paramsObjType == RsaPssParams) {
+        GC_DELREF(&((pkcs11_rsapssparams_object *) obj->paramsObj)->std);
+    } else
+  
+    if(obj->paramsObjType == Ecdh1DeriveParams) {
+        GC_DELREF(&((pkcs11_ecdh1deriveparams_object *) obj->paramsObj)->std);
+    }
 }
 
 static zend_function_entry mechanism_class_functions[] = {
