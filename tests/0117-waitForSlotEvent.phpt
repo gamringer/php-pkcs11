@@ -26,8 +26,12 @@ if (trim($info["manufacturerID"]) == 'SoftHSM'
 
 $modulePath = getenv('PHP11_MODULE');
 $module = new Pkcs11\Module($modulePath);
-$slotId = $module->waitForSlotEvent(Pkcs11\CKF_DONT_BLOCK);
-var_dump(is_int($slotId) || $slotId === null);
+try {
+	$slotId = $module->waitForSlotEvent(Pkcs11\CKF_DONT_BLOCK);
+	var_dump(is_int($slotId) || $slotId === null);
+} catch (\Pkcs11\Exception $e) {
+	var_dump($e->getCode() == \Pkcs11\CKR_FUNCTION_NOT_SUPPORTED);
+}
 
 ?>
 --EXPECTF--
