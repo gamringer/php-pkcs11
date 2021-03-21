@@ -49,7 +49,7 @@ PHP_METHOD(Mechanism, __construct) {
         } else if (Z_TYPE_P(mechanismArgument) == IS_OBJECT) {
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
                 pkcs11_gcmparams_object *mechanismParamsObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
-                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObj = mechanismParamsObj;
                 objval->paramsObjType = GcmParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
@@ -58,7 +58,7 @@ PHP_METHOD(Mechanism, __construct) {
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaOaepParams")) {
                 pkcs11_rsaoaepparams_object *mechanismParamsObj = Z_PKCS11_RSAOAEPPARAMS_P(mechanismArgument);
-                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObj = mechanismParamsObj;
                 objval->paramsObjType = RsaOaepParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
@@ -67,7 +67,7 @@ PHP_METHOD(Mechanism, __construct) {
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\RsaPssParams")) {
                 pkcs11_rsapssparams_object *mechanismParamsObj = Z_PKCS11_RSAPSSPARAMS_P(mechanismArgument);
-                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObj = mechanismParamsObj;
                 objval->paramsObjType = RsaPssParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
@@ -76,7 +76,7 @@ PHP_METHOD(Mechanism, __construct) {
 
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\Ecdh1DeriveParams")) {
                 pkcs11_ecdh1deriveparams_object *mechanismParamsObj = Z_PKCS11_ECDH1DERIVEPARAMS_P(mechanismArgument);
-                objval->paramsObj = &mechanismParamsObj;
+                objval->paramsObj = mechanismParamsObj;
                 objval->paramsObjType = Ecdh1DeriveParams;
                 objval->mechanism.pParameter = &mechanismParamsObj->params;
                 objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);

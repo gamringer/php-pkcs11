@@ -72,6 +72,7 @@ typedef struct _pkcs11_keypair_object {
 } pkcs11_keypair_object;
 
 enum knownParamTypes {
+    None,
     GcmParams,
     RsaOaepParams,
     RsaPssParams,
