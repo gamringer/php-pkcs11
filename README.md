@@ -3,6 +3,9 @@
 Tested with the following HSMs:
 * SafeNET Luna SA 4
 * SoftHSM 2.6
+* Nitrokey HSM 2
+
+Supports PHP version >= 7.4
 
 ## Compile
 ```
