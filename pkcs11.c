@@ -19,18 +19,19 @@
 #include "pkcs11int.h"
 
 static const char * strCK_RV(const CK_RV rv);
+static zend_class_entry *zend_pkcs11_exception_ce;
 
 void general_error(char *generic, char *specific) {
     char buf[BUFSIZ];
     snprintf(buf, sizeof(buf), "%s: %s", generic, specific);
-    zend_throw_exception(zend_ce_exception, buf, 0);
+    zend_throw_exception(zend_pkcs11_exception_ce, buf, 0);
 }
 
 void pkcs11_error(CK_RV rv, char *error) {
     char buf[BUFSIZ];
     snprintf(buf, sizeof(buf), "(0x%08lx/%s) PKCS#11 module error: %s",
                                rv, strCK_RV(rv), error);
-    zend_throw_exception(zend_ce_exception, buf, 0);
+    zend_throw_exception(zend_pkcs11_exception_ce, buf, rv);
 }
 
 static const char * strCK_RV(const CK_RV rv) {
@@ -230,6 +231,11 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_digestcontext();
     register_pkcs11_encryptioncontext();
     register_pkcs11_decryptioncontext();
+
+    zend_class_entry ce;
+
+    INIT_NS_CLASS_ENTRY(ce, "Pkcs11", "Exception", NULL);
+    zend_pkcs11_exception_ce = zend_register_internal_class_ex(&ce, zend_ce_exception);
 
     # define REGISTER_PKCS11_CONSTANT(n) REGISTER_NS_LONG_CONSTANT("Pkcs11", #n, n, CONST_CS | CONST_PERSISTENT)
     

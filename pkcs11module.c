@@ -794,7 +794,7 @@ PHP_METHOD(Module, waitForSlotEvent) {
         RETURN_NULL();
     }
 
-    zend_throw_exception(zend_ce_exception, "Error waiting for events", 0);
+    pkcs11_error(rv, "Error waiting for events");
 }
 
 /*
