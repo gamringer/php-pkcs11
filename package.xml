@@ -23,19 +23,24 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2021-01-09</date>
+  <date>2021-03-23</date>
   <version>
-    <release>0.1.1</release>
-    <api>0.1</api>
+    <release>1.0</release>
+    <api>1.0</api>
   </version>
   <stability>
-    <release>beta</release>
-    <api>beta</api>
+    <release>stable</release>
+    <api>stable</api>
   </stability>
   <license uri="https://www.php.net/license/">PHP License</license>
   <notes>
-  - Added a lot of new test cases
-  - Refactored some Object related functions
+  - Added support for C_WaitForSlotEvent
+  - Added support for C_Wrap/C_Unwrap in OASIS-like API
+  - New Pkcs11\Exception
+  - Normalized error throwing
+  - Fixed argument definition when expecting P11Object
+  - Fixed various memory issues
+  - Fixed OASIS mapping for C_Digest
   </notes>
   <contents>
     <dir name="/">
@@ -85,6 +90,7 @@
         <file role="test" name="0114-destroy-object.phpt" />
         <file role="test" name="0115-find-object.phpt" />
         <file role="test" name="0116-generate-key.phpt" />
+        <file role="test" name="0117-waitForSlotEvent.phpt" />
         <file role="test" name="0130-hmac-sha1.phpt" />
         <file role="test" name="0131-hmac-sha256.phpt" />
         <file role="test" name="0132-hmac-sha384.phpt" />
@@ -96,6 +102,7 @@
         <file role="test" name="0145-sym-encrypt-aes-gcm-update.phpt" />
         <file role="test" name="0150-sha256.phpt" />
         <file role="test" name="0151-sha256-update.phpt" />
+        <file role="test" name="0152-sha1.phpt" />
         <file role="test" name="0160-rsa-encrypt-pkcs.phpt" />
         <file role="test" name="0161-rsa-encrypt-oaep.phpt" />
         <file role="test" name="0162-rsa-sign-pkcs.phpt" />
@@ -118,6 +125,13 @@
         <file role="test" name="0280-oasis_FindObjects.phpt" />
         <file role="test" name="0290-oasis_FindObjects.phpt" />
         <file role="test" name="0291-oasis_FindObjects.phpt" />
+        <file role="test" name="0300-oasis_C_WaitForSlotEvent.phpt" />
+        <file role="test" name="0310-oasis_C_Digest.phpt" />
+        <file role="test" name="0320-oasis_C_Sign.phpt" />
+        <file role="test" name="0330-oasis_C_Verify.phpt" />
+        <file role="test" name="0340-oasis_C_Encrypt.phpt" />
+        <file role="test" name="require-create-object.skipif.inc" />
+        <file role="test" name="require-generate-key-pair.skipif.inc" />
         <file role="test" name="require-module-load.skipif.inc" />
         <file role="test" name="require-open-session.skipif.inc" />
         <file role="test" name="require-sopin-login.skipif.inc" />
@@ -138,6 +152,22 @@
   <providesextension>pkcs11</providesextension>
   <extsrcrelease/>
   <changelog>
+    <release>
+      <date>2020-01-09</date>
+      <version>
+        <release>0.1.1</release>
+        <api>0.1</api>
+      </version>
+      <stability>
+        <release>beta</release>
+        <api>beta</api>
+      </stability>
+      <license uri="http://www.php.net/license">PHP</license>
+      <notes>
+      - Added a lot of new test cases
+      - Refactored some Object related functions
+      </notes>
+    </release>
     <release>
       <date>2020-12-30</date>
       <version>
