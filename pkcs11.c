@@ -24,7 +24,7 @@ static zend_class_entry *zend_pkcs11_exception_ce;
 void general_error(char *generic, char *specific) {
     char buf[BUFSIZ];
     snprintf(buf, sizeof(buf), "%s: %s", generic, specific);
-    zend_throw_exception(zend_ce_exception, buf, 0);
+    zend_throw_exception(zend_pkcs11_exception_ce, buf, 0);
 }
 
 void pkcs11_error(CK_RV rv, char *error) {
