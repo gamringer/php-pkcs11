@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Installing packages
-        run: sudo apt-get install php7.4-dev softhsm2 pkcs11-dump 
+        run: sudo apt-get install php7.4-dev softhsm2 pkcs11-dump opensc
 
       - name: Setup Ubuntu SoftHSM2
         run: |
@@ -57,6 +57,8 @@ jobs:
           echo "PHP11_SLOT $PHP11_SLOT"
           export NO_INTERACTION=1
           export REPORT_EXIT_STATUS=1
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keypairgen --key-type rsa:2048
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keygen --key-type aes:32
           make test
 
   test-with-php-8_0:
@@ -66,7 +68,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Installing packages
-        run: sudo apt-get install php8.0-dev softhsm2 pkcs11-dump 
+        run: sudo apt-get install php8.0-dev softhsm2 pkcs11-dump opensc
 
       - name: Setup Ubuntu SoftHSM2
         run: |
@@ -93,7 +95,10 @@ jobs:
         run: |
           export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
           echo "PHP11_MODULE $PHP11_MODULE"
-          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1)
+          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1 | cut -f 1)
           echo "PHP11_SLOT $PHP11_SLOT"
           export NO_INTERACTION=1
+          export REPORT_EXIT_STATUS=1
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keypairgen --key-type rsa:2048
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keygen --key-type aes:32
           make test
