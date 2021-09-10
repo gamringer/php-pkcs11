@@ -192,6 +192,19 @@ DECLARE_MAGIC_FUNCS(pkcs11_digestcontext,                 DigestContext)
 DECLARE_MAGIC_FUNCS(pkcs11_encryptioncontext,             EncryptionContext)
 DECLARE_MAGIC_FUNCS(pkcs11_decryptioncontext,             DecryptionContext)
 
+#if PHP_VERSION_ID < 80100
+
+#define PKCS11_ACC_NOT_SERIALIZABLE(ce) \
+    ce->serialize = zend_class_serialize_deny; \
+    ce->unserialize = zend_class_unserialize_deny;
+
+#else
+
+#define PKCS11_ACC_NOT_SERIALIZABLE(ce) \
+    ce->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+
+#endif
+
 #define DEFINE_MAGIC_FUNCS(tt, lowername, classname)                            \
 static zend_object *tt##_ctor(zend_class_entry *ce) {                           \
     tt##_object *objval = zend_object_alloc(sizeof(tt##_object), ce);           \
@@ -216,8 +229,7 @@ void register_##tt() {                                                          
     tt##_handlers.clone_obj = NULL;                                             \
     tt##_handlers.free_obj = tt##_dtor;                                         \
     ce_Pkcs11_##classname = zend_register_internal_class(&ce);                  \
-    ce_Pkcs11_##classname->serialize = zend_class_serialize_deny;               \
-    ce_Pkcs11_##classname->unserialize = zend_class_unserialize_deny;           \
+    PKCS11_ACC_NOT_SERIALIZABLE(ce_Pkcs11_##classname);                         \
 }
 
 
