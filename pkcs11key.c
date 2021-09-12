@@ -612,6 +612,5 @@ void register_pkcs11_key() {
     pkcs11_key_handlers.offset = XtOffsetOf(pkcs11_key_object, std);
     pkcs11_key_handlers.clone_obj = NULL;
     ce_Pkcs11_Key = zend_register_internal_class_ex(&ce, ce_Pkcs11_P11Object);
-    ce_Pkcs11_Key->serialize = zend_class_serialize_deny;
-    ce_Pkcs11_Key->unserialize = zend_class_unserialize_deny;
+    PKCS11_ACC_NOT_SERIALIZABLE(ce_Pkcs11_Key);
 }
