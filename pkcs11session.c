@@ -17,7 +17,6 @@
 */
 
 #include "pkcs11int.h"
-//#include "php_string.h"
 
 zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
