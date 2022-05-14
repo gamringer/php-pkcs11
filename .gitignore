@@ -35,3 +35,5 @@ tests/*.log
 tests/*.sh
 
 example/vendor
+sandbox
+*.dep
