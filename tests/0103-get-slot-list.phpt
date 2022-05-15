@@ -37,6 +37,6 @@ array(%d) {
     ["id"]=>
     int(%d)
     ["slotDescription"]=>
-    string(64) "%s"
+    string(%d) "%s"
   }%A
 }
