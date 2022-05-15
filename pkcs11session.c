@@ -6,7 +6,7 @@
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
-   | available through the world-wide-web at the following url:           |
+   | available through the world-wide-web at the following uri:           |
    | http://www.php.net/license/3_01.txt                                  |
    | If you did not receive a copy of the PHP license and are unable to   |
    | obtain it through the world-wide-web, please send a note to          |
@@ -17,6 +17,7 @@
 */
 
 #include "pkcs11int.h"
+#include "standard/php_string.h"
 
 zend_class_entry *ce_Pkcs11_Session;
 static zend_object_handlers pkcs11_session_handlers;
@@ -89,8 +90,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_generateRandom, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, length, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_openUrl, 0, 0, 1)
-    ZEND_ARG_TYPE_INFO(0, url, IS_STRING, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_openUri, 0, 0, 1)
+    ZEND_ARG_TYPE_INFO(0, uri, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 CK_RV php_C_GetSessionInfo(const pkcs11_session_object * const objval, zval *retval) {
@@ -518,7 +519,10 @@ PHP_METHOD(Session, findObjects) {
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
 
     array_init(return_value);
-    pkcs11_find_objects(objval, templateObj, templateItemCount, return_value);
+    php_C_FindObjects(objval, templateObj, templateItemCount, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to find object");
+    }
  
     freeTemplate(templateObj);
 }
@@ -701,15 +705,15 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
     GC_DELREF(&obj->pkcs11->std);
 }
 
-PHP_METHOD(Session, openUrl) {
+PHP_METHOD(Session, openUri) {
 
     CK_RV rv;    
     zend_long limit = ZEND_LONG_MAX;
 
-    zval url_array;
-    zval url_data_array;
-    zend_string *url;
-    zend_string *url_data;
+    zval uri_array;
+    zval uri_data_array;
+    zend_string *uri;
+    zend_string *uri_data;
 
     zend_string *uriDelim        = zend_string_init(":", strlen(":"), 0);
     zend_string *attributesDelim = zend_string_init(";", strlen(";"), 0);
@@ -717,110 +721,114 @@ PHP_METHOD(Session, openUrl) {
 
 
     ZEND_PARSE_PARAMETERS_START(1,1)
-        Z_PARAM_STR(url)
+        Z_PARAM_STR(uri)
     ZEND_PARSE_PARAMETERS_END();
 
-    array_init(&url_array);
-    array_init(&url_data_array);
+    array_init(&uri_array);
+    array_init(&uri_data_array);
 
-    rv = php_explode(uriDelim, url, &url_array, limit);
-    zend_long cnt = zend_array_count(Z_ARRVAL_P(&url_array));
+    php_explode(uriDelim, uri, &uri_array, limit);
+    zend_long cnt = zend_array_count(Z_ARRVAL_P(&uri_array));
 
-    if (cnt != 2 && strcmp(ZSTR_VAL(Z_STR(Z_ARR(url_array)->arData[0].val)), "pkcs11")) {
+    if (cnt != 2 && strcmp(ZSTR_VAL(Z_STR(Z_ARR(uri_array)->arData[0].val)), "pkcs11")) {
         pkcs11_error(CKR_GENERAL_ERROR, "Invalid URI format");
         return;
     }
 
-    url_data = Z_STR(Z_ARR(url_array)->arData[1].val);
-    rv = php_explode(attributesDelim, url_data, &url_data_array, limit);
+    uri_data = Z_STR(Z_ARR(uri_array)->arData[1].val);
+    php_explode(attributesDelim, uri_data, &uri_data_array, limit);
 
-    char * label = NULL;
-    char * keyType = NULL;
-    char * pinFile = NULL;
-    char * keyId = NULL;
+    char *attrId = NULL;
+    char *attrObject = NULL;
+    CK_OBJECT_CLASS attrType;
 
-    char * tableKey = NULL;
-    char * tableValue = NULL;
-    for (int i = 0; i < zend_array_count(Z_ARRVAL_P(&url_data_array)); i++) {
-		Bucket p = Z_ARR(url_data_array)->arData[i];
+    char *tableKey = NULL;
+    char *tableValue = NULL;
+    int nbAttributes = 0;
+    for (int i = 0; i < zend_array_count(Z_ARRVAL_P(&uri_data_array)); i++) {
+		Bucket p = Z_ARR(uri_data_array)->arData[i];
 
         // If finish with an ; dont return an error
-        char * testVal = ZSTR_VAL(Z_STR(Z_ARR(url_data_array)->arData[i].val));
+        char *testVal = ZSTR_VAL(Z_STR(Z_ARR(uri_data_array)->arData[i].val));
         if (!testVal || strlen(testVal) <= 0)
             continue;
 
         zval key_values_array;
         array_init(&key_values_array);
-        php_explode(keyValueDelim, Z_STR(Z_ARR(url_data_array)->arData[i].val), &key_values_array, limit);
+        php_explode(keyValueDelim, Z_STR(Z_ARR(uri_data_array)->arData[i].val), &key_values_array, limit);
 
         if (zend_array_count(Z_ARRVAL_P(&key_values_array)) != 2) {
-            pkcs11_error(CKR_GENERAL_ERROR, "Invalid URI format");
+            general_error("Could not parse PKCS11 URI", "Invalid URI format");
             return;
         }
         
         tableKey = ZSTR_VAL(Z_STR(Z_ARR(key_values_array)->arData[0].val));
         tableValue = ZSTR_VAL(Z_STR(Z_ARR(key_values_array)->arData[1].val));
 
-        if (strcmp(tableKey, "object") == 0)
-            label = tableValue;
-        if (strcmp(tableKey, "id") == 0)
-            keyId = tableValue;
-        if (strcmp(tableKey, "type") == 0)
-            keyType = tableValue;
+        if (strcmp(tableKey, "object") == 0) {
+            attrObject = tableValue;
+            nbAttributes++;
+        }
+        if (strcmp(tableKey, "id") == 0) {
+            attrId = tableValue;
+            nbAttributes++;
+        }
+        if (strcmp(tableKey, "type") == 0) {
+            if (strcmp(tableValue, "secret-key") == 0)
+                attrType = CKO_SECRET_KEY;
+            else if (strcmp(tableValue, "public") == 0)
+                attrType = CKO_PUBLIC_KEY;
+            else if (strcmp(tableValue, "private") == 0)
+                attrType = CKO_PRIVATE_KEY;
+            else if (strcmp(tableValue, "cert") == 0)
+                attrType = CKO_CERTIFICATE;
+            else if (strcmp(tableValue, "data") == 0)
+                attrType = CKO_DATA;
+            else {
+                general_error("Could not parse PKCS11 URI", "Invalid type attribute value");
+                return;
+            }
+            nbAttributes++;
+        }
 	}
-
-    CK_OBJECT_CLASS objclass = 0;
-    if (keyType) {
-        if (strcmp(keyType, "public") == 0)
-            objclass = CKO_PUBLIC_KEY;
-        if (strcmp(keyType, "private") == 0)
-            objclass = CKO_PRIVATE_KEY;  
-    }
-
-    int nbAttributes = 0;
-    if (objclass)
-        nbAttributes++;
-    if (label)
-        nbAttributes++;
-    if (keyId)
-        nbAttributes++;
-    
 
     CK_ATTRIBUTE *tmpl = ecalloc(nbAttributes, sizeof(CK_ATTRIBUTE));
 
     int i = 0;
-    if (objclass) {
-        CK_ATTRIBUTE attribute = {CKA_CLASS, &objclass, sizeof(objclass)};
-        (tmpl)[i] = (CK_ATTRIBUTE){CKA_CLASS, &objclass, sizeof(objclass)};
+    if (attrType) {
+        CK_ATTRIBUTE attribute = {CKA_CLASS, &attrType, sizeof(attrType)};
+        (tmpl)[i] = (CK_ATTRIBUTE){CKA_CLASS, &attrType, sizeof(attrType)};
         i++;
     }
-    if (label) {
-        CK_ATTRIBUTE attribute = {CKA_LABEL, label, strlen(label)};
-        (tmpl)[i] = (CK_ATTRIBUTE){CKA_LABEL, label, strlen(label)};
+    if (attrObject) {
+        CK_ATTRIBUTE attribute = {CKA_LABEL, attrObject, strlen(attrObject)};
+        (tmpl)[i] = (CK_ATTRIBUTE){CKA_LABEL, attrObject, strlen(attrObject)};
         i++;
     }
-    if (keyId) {
-        CK_ATTRIBUTE attribute = {CKA_ID, keyId, strlen(keyId)};
-        (tmpl)[i] = (CK_ATTRIBUTE){CKA_ID, keyId, strlen(keyId)};
+    if (attrId) {
+        CK_ATTRIBUTE attribute = {CKA_ID, attrId, strlen(attrId)};
+        (tmpl)[i] = (CK_ATTRIBUTE){CKA_ID, attrId, strlen(attrId)};
         i++;
     }
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
 
     array_init(return_value);
-    pkcs11_find_objects(objval, tmpl, nbAttributes, return_value);
+    php_C_FindObjects(objval, tmpl, nbAttributes, return_value);
+    if (rv != CKR_OK) {
+        pkcs11_error(rv, "Unable to find object");
+    }
 
     freeTemplate(tmpl);
 }
 
-void pkcs11_find_objects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int nbAttributes, zval * return_value) {
+CK_RV php_C_FindObjects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int nbAttributes, zval *return_value) {
     CK_RV rv;
 
     rv = objval->pkcs11->functionList->C_FindObjectsInit(objval->session, tmpl, nbAttributes);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to find objects");
-        freeTemplate(tmpl);
-        return;
+        // pkcs11_error(rv, "Unable to find objects");
+        return rv;
     }
 
     CK_OBJECT_HANDLE hObject;
@@ -857,6 +865,8 @@ void pkcs11_find_objects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int
     }
 
     rv = objval->pkcs11->functionList->C_FindObjectsFinal(objval->session);
+
+    return rv;
 }
 
 
@@ -877,7 +887,7 @@ static zend_function_entry session_class_functions[] = {
     PHP_ME(Session, generateKeyPair,  arginfo_generateKeyPair,  ZEND_ACC_PUBLIC)
     PHP_ME(Session, seedRandom,       arginfo_seedRandom,       ZEND_ACC_PUBLIC)
     PHP_ME(Session, generateRandom,   arginfo_generateRandom,   ZEND_ACC_PUBLIC)
-    PHP_ME(Session, openUrl,          arginfo_openUrl,   ZEND_ACC_PUBLIC)
+    PHP_ME(Session, openUri,          arginfo_openUri,   ZEND_ACC_PUBLIC)
 
     PHP_ME(Session, __debugInfo,      arginfo___debugInfo,        ZEND_ACC_PUBLIC)
 
