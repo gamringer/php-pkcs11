@@ -17,6 +17,7 @@
 */
 
 #include "pkcs11int.h"
+#include "standard/php_string.h"
 
 zend_class_entry *ce_Pkcs11_Module;
 static zend_object_handlers pkcs11_handlers;
@@ -190,11 +191,22 @@ CK_RV php_C_GetInfo(pkcs11_object *objval, zval *retval) {
     add_assoc_long(&libversion, "major", info.libraryVersion.major);
     add_assoc_long(&libversion, "minor", info.libraryVersion.minor);
 
+    zend_string *manufacturerIDRaw = zend_string_init(info.manufacturerID, sizeof(info.manufacturerID)-1, 0);
+    zend_string *manufacturerID = php_trim(manufacturerIDRaw, NULL, 0, 2);
+
+    zend_string *libraryDescriptionRaw = zend_string_init(info.libraryDescription, sizeof(info.libraryDescription)-1, 0);
+    zend_string *libraryDescription = php_trim(libraryDescriptionRaw, NULL, 0, 2);
+
     array_init(retval);
     add_assoc_zval(retval, "cryptokiVersion", &cryptokiversion);
-    add_assoc_stringl(retval, "manufacturerID", info.manufacturerID, sizeof(info.manufacturerID));
-    add_assoc_stringl(retval, "libraryDescription", info.libraryDescription, sizeof(info.libraryDescription));
+    add_assoc_stringl(retval, "manufacturerID", ZSTR_VAL(manufacturerID), ZSTR_LEN(manufacturerID));
+    add_assoc_stringl(retval, "libraryDescription", ZSTR_VAL(libraryDescription), ZSTR_LEN(libraryDescription));
     add_assoc_zval(retval, "libraryVersion", &libversion);
+
+    zend_string_release(manufacturerIDRaw);
+    zend_string_release(manufacturerID);
+    zend_string_release(libraryDescriptionRaw);
+    zend_string_release(libraryDescription);
 
     return rv;
 }
@@ -307,10 +319,16 @@ PHP_METHOD(Module, getSlots) {
             return;
         }
 
+        zend_string *slotDescriptionRaw = zend_string_init(slotInfo.slotDescription, sizeof(slotInfo.slotDescription)-1, 0);
+        zend_string *slotDescription = php_trim(slotDescriptionRaw, NULL, 0, 2);
+
         array_init(&slotObj);
         add_assoc_long(&slotObj, "id", pSlotList[i]);
-        add_assoc_stringl(&slotObj, "slotDescription", slotInfo.slotDescription, sizeof(slotInfo.slotDescription));
+        add_assoc_stringl(&slotObj, "slotDescription", ZSTR_VAL(slotDescription), ZSTR_LEN(slotDescription));
         add_index_zval(return_value, pSlotList[i], &slotObj);
+
+        zend_string_release(slotDescriptionRaw);
+        zend_string_release(slotDescription);
     }
     efree(pSlotList);
 }
@@ -368,10 +386,16 @@ CK_RV php_C_GetSlotInfo(pkcs11_object *objval, zend_long slotId, zval *retval) {
         return rv;
     }
 
+    zend_string *slotDescriptionRaw = zend_string_init(slotInfo.slotDescription, sizeof(slotInfo.slotDescription)-1, 0);
+    zend_string *slotDescription = php_trim(slotDescriptionRaw, NULL, 0, 2);
+
+    zend_string *manufacturerIDRaw = zend_string_init(slotInfo.manufacturerID, sizeof(slotInfo.manufacturerID)-1, 0);
+    zend_string *manufacturerID = php_trim(manufacturerIDRaw, NULL, 0, 2);
+
     array_init(retval);
     add_assoc_long(retval, "id", (CK_SLOT_ID)slotId);
-    add_assoc_stringl(retval, "description", slotInfo.slotDescription, 64);
-    add_assoc_stringl(retval, "manufacturerID", slotInfo.manufacturerID, sizeof(slotInfo.manufacturerID));
+    add_assoc_stringl(retval, "description", ZSTR_VAL(slotDescription), ZSTR_LEN(slotDescription));
+    add_assoc_stringl(retval, "manufacturerID", ZSTR_VAL(manufacturerID), ZSTR_LEN(manufacturerID));
     add_assoc_long(retval, "flags", slotInfo.flags);
 
     zval hardwareVersion;
@@ -385,6 +409,11 @@ CK_RV php_C_GetSlotInfo(pkcs11_object *objval, zend_long slotId, zval *retval) {
     add_assoc_long(&firmwareVersion, "major", slotInfo.firmwareVersion.major);
     add_assoc_long(&firmwareVersion, "minor", slotInfo.firmwareVersion.minor);
     add_assoc_zval(retval, "firmwareVersion", &firmwareVersion);
+
+    zend_string_release(slotDescriptionRaw);
+    zend_string_release(slotDescription);
+    zend_string_release(manufacturerIDRaw);
+    zend_string_release(manufacturerID);
 
     return rv;
 }
@@ -447,10 +476,19 @@ CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval)
         return rv;
     }
 
+    zend_string *labelRaw = zend_string_init(tokenInfo.label, sizeof(tokenInfo.label)-1, 0);
+    zend_string *label = php_trim(labelRaw, NULL, 0, 2);
+
+    zend_string *manufacturerIDRaw = zend_string_init(tokenInfo.manufacturerID, sizeof(tokenInfo.manufacturerID)-1, 0);
+    zend_string *manufacturerID = php_trim(manufacturerIDRaw, NULL, 0, 2);
+
+    zend_string *modelRaw = zend_string_init(tokenInfo.model, sizeof(tokenInfo.model)-1, 0);
+    zend_string *model = php_trim(modelRaw, NULL, 0, 2);
+
     array_init(retval);
-    add_assoc_stringl(retval, "label", tokenInfo.label, sizeof(tokenInfo.label));
-    add_assoc_stringl(retval, "manufacturerID", tokenInfo.manufacturerID, sizeof(tokenInfo.manufacturerID));
-    add_assoc_stringl(retval, "model", tokenInfo.model, sizeof(tokenInfo.model));
+    add_assoc_stringl(retval, "label", ZSTR_VAL(label), ZSTR_LEN(label));
+    add_assoc_stringl(retval, "manufacturerID", ZSTR_VAL(manufacturerID), ZSTR_LEN(manufacturerID));
+    add_assoc_stringl(retval, "model", ZSTR_VAL(model), ZSTR_LEN(model));
     add_assoc_stringl(retval, "serialNumber", tokenInfo.serialNumber, sizeof(tokenInfo.serialNumber));
 
     add_assoc_long(retval, "flags", tokenInfo.flags);
@@ -479,6 +517,13 @@ CK_RV php_C_GetTokenInfo(pkcs11_object *objval, CK_SLOT_ID slotId, zval *retval)
     add_assoc_zval(retval, "firmwareVersion", &firmwareVersion);
 
     add_assoc_stringl(retval, "utcTime", tokenInfo.utcTime, sizeof(tokenInfo.utcTime));
+
+    zend_string_release(labelRaw);
+    zend_string_release(label);
+    zend_string_release(manufacturerIDRaw);
+    zend_string_release(manufacturerID);
+    zend_string_release(modelRaw);
+    zend_string_release(model);
 
     return rv;
 }
