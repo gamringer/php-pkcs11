@@ -270,3 +270,41 @@ $secret = $keypair->skey->derive($mechanism, [
 
 $rawSecret = $secret->getAttributeValue([Pkcs11\CKA_VALUE])[Pkcs11\CKA_VALUE];
 ```
+
+### Retrieving object by URI
+You have the ability to retrieve object using [RFC7512](https://datatracker.ietf.org/doc/html/rfc7512) URIs.
+
+_Note:_ Currently, only the following path attributes are supported:
+- id
+- object
+- type
+
+```php
+$session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN), [
+  Pkcs11\CKA_ENCRYPT => true,
+  Pkcs11\CKA_MODULUS_BITS => 2048,
+  Pkcs11\CKA_PUBLIC_EXPONENT => hex2bin('010001'),
+  Pkcs11\CKA_LABEL => "testPkcs11Url",
+  Pkcs11\CKA_ID => "testPkcs11UrlPublicId",
+],[
+  Pkcs11\CKA_TOKEN => false,
+  Pkcs11\CKA_PRIVATE => true,
+  Pkcs11\CKA_SENSITIVE => true,
+  Pkcs11\CKA_DECRYPT => true,
+  Pkcs11\CKA_LABEL => "testPkcs11Url",
+  Pkcs11\CKA_ID => "testPkcs11UrlPrivateId",
+]);
+
+$privateKeySearchResult = $session->openUri("pkcs11:object=testPkcs11Url;type=private;");
+
+$mechanism = new Pkcs11\Mechanism(Pkcs11\CKM_SHA256_RSA_PKCS);
+
+$data = "Hello World!";
+$signature = $privateKeySearchResult[0]->sign($mechanism, $data);
+var_dump(bin2hex($signature));
+
+$publicKeySearchResult = $session->openUri("pkcs11:id=testPkcs11UrlPublicId");
+$valid = $publicKeySearchResult[0]->verify($mechanism, $data, $signature);
+var_dump($valid);
+
+```
