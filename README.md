@@ -270,3 +270,57 @@ $secret = $keypair->skey->derive($mechanism, [
 
 $rawSecret = $secret->getAttributeValue([Pkcs11\CKA_VALUE])[Pkcs11\CKA_VALUE];
 ```
+
+### Retrieve object attributes
+Given an Object, you can retrieve it's readable attributes.
+
+_Note:_ the following attributes are not implemented and retrieving them throws an exception:
+- CKA_WRAP_TEMPLATE
+- CKA_UNWRAP_TEMPLATE
+- CKA_DERIVE_TEMPLATE
+
+_Note:_ the following attributes internally provide a struct describing the date, but are here returned as a string:
+- CKA_START_DATE
+- CKA_END_DATE
+
+```php
+$keypair = $session->generateKeyPair(new Pkcs11\Mechanism(Pkcs11\CKM_RSA_PKCS_KEY_PAIR_GEN), /* ... */);
+
+$attributes = $keypair->skey->getAttributeValue([
+  Pkcs11\CKA_TOKEN,
+  Pkcs11\CKA_PRIVATE,
+  Pkcs11\CKA_SENSITIVE,
+  Pkcs11\CKA_EXTRACTABLE,
+  Pkcs11\CKA_NEVER_EXTRACTABLE,
+  Pkcs11\CKA_ALWAYS_SENSITIVE,
+  Pkcs11\CKA_SIGN,
+  Pkcs11\CKA_DECRYPT,
+  Pkcs11\CKA_PUBLIC_EXPONENT,
+  Pkcs11\CKA_LABEL,
+]);
+
+var_dump($attributes[Pkcs11\CKA_TOKEN]);
+var_dump($attributes[Pkcs11\CKA_PRIVATE]);
+var_dump($attributes[Pkcs11\CKA_SENSITIVE]);
+var_dump($attributes[Pkcs11\CKA_EXTRACTABLE]);
+var_dump($attributes[Pkcs11\CKA_NEVER_EXTRACTABLE]);
+var_dump($attributes[Pkcs11\CKA_ALWAYS_SENSITIVE]);
+var_dump($attributes[Pkcs11\CKA_SIGN]);
+var_dump($attributes[Pkcs11\CKA_DECRYPT]);
+var_dump(bin2hex($attributes[Pkcs11\CKA_PUBLIC_EXPONENT]));
+var_dump($attributes[Pkcs11\CKA_LABEL]);
+
+/* Outputs:
+bool(false)
+bool(true)
+bool(true)
+bool(false)
+bool(true)
+bool(true)
+bool(true)
+bool(false)
+string(6) "010001"
+string(16) "Test RSA Private"
+*/
+
+```
