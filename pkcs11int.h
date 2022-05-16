@@ -248,5 +248,6 @@ extern CK_RV php_C_GenerateKeyPair(pkcs11_session_object *objval, zval *mechanis
 extern CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *template, zval *retval);
 extern CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTable *template, zval *retval);
 extern CK_RV php_C_DestroyObject(pkcs11_session_object *objval, zval *object);
+extern CK_RV php_C_FindObjects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int nbAttributes, zval *return_value);
 
 #endif
