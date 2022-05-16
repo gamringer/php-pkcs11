@@ -827,7 +827,6 @@ CK_RV php_C_FindObjects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int 
 
     rv = objval->pkcs11->functionList->C_FindObjectsInit(objval->session, tmpl, nbAttributes);
     if (rv != CKR_OK) {
-        pkcs11_error(rv, "Unable to find objects");
         return rv;
     }
 
