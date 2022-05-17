@@ -23,7 +23,7 @@ extern zend_module_entry pkcs11_module_entry;
 # define phpext_pkcs11_ptr &pkcs11_module_entry
 
 # define PHP_PKCS11_NAME    "pkcs11"
-# define PHP_PKCS11_VERSION "1.0"
+# define PHP_PKCS11_VERSION "1.1"
 
 # if defined(ZTS) && defined(COMPILE_DL_PKCS11)
 ZEND_TSRMLS_CACHE_EXTERN()

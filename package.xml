@@ -23,10 +23,10 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2021-03-23</date>
+  <date>2022-05-16</date>
   <version>
-    <release>1.0</release>
-    <api>1.0</api>
+    <release>1.1</release>
+    <api>1.1</api>
   </version>
   <stability>
     <release>stable</release>
@@ -34,13 +34,11 @@
   </stability>
   <license uri="https://www.php.net/license/">PHP License</license>
   <notes>
-  - Added support for C_WaitForSlotEvent
-  - Added support for C_Wrap/C_Unwrap in OASIS-like API
-  - New Pkcs11\Exception
-  - Normalized error throwing
-  - Fixed argument definition when expecting P11Object
-  - Fixed various memory issues
-  - Fixed OASIS mapping for C_Digest
+  - Added Yubico vendor definitions
+  - Fixed compatibility with PHP 8.1
+  - Token and slot info is now trimmed
+  - Attributes are now returned in types consistant with the defined constants
+  - Added support to retrieve objects by URI from a Pkcs11\Session object
   </notes>
   <contents>
     <dir name="/">
@@ -152,6 +150,27 @@
   <providesextension>pkcs11</providesextension>
   <extsrcrelease/>
   <changelog>
+    <release>
+      <date>2021-03-23</date>
+      <version>
+        <release>1.0</release>
+        <api>1.0</api>
+      </version>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <license uri="https://www.php.net/license/">PHP License</license>
+      <notes>
+      - Added support for C_WaitForSlotEvent
+      - Added support for C_Wrap/C_Unwrap in OASIS-like API
+      - New Pkcs11\Exception
+      - Normalized error throwing
+      - Fixed argument definition when expecting P11Object
+      - Fixed various memory issues
+      - Fixed OASIS mapping for C_Digest
+      </notes>
+    </release>
     <release>
       <date>2020-01-09</date>
       <version>
