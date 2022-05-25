@@ -519,7 +519,7 @@ PHP_METHOD(Session, findObjects) {
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
 
     array_init(return_value);
-    php_C_FindObjects(objval, templateObj, templateItemCount, return_value);
+    rv = php_C_FindObjects(objval, templateObj, templateItemCount, return_value);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to find object");
     }
@@ -814,7 +814,7 @@ PHP_METHOD(Session, openUri) {
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
 
     array_init(return_value);
-    php_C_FindObjects(objval, tmpl, nbAttributes, return_value);
+    rv = php_C_FindObjects(objval, tmpl, nbAttributes, return_value);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to find object");
     }
