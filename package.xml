@@ -23,9 +23,9 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2022-05-16</date>
+  <date>2022-05-25</date>
   <version>
-    <release>1.1</release>
+    <release>1.1.1</release>
     <api>1.1</api>
   </version>
   <stability>
@@ -34,11 +34,7 @@
   </stability>
   <license uri="https://www.php.net/license/">PHP License</license>
   <notes>
-  - Added Yubico vendor definitions
-  - Fixed compatibility with PHP 8.1
-  - Token and slot info is now trimmed
-  - Attributes are now returned in types consistant with the defined constants
-  - Added support to retrieve objects by URI from a Pkcs11\Session object
+  - Fixed random unexpected errors in Session::findObjects and Session::openUri
   </notes>
   <contents>
     <dir name="/">
@@ -128,6 +124,7 @@
         <file role="test" name="0320-oasis_C_Sign.phpt" />
         <file role="test" name="0330-oasis_C_Verify.phpt" />
         <file role="test" name="0340-oasis_C_Encrypt.phpt" />
+        <file role="test" name="0400-open-uri.phpt" />
         <file role="test" name="require-create-object.skipif.inc" />
         <file role="test" name="require-generate-key-pair.skipif.inc" />
         <file role="test" name="require-module-load.skipif.inc" />
@@ -150,6 +147,25 @@
   <providesextension>pkcs11</providesextension>
   <extsrcrelease/>
   <changelog>
+    <release>
+      <date>2022-05-16</date>
+      <version>
+        <release>1.1</release>
+        <api>1.1</api>
+      </version>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <license uri="https://www.php.net/license/">PHP License</license>
+      <notes>
+      - Added Yubico vendor definitions
+      - Fixed compatibility with PHP 8.1
+      - Token and slot info is now trimmed
+      - Attributes are now returned in types consistant with the defined constants
+      - Added support to retrieve objects by URI from a Pkcs11\Session object
+      </notes>
+    </release>
     <release>
       <date>2021-03-23</date>
       <version>
