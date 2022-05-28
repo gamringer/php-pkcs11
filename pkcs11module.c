@@ -808,7 +808,7 @@ PHP_METHOD(Module, openSession) {
 
     zend_long      slotid;
     zend_long      flags = 0;
-    zend_string    *application;
+    zend_string    *application = NULL;
     zend_fcall_info php_fciNotify;
     zend_fcall_info_cache fciNotify_cache;
 
@@ -910,14 +910,18 @@ PHP_METHOD(Module, C_OpenSession) {
     zval zvhSession = {};
     object_init_ex(&zvhSession, ce_Pkcs11_Session);
     session_objval = Z_PKCS11_SESSION_P(&zvhSession);
+    session_objval->fci = php_fciNotify;
+    session_objval->fci_cache = fciNotify_cache;
+    session_objval->applicationData = ZSTR_VAL(php_pApplication);
+    session_objval->applicationDataLen = ZSTR_LEN(php_pApplication);
     session_objval->pkcs11 = objval;
     GC_ADDREF(&objval->std); /* session is refering the pkcs11 module */
 
     CK_SESSION_HANDLE hSession = 0;
     if (ZEND_NUM_ARGS() > 4)
-        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, NULL_PTR, NULL_PTR, &hSession); /* TODO: add callbacks */
+        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, session_objval, &surrenderCallback, &hSession); /* TODO: add callbacks */
     else
-        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, NULL_PTR, NULL_PTR, &hSession); /* TODO: add callbacks */
+        rv = objval->functionList->C_OpenSession((CK_SLOT_ID)php_slotID, php_flags, session_objval, &surrenderCallback, &hSession); /* TODO: add callbacks */
     session_objval->session = hSession;
     if (rv != CKR_OK) {
         RETURN_LONG(rv);
