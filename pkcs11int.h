@@ -51,6 +51,10 @@ typedef struct _pkcs11_session_object {
     CK_SESSION_HANDLE session;
     CK_SLOT_ID slotID;
     zend_object std;
+    zend_fcall_info fci;
+    zend_fcall_info_cache fci_cache;
+    char *applicationData;
+    size_t applicationDataLen;
 } pkcs11_session_object;
 
 typedef struct _pkcs11_object_object {
@@ -249,5 +253,6 @@ extern CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *templa
 extern CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTable *template, zval *retval);
 extern CK_RV php_C_DestroyObject(pkcs11_session_object *objval, zval *object);
 extern CK_RV php_C_FindObjects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int nbAttributes, zval *return_value);
+extern CK_RV surrenderCallback(CK_SESSION_HANDLE hSession, CK_NOTIFICATION notificationType, CK_VOID_PTR pApplication);
 
 #endif

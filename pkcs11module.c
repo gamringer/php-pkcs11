@@ -776,6 +776,33 @@ PHP_METHOD(Module, C_InitToken) {
     RETURN_LONG(rv);
 }
 
+CK_RV surrenderCallback(CK_SESSION_HANDLE hSession, CK_NOTIFICATION notificationType, CK_VOID_PTR pApplication) {
+    pkcs11_session_object* session_obj = pApplication;
+
+    zval arguments[3];
+    ZVAL_OBJ(&arguments[0], &(session_obj->std));
+    ZVAL_LONG(&arguments[1], notificationType);
+    ZVAL_STRING(&arguments[2], session_obj->applicationData);
+
+    zval retval;
+    session_obj->fci.retval = &retval;
+    session_obj->fci.params = arguments;
+    session_obj->fci.param_count = 3;
+    zend_call_function(&session_obj->fci, &session_obj->fci_cache);
+
+    if (Z_TYPE(retval) == IS_TRUE) {
+        return CKR_OK;
+    }
+
+    if (Z_TYPE(retval) == IS_FALSE) {
+        return CKR_CANCEL;
+    }
+
+    zend_throw_exception(zend_ce_exception, "Unexpected return type from Notify callback", 0);
+
+    return CKR_CANCEL;
+}
+
 PHP_METHOD(Module, openSession) {
     CK_RV rv;
 
@@ -805,10 +832,14 @@ PHP_METHOD(Module, openSession) {
     object_init_ex(return_value, ce_Pkcs11_Session);
     session_obj = Z_PKCS11_SESSION_P(return_value);
     session_obj->pkcs11 = objval;
+    session_obj->fci = php_fciNotify;
+    session_obj->fci_cache = fciNotify_cache;
+    session_obj->applicationData = ZSTR_VAL(application);
+    session_obj->applicationDataLen = ZSTR_LEN(application);
     GC_ADDREF(&objval->std);
 
     CK_SESSION_HANDLE phSession;
-    rv = objval->functionList->C_OpenSession(slotid, CKF_SERIAL_SESSION | flags, NULL_PTR, NULL_PTR, &phSession);
+    rv = objval->functionList->C_OpenSession(slotid, CKF_SERIAL_SESSION | flags, session_obj, &surrenderCallback, &phSession);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to open session");
         return;
