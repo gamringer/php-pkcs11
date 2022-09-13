@@ -218,6 +218,8 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_object();
     register_pkcs11_key();
     register_pkcs11_keypair();
+    zend_declare_property_null(ce_Pkcs11_KeyPair, "skey", sizeof("skey")-1, ZEND_ACC_PUBLIC);
+    zend_declare_property_null(ce_Pkcs11_KeyPair, "pkey", sizeof("pkey")-1, ZEND_ACC_PUBLIC);
     register_pkcs11_mechanism();
     register_pkcs11_rsapssparams();
     register_pkcs11_rsaoaepparams();
