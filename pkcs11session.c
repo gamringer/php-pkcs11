@@ -730,12 +730,12 @@ PHP_METHOD(Session, openUri) {
     php_explode(uriDelim, uri, &uri_array, limit);
     zend_long cnt = zend_array_count(Z_ARRVAL_P(&uri_array));
 
-    if (cnt != 2 && strcmp(ZSTR_VAL(Z_STR(Z_ARR(uri_array)->arData[0].val)), "pkcs11")) {
+    if (cnt != 2 && strcmp(ZSTR_VAL(Z_STR_P(zend_hash_index_find(Z_ARR(uri_array), 0))), "pkcs11")) {
         pkcs11_error(CKR_GENERAL_ERROR, "Invalid URI format");
         return;
     }
 
-    uri_data = Z_STR(Z_ARR(uri_array)->arData[1].val);
+    uri_data = Z_STR_P(zend_hash_index_find(Z_ARR(uri_array), 1));
     php_explode(attributesDelim, uri_data, &uri_data_array, limit);
 
     char *attrId = NULL;
@@ -746,24 +746,22 @@ PHP_METHOD(Session, openUri) {
     char *tableValue = NULL;
     int nbAttributes = 0;
     for (int i = 0; i < zend_array_count(Z_ARRVAL_P(&uri_data_array)); i++) {
-		Bucket p = Z_ARR(uri_data_array)->arData[i];
-
         // If finish with an ; dont return an error
-        char *testVal = ZSTR_VAL(Z_STR(Z_ARR(uri_data_array)->arData[i].val));
-        if (!testVal || strlen(testVal) <= 0)
+        zend_string *testVal = Z_STR_P(zend_hash_index_find(Z_ARR(uri_data_array), i));
+        if (!testVal || ZSTR_LEN(testVal) <= 0)
             continue;
 
         zval key_values_array;
         array_init(&key_values_array);
-        php_explode(keyValueDelim, Z_STR(Z_ARR(uri_data_array)->arData[i].val), &key_values_array, limit);
+        php_explode(keyValueDelim, testVal, &key_values_array, limit);
 
         if (zend_array_count(Z_ARRVAL_P(&key_values_array)) != 2) {
             general_error("Could not parse PKCS11 URI", "Invalid URI format");
             return;
         }
         
-        tableKey = ZSTR_VAL(Z_STR(Z_ARR(key_values_array)->arData[0].val));
-        tableValue = ZSTR_VAL(Z_STR(Z_ARR(key_values_array)->arData[1].val));
+        tableKey = ZSTR_VAL(Z_STR_P(zend_hash_index_find(Z_ARR(key_values_array), 0)));
+        tableValue = ZSTR_VAL(Z_STR_P(zend_hash_index_find(Z_ARR(key_values_array), 1)));
 
         if (strcmp(tableKey, "object") == 0) {
             attrObject = tableValue;
