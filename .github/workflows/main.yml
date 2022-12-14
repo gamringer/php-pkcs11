@@ -18,91 +18,6 @@ env:
   PHP11_SOPIN: 12345678
 
 jobs:
-  # This workflow contains a single job called "build"
-  test-with-php-7_4:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Installing packages
-        run: sudo apt-get install php7.4-dev softhsm2 pkcs11-dump opensc
-
-      - name: Setup Ubuntu SoftHSM2
-        run: |
-          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
-          mkdir -p $SOFTHSM2_TOKENDIR
-          cat <<EOFCONF >> $SOFTHSM2_CONF
-          directories.tokendir = $SOFTHSM2_TOKENDIR
-          objectstore.backend = file
-          log.level = INFO
-          slots.removable = false
-          slots.mechanisms = ALL
-          EOFCONF
-          softhsm2-util --init-token --slot 0 --label "Test Token" --pin $PHP11_PIN --so-pin $PHP11_SOPIN
-          pkcs11-dump info $PHP11_MODULE
-          pkcs11-dump slotlist $PHP11_MODULE
-
-      - name: Compile
-        run: |
-          phpize
-          ./configure
-          make -j $(nproc)
-
-      - name: Tests using SoftHSM2
-        run: |
-          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
-          echo "PHP11_MODULE $PHP11_MODULE"
-          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1 | cut -f 1)
-          echo "PHP11_SLOT $PHP11_SLOT"
-          export NO_INTERACTION=1
-          export REPORT_EXIT_STATUS=1
-          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keypairgen --key-type rsa:2048
-          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keygen --key-type aes:32
-          make test
-
-  test-with-php-8_0:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Installing packages
-        run: sudo apt-get install php8.0-dev softhsm2 pkcs11-dump opensc
-
-      - name: Setup Ubuntu SoftHSM2
-        run: |
-          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
-          mkdir -p $SOFTHSM2_TOKENDIR
-          cat <<EOFCONF >> $SOFTHSM2_CONF
-          directories.tokendir = $SOFTHSM2_TOKENDIR
-          objectstore.backend = file
-          log.level = INFO
-          slots.removable = false
-          slots.mechanisms = ALL
-          EOFCONF
-          softhsm2-util --init-token --slot 0 --label "Test Token" --pin $PHP11_PIN --so-pin $PHP11_SOPIN
-          pkcs11-dump info $PHP11_MODULE
-          pkcs11-dump slotlist $PHP11_MODULE
-
-      - name: Compile
-        run: |
-          phpize
-          ./configure
-          make -j $(nproc)
-
-      - name: Tests using SoftHSM2
-        run: |
-          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
-          echo "PHP11_MODULE $PHP11_MODULE"
-          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1 | cut -f 1)
-          echo "PHP11_SLOT $PHP11_SLOT"
-          export NO_INTERACTION=1
-          export REPORT_EXIT_STATUS=1
-          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keypairgen --key-type rsa:2048
-          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keygen --key-type aes:32
-          make test
-
   test-with-php-8_1:
     runs-on: ubuntu-latest
 
@@ -114,6 +29,51 @@ jobs:
           sudo add-apt-repository ppa:ondrej/php
           sudo apt-get update
           sudo apt-get install php8.1-dev softhsm2 pkcs11-dump opensc
+
+      - name: Setup Ubuntu SoftHSM2
+        run: |
+          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
+          mkdir -p $SOFTHSM2_TOKENDIR
+          cat <<EOFCONF >> $SOFTHSM2_CONF
+          directories.tokendir = $SOFTHSM2_TOKENDIR
+          objectstore.backend = file
+          log.level = INFO
+          slots.removable = false
+          slots.mechanisms = ALL
+          EOFCONF
+          softhsm2-util --init-token --slot 0 --label "Test Token" --pin $PHP11_PIN --so-pin $PHP11_SOPIN
+          pkcs11-dump info $PHP11_MODULE
+          pkcs11-dump slotlist $PHP11_MODULE
+
+      - name: Compile
+        run: |
+          phpize
+          ./configure
+          make -j $(nproc)
+
+      - name: Tests using SoftHSM2
+        run: |
+          export PHP11_MODULE=/usr/lib/softhsm/libsofthsm2.so
+          echo "PHP11_MODULE $PHP11_MODULE"
+          export PHP11_SLOT=$(pkcs11-dump slotlist $PHP11_MODULE 2>/dev/null | grep SoftHSM | head -1 | cut -f 1)
+          echo "PHP11_SLOT $PHP11_SLOT"
+          export NO_INTERACTION=1
+          export REPORT_EXIT_STATUS=1
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keypairgen --key-type rsa:2048
+          pkcs11-tool --module $PHP11_MODULE --login --slot $PHP11_SLOT --pin $PHP11_PIN --keygen --key-type aes:32
+          make test
+
+  test-with-php-8_2:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Installing packages
+        run: |
+          sudo add-apt-repository ppa:ondrej/php
+          sudo apt-get update
+          sudo apt-get install php8.2-dev softhsm2 pkcs11-dump opensc
 
       - name: Setup Ubuntu SoftHSM2
         run: |
