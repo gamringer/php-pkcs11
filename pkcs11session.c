@@ -740,7 +740,7 @@ PHP_METHOD(Session, openUri) {
 
     char *attrId = NULL;
     char *attrObject = NULL;
-    CK_OBJECT_CLASS attrType;
+    CK_OBJECT_CLASS attrType = NULL_PTR;
 
     char *tableKey = NULL;
     char *tableValue = NULL;
@@ -789,22 +789,19 @@ PHP_METHOD(Session, openUri) {
             nbAttributes++;
         }
 	}
-
     CK_ATTRIBUTE *tmpl = ecalloc(nbAttributes, sizeof(CK_ATTRIBUTE));
 
+
     int i = 0;
-    if (attrType) {
-        CK_ATTRIBUTE attribute = {CKA_CLASS, &attrType, sizeof(attrType)};
+    if (attrType != NULL_PTR) {
         (tmpl)[i] = (CK_ATTRIBUTE){CKA_CLASS, &attrType, sizeof(attrType)};
         i++;
     }
-    if (attrObject) {
-        CK_ATTRIBUTE attribute = {CKA_LABEL, attrObject, strlen(attrObject)};
+    if (attrObject != NULL_PTR) {
         (tmpl)[i] = (CK_ATTRIBUTE){CKA_LABEL, attrObject, strlen(attrObject)};
         i++;
     }
-    if (attrId) {
-        CK_ATTRIBUTE attribute = {CKA_ID, attrId, strlen(attrId)};
+    if (attrId != NULL_PTR) {
         (tmpl)[i] = (CK_ATTRIBUTE){CKA_ID, attrId, strlen(attrId)};
         i++;
     }
