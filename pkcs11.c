@@ -223,6 +223,7 @@ PHP_MINIT_FUNCTION(pkcs11)
     register_pkcs11_mechanism();
     register_pkcs11_rsapssparams();
     register_pkcs11_rsaoaepparams();
+    register_pkcs11_awsgcmparams();
     register_pkcs11_gcmparams();
     register_pkcs11_chacha20params();
     register_pkcs11_salsa20params();

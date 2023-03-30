@@ -2036,6 +2036,17 @@ typedef struct CK_AES_CTR_PARAMS {
 
 typedef CK_AES_CTR_PARAMS CK_PTR CK_AES_CTR_PARAMS_PTR;
 
+typedef struct CK_AWS_GCM_PARAMS {
+    CK_BYTE_PTR       pIv;
+    CK_ULONG          ulIvLen;
+    CK_ULONG          ulIvBits;
+    CK_BYTE_PTR       pAAD;
+    CK_ULONG          ulAADLen;
+    CK_ULONG          ulTagBits;
+} CK_AWS_GCM_PARAMS;
+
+typedef CK_AWS_GCM_PARAMS CK_PTR CK_AWS_GCM_PARAMS_PTR;
+
 typedef struct CK_GCM_PARAMS {
     CK_BYTE_PTR       pIv;
     CK_ULONG          ulIvLen;

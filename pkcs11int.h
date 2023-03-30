@@ -73,6 +73,7 @@ typedef struct _pkcs11_keypair_object {
 
 enum knownParamTypes {
     None,
+    AwsGcmParams,
     GcmParams,
     RsaOaepParams,
     RsaPssParams,
@@ -95,6 +96,11 @@ typedef struct _pkcs11_rsaoaepparams_object {
     CK_RSA_PKCS_OAEP_PARAMS params;
     zend_object std;
 } pkcs11_rsaoaepparams_object;
+
+typedef struct _pkcs11_awsgcmparams_object {
+    CK_AWS_GCM_PARAMS params;
+    zend_object std;
+} pkcs11_awsgcmparams_object;
 
 typedef struct _pkcs11_gcmparams_object {
     CK_GCM_PARAMS params;
@@ -155,6 +161,7 @@ typedef struct _pkcs11_decryptioncontext_object {
 #define Z_PKCS11_MECHANISM_P(zv)                     pkcs11_mechanism_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAPSSPARAMS_P(zv)                  pkcs11_rsapssparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_RSAOAEPPARAMS_P(zv)                 pkcs11_rsaoaepparams_from_zend_object(Z_OBJ_P((zv)))
+#define Z_PKCS11_AWSGCMPARAMS_P(zv)                  pkcs11_awsgcmparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_GCMPARAMS_P(zv)                     pkcs11_gcmparams_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_CHACHA20PARAMS_P(zv)                pkcs11_chacha20params_from_zend_object(Z_OBJ_P((zv)))
 #define Z_PKCS11_SALSA20PARAMS_P(zv)                 pkcs11_salsa20params_from_zend_object(Z_OBJ_P((zv)))
@@ -181,6 +188,7 @@ DECLARE_MAGIC_FUNCS(pkcs11_keypair,                       KeyPair)
 DECLARE_MAGIC_FUNCS(pkcs11_mechanism,                     Mechanism)
 DECLARE_MAGIC_FUNCS(pkcs11_rsapssparams,                  RsaPssParams)
 DECLARE_MAGIC_FUNCS(pkcs11_rsaoaepparams,                 RsaOaepParams)
+DECLARE_MAGIC_FUNCS(pkcs11_awsgcmparams,                  AwsGcmParams)
 DECLARE_MAGIC_FUNCS(pkcs11_gcmparams,                     GcmParams)
 DECLARE_MAGIC_FUNCS(pkcs11_chacha20params,                ChaCha20Params)
 DECLARE_MAGIC_FUNCS(pkcs11_salsa20params,                 Salsa20Params)

@@ -47,6 +47,15 @@ PHP_METHOD(Mechanism, __construct) {
             objval->mechanism.ulParameterLen = Z_STRLEN_P(mechanismArgument);
 
         } else if (Z_TYPE_P(mechanismArgument) == IS_OBJECT) {
+            if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\AwsGcmParams")) {
+                pkcs11_awsgcmparams_object *mechanismParamsObj = Z_PKCS11_AWSGCMPARAMS_P(mechanismArgument);
+                objval->paramsObj = mechanismParamsObj;
+                objval->paramsObjType = AwsGcmParams;
+                objval->mechanism.pParameter = &mechanismParamsObj->params;
+                objval->mechanism.ulParameterLen = sizeof(mechanismParamsObj->params);
+                GC_ADDREF(&mechanismParamsObj->std);
+            } else
+
             if(zend_string_equals_literal(Z_OBJ_P(mechanismArgument)->ce->name, "Pkcs11\\GcmParams")) {
                 pkcs11_gcmparams_object *mechanismParamsObj = Z_PKCS11_GCMPARAMS_P(mechanismArgument);
                 objval->paramsObj = mechanismParamsObj;
@@ -101,6 +110,10 @@ PHP_METHOD(Mechanism, __debugInfo) {
 }
 
 void pkcs11_mechanism_shutdown(pkcs11_mechanism_object *obj) {
+    if(obj->paramsObjType == AwsGcmParams) {
+        GC_DELREF(&((pkcs11_awsgcmparams_object *) obj->paramsObj)->std);
+    } else
+
     if(obj->paramsObjType == GcmParams) {
         GC_DELREF(&((pkcs11_gcmparams_object *) obj->paramsObj)->std);
     } else

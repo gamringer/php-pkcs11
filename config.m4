@@ -91,5 +91,5 @@ if test "$PHP_PKCS11" != "no"; then
   dnl In case of no dependencies
   AC_DEFINE(HAVE_PKCS11, 1, [ Have pkcs11 support ])
 
-  PHP_NEW_EXTENSION(pkcs11, pkcs11.c pkcs11object.c pkcs11key.c pkcs11keypair.c pkcs11module.c pkcs11signaturecontext.c pkcs11verificationcontext.c pkcs11digestcontext.c pkcs11encryptioncontext.c pkcs11decryptioncontext.c pkcs11mechanism.c pkcs11rsapssparams.c pkcs11rsaoaepparams.c pkcs11gcmparams.c pkcs11chacha20params.c pkcs11salsa20params.c pkcs11salsa20chacha20poly1305params.c pkcs11ecdh1deriveparams.c pkcs11session.c, $ext_shared)
+  PHP_NEW_EXTENSION(pkcs11, pkcs11.c pkcs11object.c pkcs11key.c pkcs11keypair.c pkcs11module.c pkcs11signaturecontext.c pkcs11verificationcontext.c pkcs11digestcontext.c pkcs11encryptioncontext.c pkcs11decryptioncontext.c pkcs11mechanism.c pkcs11rsapssparams.c pkcs11rsaoaepparams.c pkcs11awsgcmparams.c pkcs11gcmparams.c pkcs11chacha20params.c pkcs11salsa20params.c pkcs11salsa20chacha20poly1305params.c pkcs11ecdh1deriveparams.c pkcs11session.c, $ext_shared)
 fi
