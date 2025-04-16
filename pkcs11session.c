@@ -183,7 +183,7 @@ PHP_METHOD(Session, seedRandom) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    php_C_SeedRandom(objval, seed);
+    rv = php_C_SeedRandom(objval, seed);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to seed random data");
@@ -221,7 +221,7 @@ PHP_METHOD(Session, generateRandom) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    php_C_GenerateRandom(objval, length, return_value);
+    rv = php_C_GenerateRandom(objval, length, return_value);
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to generate random data");
@@ -523,7 +523,7 @@ PHP_METHOD(Session, findObjects) {
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to find object");
     }
- 
+
     freeTemplate(templateObj);
 }
 
@@ -536,7 +536,7 @@ CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *template, zva
     CK_ATTRIBUTE_PTR templateObj;
     parseTemplate(&template, &templateObj, &templateItemCount);
 
-    
+
     rv = objval->pkcs11->functionList->C_CreateObject(
         objval->session,
         templateObj, templateItemCount, &hObject
@@ -598,7 +598,7 @@ CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTabl
     CK_ATTRIBUTE_PTR templateObj;
     parseTemplate(&template, &templateObj, &templateItemCount);
 
-    
+
     pkcs11_object_object *originalval = Z_PKCS11_OBJECT_P(objectOrig);
     rv = objval->pkcs11->functionList->C_CopyObject(
         objval->session,
@@ -707,7 +707,7 @@ void pkcs11_session_shutdown(pkcs11_session_object *obj) {
 
 PHP_METHOD(Session, openUri) {
 
-    CK_RV rv;    
+    CK_RV rv;
     zend_long limit = ZEND_LONG_MAX;
 
     zval uri_array;
@@ -759,7 +759,7 @@ PHP_METHOD(Session, openUri) {
             general_error("Could not parse PKCS11 URI", "Invalid URI format");
             return;
         }
-        
+
         tableKey = ZSTR_VAL(Z_STR_P(zend_hash_index_find(Z_ARR(key_values_array), 0)));
         tableValue = ZSTR_VAL(Z_STR_P(zend_hash_index_find(Z_ARR(key_values_array), 1)));
 
