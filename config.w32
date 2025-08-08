@@ -1,0 +1,15 @@
+// config.w32 for extension pkcs11
+
+ARG_ENABLE("pkcs11", "enable pkcs11 support", "no");
+
+if (PHP_PKCS11 != "no") {
+	EXTENSION("pkcs11", "pkcs11.c pkcs11object.c pkcs11key.c pkcs11keypair.c pkcs11module.c pkcs11signaturecontext.c pkcs11verificationcontext.c pkcs11digestcontext.c pkcs11encryptioncontext.c pkcs11decryptioncontext.c pkcs11mechanism.c pkcs11rsapssparams.c pkcs11rsaoaepparams.c pkcs11gcmparams.c pkcs11chacha20params.c pkcs11salsa20params.c pkcs11salsa20chacha20poly1305params.c pkcs11ecdh1deriveparams.c pkcs11session.c", true);
+	
+	AC_DEFINE("HAVE_PKCS11", 1, "Have pkcs11 support");
+	
+	// Add the oasis directory for PKCS#11 headers
+	ADD_FLAG("CFLAGS_PKCS11", "/I " + configure_module_dirname + "/oasis");
+	
+	// On Windows, we'll use LoadLibrary/GetProcAddress instead of dlopen/dlsym
+	AC_DEFINE("PHP_WIN32", 1, "Windows build");
+}

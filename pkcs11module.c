@@ -139,6 +139,25 @@ PHP_METHOD(Module, __construct) {
 
     CK_RV rv;
 
+#ifdef PHP_WIN32
+    objval->pkcs11module = LoadLibraryA(module_path);
+    if (objval->pkcs11module == NULL) {
+        DWORD error = GetLastError();
+        char error_msg[256];
+        snprintf(error_msg, sizeof(error_msg), "LoadLibrary failed with error code: %lu", error);
+        general_error("Unable to initialise PKCS11 module", error_msg);
+        return;
+    }
+
+    CK_C_GetFunctionList C_GetFunctionList = (CK_C_GetFunctionList)GetProcAddress(objval->pkcs11module, "C_GetFunctionList");
+    if (C_GetFunctionList == NULL) {
+        DWORD error = GetLastError();
+        char error_msg[256];
+        snprintf(error_msg, sizeof(error_msg), "GetProcAddress failed with error code: %lu", error);
+        general_error("Unable to initialise PKCS11 module", error_msg);
+        return;
+    }
+#else
     char* dlerror_str;
     objval->pkcs11module = dlopen(module_path, RTLD_NOW);
 
@@ -154,6 +173,7 @@ PHP_METHOD(Module, __construct) {
         general_error("Unable to initialise PKCS11 module", dlerror_str);
         return;
     }
+#endif
 
     rv = C_GetFunctionList(&objval->functionList);
     if (rv != CKR_OK) {
@@ -2298,7 +2318,11 @@ void pkcs11_shutdown(pkcs11_object *obj) {
     }
 
     if (obj->pkcs11module != NULL) {
+#ifdef PHP_WIN32
+        FreeLibrary(obj->pkcs11module);
+#else
         dlclose(obj->pkcs11module);
+#endif
     }
 }
 

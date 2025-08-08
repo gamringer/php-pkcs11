@@ -35,7 +35,11 @@ void pkcs11_error(CK_RV rv, char *error) {
 }
 
 static const char * strCK_RV(const CK_RV rv) {
+#ifdef PHP_WIN32
+    static __declspec(thread) char str[BUFSIZ];
+#else
     static __thread char str[BUFSIZ];
+#endif
 
     switch(rv) {
     #define REGISTER_PKCS11_CONSTANT(n) \

@@ -29,8 +29,17 @@
 #include "ext/standard/info.h"
 #include "php_pkcs11.h"
 
+#include <stdio.h>
 #include <stdbool.h>
+
+#ifdef PHP_WIN32
+#include <windows.h>
+#if _MSC_VER < 1900
+#define snprintf _snprintf
+#endif
+#else
 #include <dlfcn.h>
+#endif
 
 /* For compatibility with older PHP versions */
 #ifndef ZEND_PARSE_PARAMETERS_NONE
@@ -41,7 +50,11 @@
 
 typedef struct _pkcs11_object {
     bool initialised;
+#ifdef PHP_WIN32
+    HMODULE pkcs11module;
+#else
     void *pkcs11module;
+#endif
     CK_FUNCTION_LIST_PTR functionList;
     zend_object std;
 } pkcs11_object;
