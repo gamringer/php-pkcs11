@@ -21,7 +21,7 @@
 zend_class_entry *ce_Pkcs11_Mechanism;
 static zend_object_handlers pkcs11_mechanism_handlers;
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo___construct, 0, 0, 1)
     ZEND_ARG_TYPE_INFO(0, mechanismId, IS_LONG, 0)
     ZEND_ARG_INFO(0, mechanismArgument)
 ZEND_END_ARG_INFO()
