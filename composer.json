@@ -1,0 +1,9 @@
+{
+    "name": "gamringer/pkcs11",
+    "description": "PHP extension for PKCS11",
+    "type": "php-ext",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    }
+}
