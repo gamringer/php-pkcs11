@@ -23,19 +23,19 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2023-06-25</date>
+  <date>2026-03-04</date>
   <version>
-    <release>1.1.2</release>
+    <release>1.1.4</release>
     <api>1.1</api>
   </version>
   <stability>
     <release>stable</release>
     <api>stable</api>
   </stability>
-  <license uri="https://www.php.net/license/">PHP License</license>
+  <license uri="https://mit-license.org/">MIT</license>
   <notes>
-  - Fixed compatibility with PHP 8.2
-  - Fix issue where not specifying the object type in openUri would fail
+  - Fixed inconsistencies with release metadata
+  - Changed license to MIT
   </notes>
   <contents>
     <dir name="/">
@@ -148,6 +148,39 @@
   <providesextension>pkcs11</providesextension>
   <extsrcrelease/>
   <changelog>
+    <release>
+      <date>2026-03-03</date>
+      <version>
+        <release>1.1.3</release>
+        <api>1.1</api>
+      </version>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <license uri="https://www.php.net/license/">PHP License</license>
+      <notes>
+      - Fixed missing result checks on a few internal calls
+      - Fixed argument count definition on Mechanism::__construct
+      - Added support for PIE
+      </notes>
+    </release>
+    <release>
+      <date>2023-06-25</date>
+      <version>
+        <release>1.1.2</release>
+        <api>1.1</api>
+      </version>
+      <stability>
+        <release>stable</release>
+        <api>stable</api>
+      </stability>
+      <license uri="https://www.php.net/license/">PHP License</license>
+      <notes>
+      - Fixed compatibility with PHP 8.2
+      - Fix issue where not specifying the object type in openUri would fail
+      </notes>
+    </release>
     <release>
       <date>2022-05-25</date>
       <version>
