@@ -5,8 +5,8 @@
    | Copyright (c) Guillaume Amringer                                     |
    +----------------------------------------------------------------------+
    | This source file is subject to the MIT license, that is bundled with |
-   | this package in the file LICENSE, and is available through the at    |
-   | the following url: https://mit-license.org/                          |
+   | this package in the file LICENSE, and is available at the following  |
+   | url: https://mit-license.org/                                        |
    +----------------------------------------------------------------------+
    | Author: Guillaume Amringer                                           |
    +----------------------------------------------------------------------+
