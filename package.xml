@@ -23,7 +23,7 @@
     <email>vjardin@free.fr</email>
     <active>yes</active>
   </contributor>
-  <date>2026-04-05</date>
+  <date>2026-04-06</date>
   <version>
     <release>1.1.3</release>
     <api>1.1</api>
@@ -32,7 +32,7 @@
     <release>stable</release>
     <api>stable</api>
   </stability>
-  <license uri="https://www.php.net/license/">PHP License</license>
+  <license uri="https://mit-license.org/">MIT</license>
   <notes>
   - Fixed inconsistencies with release metadata
   - Corrected license to indicate MIT everywhere
