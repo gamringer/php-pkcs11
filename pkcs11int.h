@@ -36,17 +36,22 @@
 #endif
 
 typedef struct _pkcs11_object {
-    bool initialised;
-    void *pkcs11module;
-    CK_FUNCTION_LIST_PTR functionList;
-    zend_object std;
+    bool                  initialised;
+    void                 *pkcs11module;     /* = lib->dlhandle (call-site compat) */
+    CK_FUNCTION_LIST_PTR  functionList;     /* = lib->functionList (call-site compat) */
+    char                 *lib_path;         /* pemalloc'd realpath; key into pkcs11_libs */
+    pkcs11_lib_record    *lib;              /* direct pointer — avoids registry re-lookup */
+    zend_object           std;              /* MUST be last */
 } pkcs11_object;
 
 typedef struct _pkcs11_session_object {
-    pkcs11_object *pkcs11;
-    CK_SESSION_HANDLE session;
-    CK_SLOT_ID slotID;
-    zend_object std;
+    pkcs11_object          *pkcs11;
+    CK_SESSION_HANDLE       session;
+    CK_SLOT_ID              slotID;
+    CK_FLAGS                flags;          /* CKF_SERIAL_SESSION | user flags */
+    bool                    tainted;        /* true = active C_*Init; don't pool */
+    pkcs11_pooled_session  *pooled;         /* backpointer; NULL = not pooled */
+    zend_object             std;            /* MUST be last */
 } pkcs11_session_object;
 
 typedef struct _pkcs11_object_object {
@@ -245,5 +250,61 @@ extern CK_RV php_C_CreateObject(pkcs11_session_object *objval, HashTable *templa
 extern CK_RV php_C_CopyObject(pkcs11_session_object *objval, zval *objectOrig, HashTable *template, zval *retval);
 extern CK_RV php_C_DestroyObject(pkcs11_session_object *objval, zval *object);
 extern CK_RV php_C_FindObjects(pkcs11_session_object *objval,  CK_ATTRIBUTE *tmpl, int nbAttributes, zval *return_value);
+
+/* Phase 2: stale session eviction */
+extern void pkcs11_evict_session(pkcs11_session_object *sobj);
+
+/*
+ * PKCS11_SESSION_CALL — for C_*Init and single-shot calls.
+ * On stale-session errors: evict, open fresh session, retry once.
+ * Use this for stateless/init calls where retry is meaningful.
+ *
+ * WHY RETRY IS SAFE: The error codes CKR_SESSION_HANDLE_INVALID,
+ * CKR_SESSION_CLOSED, CKR_TOKEN_NOT_PRESENT, and CKR_DEVICE_REMOVED all
+ * indicate that the session was invalid BEFORE the call executed — the
+ * operation could not have partially completed.  Retrying on a fresh
+ * session is therefore idempotent and safe.
+ */
+#define PKCS11_SESSION_CALL(sobj, rv, call) do {                          \
+    (rv) = (call);                                                         \
+    if ((rv) == CKR_SESSION_HANDLE_INVALID ||                              \
+        (rv) == CKR_SESSION_CLOSED         ||                              \
+        (rv) == CKR_TOKEN_NOT_PRESENT      ||                              \
+        (rv) == CKR_DEVICE_REMOVED) {                                      \
+        pkcs11_evict_session(sobj);                                        \
+        CK_SESSION_HANDLE _new_h;                                          \
+        CK_RV _reopen = (sobj)->pkcs11->functionList->C_OpenSession(       \
+            (sobj)->slotID, CKF_SERIAL_SESSION | (sobj)->flags,            \
+            NULL_PTR, NULL_PTR, &_new_h);                                  \
+        if (_reopen == CKR_OK) {                                           \
+            (sobj)->session = _new_h;                                      \
+            if ((sobj)->pooled) {                                          \
+                (sobj)->pooled->handle = _new_h;                           \
+                (sobj)->pooled->dead = false;                              \
+                (sobj)->pooled->in_use = true;                             \
+            }                                                              \
+            (rv) = (call);                                                 \
+        }                                                                  \
+    }                                                                      \
+} while(0)
+
+/*
+ * PKCS11_SESSION_EVICT — for C_*Update / C_*Final (stateful calls).
+ * On stale errors: evict only, do NOT retry.  Retry is pointless for
+ * multipart operations because the new session has no prior Init/Update
+ * state.  The error propagates to PHP; caller handles it.
+ */
+#define PKCS11_SESSION_EVICT(sobj, rv, call) do {                         \
+    (rv) = (call);                                                         \
+    if ((rv) == CKR_SESSION_HANDLE_INVALID ||                              \
+        (rv) == CKR_SESSION_CLOSED         ||                              \
+        (rv) == CKR_TOKEN_NOT_PRESENT      ||                              \
+        (rv) == CKR_DEVICE_REMOVED) {                                      \
+        pkcs11_evict_session(sobj);                                        \
+    }                                                                      \
+} while(0)
+
+/* Phase 2: pool key helper (defined in pkcs11session.c) */
+extern void pkcs11_pool_mark_dead(CK_SESSION_HANDLE handle);
 
 #endif

@@ -36,12 +36,15 @@ PHP_METHOD(VerificationContext, update) {
 
     pkcs11_verificationcontext_object *objval = Z_PKCS11_VERIFICATIONCONTEXT_P(ZEND_THIS);
 
-    rv = objval->key->session->pkcs11->functionList->C_VerifyUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data)
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_VerifyUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data)
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update verification");
         return;
     }
@@ -58,21 +61,26 @@ PHP_METHOD(VerificationContext, finalize) {
 
     pkcs11_verificationcontext_object *objval = Z_PKCS11_VERIFICATIONCONTEXT_P(ZEND_THIS);
 
-    rv = objval->key->session->pkcs11->functionList->C_VerifyFinal(
-        objval->key->session->session,
-        ZSTR_VAL(signature),
-        ZSTR_LEN(signature)
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_VerifyFinal(
+            objval->key->session->session,
+            ZSTR_VAL(signature),
+            ZSTR_LEN(signature)
+        )
     );
 
     if (rv == CKR_SIGNATURE_INVALID || rv == CKR_SIGNATURE_LEN_RANGE) {
+        objval->key->session->tainted = false;
         RETURN_BOOL(false);
     }
 
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize verification");
         return;
     }
 
+    objval->key->session->tainted = false;
     RETURN_BOOL(true);
 }
 

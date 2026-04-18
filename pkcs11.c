@@ -14,6 +14,40 @@
 
 #include "pkcs11int.h"
 
+#ifdef ZTS
+# include <pthread.h>
+#endif
+
+ZEND_DECLARE_MODULE_GLOBALS(pkcs11)
+
+/* Process-wide library registry — defined in pkcs11module.c */
+extern HashTable        pkcs11_libs;
+#ifdef ZTS
+extern pthread_mutex_t  pkcs11_lib_mutex;
+#endif
+extern bool             pkcs11_libs_initialized;
+
+static void pkcs11_globals_ctor(zend_pkcs11_globals *globals) {
+    zend_hash_init(&globals->session_pool, 8, NULL, NULL, 1);
+}
+
+static void pkcs11_globals_dtor(zend_pkcs11_globals *globals) {
+    pkcs11_pooled_session *entry;
+
+    ZEND_HASH_FOREACH_PTR(&globals->session_pool, entry) {
+        if (entry) {
+            if (!entry->dead && !entry->lib->finalized) {
+                /* Close session only if library is still alive.
+                 * MSHUTDOWN may have already called C_Finalize. */
+                entry->lib->functionList->C_CloseSession(entry->handle);
+            }
+            pefree(entry, 1);
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    zend_hash_destroy(&globals->session_pool);
+}
+
 static const char * strCK_RV(const CK_RV rv);
 static zend_class_entry *zend_pkcs11_exception_ce;
 
@@ -209,6 +243,9 @@ void getObjectClass(pkcs11_session_object *session, CK_OBJECT_HANDLE_PTR hObject
 
 PHP_MINIT_FUNCTION(pkcs11)
 {
+    extern void pkcs11_lib_registry_init(void);
+    pkcs11_lib_registry_init();
+    ZEND_INIT_MODULE_GLOBALS(pkcs11, pkcs11_globals_ctor, pkcs11_globals_dtor);
     register_pkcs11();
     register_pkcs11_session();
     register_pkcs11_object();
@@ -1096,6 +1133,46 @@ PHP_MINIT_FUNCTION(pkcs11)
     return SUCCESS;
 }
 
+PHP_MSHUTDOWN_FUNCTION(pkcs11)
+{
+    if (pkcs11_libs_initialized) {
+        pkcs11_lib_record *lib;
+
+#ifndef ZTS
+        /* In non-ZTS, ZEND_INIT_MODULE_GLOBALS ignores the dtor argument,
+         * so globals_dtor never runs automatically.  Clean up explicitly. */
+        pkcs11_globals_dtor(&pkcs11_globals);
+#endif
+
+        PKCS11_LIB_LOCK();
+        ZEND_HASH_FOREACH_PTR(&pkcs11_libs, lib) {
+            lib->finalized = true;
+            lib->functionList->C_Finalize(NULL_PTR);
+            /* Do NOT dlclose or pefree(lib) here — globals_dtor may still
+             * reference lib->finalized.  Process is exiting; OS reclaims. */
+        } ZEND_HASH_FOREACH_END();
+
+#ifdef ZTS
+        /* In ZTS, pkcs11_globals_dtor was registered via ts_allocate_id() and
+         * would normally run during tsrm_shutdown().  However, tsrm_shutdown()
+         * is called AFTER zend_destroy_modules() has already unloaded this
+         * extension via DL_UNLOAD(), leaving the function pointer pointing at
+         * unmapped memory and causing a SIGSEGV on every PHP invocation.
+         * Fix: call ts_free_id() here while the .so is still mapped.  This
+         * runs the dtor for every thread (sessions are skipped because libs
+         * are already marked finalized above) and deregisters the destructor
+         * from TSRM so tsrm_shutdown() does not call it again. */
+        ts_free_id(pkcs11_globals_id);
+        pkcs11_globals_id = 0;
+#endif
+
+        zend_hash_destroy(&pkcs11_libs);
+        pkcs11_libs_initialized = false;
+        PKCS11_LIB_UNLOCK();
+    }
+
+    return SUCCESS;
+}
 
 PHP_MINFO_FUNCTION(pkcs11)
 {
@@ -1109,7 +1186,7 @@ zend_module_entry pkcs11_module_entry = {
     PHP_PKCS11_NAME,
     NULL,                           /* zend_function_entry */
     PHP_MINIT(pkcs11),              /* PHP_MINIT - Module initialization */
-    NULL,                           /* PHP_MSHUTDOWN - Module shutdown */
+    PHP_MSHUTDOWN(pkcs11),          /* PHP_MSHUTDOWN - Module shutdown */
     NULL,                           /* PHP_RINIT - Request initialization */
     NULL,                           /* PHP_RSHUTDOWN - Request shutdown */
     PHP_MINFO(pkcs11),              /* PHP_MINFO - Module info */

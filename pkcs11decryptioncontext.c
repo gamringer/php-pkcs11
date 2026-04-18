@@ -36,27 +36,34 @@ PHP_METHOD(DecryptionContext, update) {
     pkcs11_decryptioncontext_object *objval = Z_PKCS11_DECRYPTIONCONTEXT_P(ZEND_THIS);
 
     CK_ULONG plaintextLen;
-    rv = objval->key->session->pkcs11->functionList->C_DecryptUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        NULL_PTR ,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_DecryptUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            NULL_PTR ,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update decryption");
         return;
     }
 
     CK_BYTE_PTR plaintext = ecalloc(plaintextLen, sizeof(CK_BYTE));
-    rv = objval->key->session->pkcs11->functionList->C_DecryptUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        plaintext,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_DecryptUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            plaintext,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(plaintext);
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update decryption");
         return;
     }
@@ -83,23 +90,30 @@ PHP_METHOD(DecryptionContext, finalize) {
     pkcs11_decryptioncontext_object *objval = Z_PKCS11_DECRYPTIONCONTEXT_P(ZEND_THIS);
 
     CK_ULONG plaintextLen;
-    rv = objval->key->session->pkcs11->functionList->C_DecryptFinal(
-        objval->key->session->session,
-        NULL_PTR ,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_DecryptFinal(
+            objval->key->session->session,
+            NULL_PTR ,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize decryption");
         return;
     }
 
     CK_BYTE_PTR plaintext = ecalloc(plaintextLen, sizeof(CK_BYTE));
-    rv = objval->key->session->pkcs11->functionList->C_DecryptFinal(
-        objval->key->session->session,
-        plaintext,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_DecryptFinal(
+            objval->key->session->session,
+            plaintext,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(plaintext);
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize decryption");
         return;
     }
@@ -113,6 +127,7 @@ PHP_METHOD(DecryptionContext, finalize) {
     );
     efree(plaintext);
 
+    objval->key->session->tainted = false;
     RETURN_STR(returnval);
 }
 

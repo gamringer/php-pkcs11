@@ -51,11 +51,13 @@ PHP_METHOD(Object, getAttributeValue) {
     } ZEND_HASH_FOREACH_END();
 
     pkcs11_object_object *objval = Z_PKCS11_OBJECT_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
-        objval->session->session,
-        objval->object,
-        template,
-        attributeIdCount
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_GetAttributeValue(
+            objval->session->session,
+            objval->object,
+            template,
+            attributeIdCount
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get attribute value");
@@ -66,11 +68,13 @@ PHP_METHOD(Object, getAttributeValue) {
         template[i].pValue = (uint8_t *) ecalloc(1, template[i].ulValueLen);
     }
 
-    rv = objval->session->pkcs11->functionList->C_GetAttributeValue(
-        objval->session->session,
-        objval->object,
-        template,
-        attributeIdCount
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_GetAttributeValue(
+            objval->session->session,
+            objval->object,
+            template,
+            attributeIdCount
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get attribute value");
@@ -198,10 +202,12 @@ PHP_METHOD(Object, getSize) {
     CK_ULONG ulSize;
 
     pkcs11_object_object *objval = Z_PKCS11_OBJECT_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_GetObjectSize(
-        objval->session->session,
-        objval->object,
-        &ulSize
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_GetObjectSize(
+            objval->session->session,
+            objval->object,
+            &ulSize
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to get object size");

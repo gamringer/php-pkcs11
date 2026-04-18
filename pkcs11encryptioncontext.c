@@ -36,27 +36,34 @@ PHP_METHOD(EncryptionContext, update) {
     pkcs11_encryptioncontext_object *objval = Z_PKCS11_ENCRYPTIONCONTEXT_P(ZEND_THIS);
 
     CK_ULONG ciphertextLen;
-    rv = objval->key->session->pkcs11->functionList->C_EncryptUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        NULL_PTR ,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_EncryptUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            NULL_PTR ,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update encryption");
         return;
     }
 
     CK_BYTE_PTR ciphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
-    rv = objval->key->session->pkcs11->functionList->C_EncryptUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        ciphertext,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_EncryptUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            ciphertext,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(ciphertext);
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update encryption");
         return;
     }
@@ -83,23 +90,30 @@ PHP_METHOD(EncryptionContext, finalize) {
     pkcs11_encryptioncontext_object *objval = Z_PKCS11_ENCRYPTIONCONTEXT_P(ZEND_THIS);
 
     CK_ULONG ciphertextLen;
-    rv = objval->key->session->pkcs11->functionList->C_EncryptFinal(
-        objval->key->session->session,
-        NULL_PTR ,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_EncryptFinal(
+            objval->key->session->session,
+            NULL_PTR ,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize encryption");
         return;
     }
 
     CK_BYTE_PTR ciphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
-    rv = objval->key->session->pkcs11->functionList->C_EncryptFinal(
-        objval->key->session->session,
-        ciphertext,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_EncryptFinal(
+            objval->key->session->session,
+            ciphertext,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(ciphertext);
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize encryption");
         return;
     }
@@ -113,6 +127,7 @@ PHP_METHOD(EncryptionContext, finalize) {
     );
     efree(ciphertext);
 
+    objval->key->session->tainted = false;
     RETURN_STR(returnval);
 }
 

@@ -15,6 +15,22 @@
 #include "pkcs11int.h"
 #include "standard/php_string.h"
 
+#ifdef ZTS
+# include <pthread.h>
+#endif
+
+/* Process-wide library registry: realpath → pkcs11_lib_record* */
+HashTable        pkcs11_libs;
+#ifdef ZTS
+pthread_mutex_t  pkcs11_lib_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+bool             pkcs11_libs_initialized = false;
+
+void pkcs11_lib_registry_init(void) {
+    zend_hash_init(&pkcs11_libs, 4, NULL, NULL, 1);
+    pkcs11_libs_initialized = true;
+}
+
 zend_class_entry *ce_Pkcs11_Module;
 static zend_object_handlers pkcs11_handlers;
 
@@ -125,7 +141,6 @@ PHP_METHOD(Module, __construct) {
         Z_PARAM_PATH(module_path, module_path_len)
     ZEND_PARSE_PARAMETERS_END();
 
-
     pkcs11_object *objval = Z_PKCS11_P(ZEND_THIS);
 
     if (objval->initialised) {
@@ -133,10 +148,34 @@ PHP_METHOD(Module, __construct) {
         return;
     }
 
+    /* Canonicalize path; fall back to original on failure */
+    char resolved[PATH_MAX];
+    char *canonical = realpath(module_path, resolved);
+    if (canonical == NULL) {
+        canonical = module_path;
+    }
+    size_t canonical_len = strlen(canonical);
+
+    /* First check: lock and look up the registry */
+    PKCS11_LIB_LOCK();
+    pkcs11_lib_record *lib = zend_hash_str_find_ptr(&pkcs11_libs, canonical, canonical_len);
+    if (lib != NULL) {
+        /* Already initialized by another Module — reuse */
+        objval->pkcs11module = lib->dlhandle;
+        objval->functionList = lib->functionList;
+        objval->lib = lib;
+        objval->lib_path = pemalloc(canonical_len + 1, 1);
+        memcpy(objval->lib_path, canonical, canonical_len + 1);
+        objval->initialised = true;
+        PKCS11_LIB_UNLOCK();
+        return;
+    }
+    PKCS11_LIB_UNLOCK();
+
+    /* Not found — do slow work (dlopen) outside the lock */
     CK_RV rv;
-
-    char* dlerror_str;
-    objval->pkcs11module = dlopen(module_path, RTLD_NOW);
+    char *dlerror_str;
+    void *dlhandle = dlopen(module_path, RTLD_NOW);
 
     dlerror_str = dlerror();
     if (dlerror_str != NULL) {
@@ -144,25 +183,65 @@ PHP_METHOD(Module, __construct) {
         return;
     }
 
-    CK_C_GetFunctionList C_GetFunctionList = dlsym(objval->pkcs11module, "C_GetFunctionList");
+    CK_C_GetFunctionList C_GetFunctionList = dlsym(dlhandle, "C_GetFunctionList");
     dlerror_str = dlerror();
     if (dlerror_str != NULL) {
+        dlclose(dlhandle);
         general_error("Unable to initialise PKCS11 module", dlerror_str);
         return;
     }
 
-    rv = C_GetFunctionList(&objval->functionList);
+    CK_FUNCTION_LIST_PTR functionList;
+    rv = C_GetFunctionList(&functionList);
     if (rv != CKR_OK) {
+        dlclose(dlhandle);
         pkcs11_error(rv, "Unable to retrieve function list");
         return;
     }
 
-    rv = objval->functionList->C_Initialize(NULL);
-    if (rv != CKR_OK) {
+    /* Re-lock and double-check — another thread may have initialized */
+    PKCS11_LIB_LOCK();
+    lib = zend_hash_str_find_ptr(&pkcs11_libs, canonical, canonical_len);
+    if (lib != NULL) {
+        /* Race: another thread initialized while we were unlocked */
+        dlclose(dlhandle);
+        objval->pkcs11module = lib->dlhandle;
+        objval->functionList = lib->functionList;
+        objval->lib = lib;
+        objval->lib_path = pemalloc(canonical_len + 1, 1);
+        memcpy(objval->lib_path, canonical, canonical_len + 1);
+        objval->initialised = true;
+        PKCS11_LIB_UNLOCK();
+        return;
+    }
+
+    /* We're the first — initialize the library */
+#ifdef ZTS
+    CK_C_INITIALIZE_ARGS init_args = {NULL, NULL, NULL, NULL, CKF_OS_LOCKING_OK, NULL};
+    rv = functionList->C_Initialize(&init_args);
+#else
+    rv = functionList->C_Initialize(NULL);
+#endif
+    if (rv != CKR_OK && rv != CKR_CRYPTOKI_ALREADY_INITIALIZED) {
+        PKCS11_LIB_UNLOCK();
+        dlclose(dlhandle);
         pkcs11_error(rv, "Unable to initialise token");
         return;
     }
 
+    /* Insert into registry */
+    lib = pemalloc(sizeof(pkcs11_lib_record), 1);
+    lib->dlhandle     = dlhandle;
+    lib->functionList = functionList;
+    lib->finalized    = false;
+    zend_hash_str_add_ptr(&pkcs11_libs, canonical, canonical_len, lib);
+    PKCS11_LIB_UNLOCK();
+
+    objval->pkcs11module = lib->dlhandle;
+    objval->functionList = lib->functionList;
+    objval->lib = lib;
+    objval->lib_path = pemalloc(canonical_len + 1, 1);
+    memcpy(objval->lib_path, canonical, canonical_len + 1);
     objval->initialised = true;
 }
 
@@ -796,21 +875,67 @@ PHP_METHOD(Module, openSession) {
         return;
     }
 
-    pkcs11_session_object* session_obj;
+    CK_FLAGS effective_flags = CKF_SERIAL_SESSION | (CK_FLAGS)flags;
 
+    /* Build pool key: "lib_path:slotID:flags" */
+    char pool_key[PATH_MAX + 64];
+    size_t pool_key_len = snprintf(pool_key, sizeof(pool_key), "%s:%lu:%lu",
+        objval->lib_path ? objval->lib_path : "",
+        (unsigned long)slotid,
+        (unsigned long)effective_flags);
+
+    pkcs11_session_object *session_obj;
     object_init_ex(return_value, ce_Pkcs11_Session);
     session_obj = Z_PKCS11_SESSION_P(return_value);
     session_obj->pkcs11 = objval;
     GC_ADDREF(&objval->std);
+    session_obj->slotID = slotid;
+    session_obj->flags = (CK_FLAGS)flags;
+    session_obj->tainted = false;
 
+    /* Check the per-thread session pool */
+    pkcs11_pooled_session *entry = zend_hash_str_find_ptr(
+        &PKCS11_G(session_pool), pool_key, pool_key_len);
+
+    if (entry != NULL && !entry->in_use && !entry->dead) {
+        /* Reuse pooled session */
+        entry->in_use = true;
+        session_obj->session = entry->handle;
+        session_obj->pooled = entry;
+        return;
+    }
+
+    /* No usable pool entry — open a new session */
     CK_SESSION_HANDLE phSession;
-    rv = objval->functionList->C_OpenSession(slotid, CKF_SERIAL_SESSION | flags, NULL_PTR, NULL_PTR, &phSession);
+    rv = objval->functionList->C_OpenSession(slotid, effective_flags,
+        NULL_PTR, NULL_PTR, &phSession);
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to open session");
         return;
     }
-    session_obj->session = phSession;
-    session_obj->slotID = slotid;
+
+    if (entry != NULL && entry->in_use) {
+        /* Another live Session owns this key's pool entry.
+         * This session is ephemeral — not pooled.  Closed normally in dtor. */
+        session_obj->session = phSession;
+        session_obj->pooled = NULL;
+    } else {
+        /* Create or replace pool entry (entry is NULL or dead) */
+        pkcs11_pooled_session *new_entry = pemalloc(sizeof(pkcs11_pooled_session), 1);
+        new_entry->handle = phSession;
+        new_entry->lib = objval->lib;
+        new_entry->in_use = true;
+        new_entry->dead = false;
+
+        if (entry != NULL && entry->dead) {
+            /* Old entry was dead — free it before updating */
+            pefree(entry, 1);
+        }
+
+        zend_hash_str_update_ptr(&PKCS11_G(session_pool), pool_key, pool_key_len, new_entry);
+        session_obj->session = phSession;
+        session_obj->pooled = new_entry;
+    }
 }
 
 PHP_METHOD(Module, waitForSlotEvent) {
@@ -912,7 +1037,7 @@ PHP_METHOD(Module, C_CloseSession) {
     pkcs11_session_object *sessionobjval = Z_PKCS11_SESSION_P(php_session);
 
     rv = sessionobjval->pkcs11->functionList->C_CloseSession(sessionobjval->session);
-    // TBC GC_DELREF(&objval->std); /* session is refering the pkcs11 module */
+    pkcs11_pool_mark_dead(sessionobjval->session);
     sessionobjval->session = 0;
 
     RETURN_LONG(rv);
@@ -2287,15 +2412,28 @@ PHP_METHOD(Module, C_DestroyObject) {
 }
 
 void pkcs11_shutdown(pkcs11_object *obj) {
-    // called before the pkcs11_object is freed
-    if (obj->functionList != NULL) {
-        obj->functionList->C_Finalize(NULL_PTR);
-        obj->functionList = NULL;
+    if (!obj->initialised) {
+        /* Constructor failed before registering — only clean up dlhandle
+         * if it was allocated but never registered */
+        if (obj->pkcs11module != NULL) {
+            dlclose(obj->pkcs11module);
+            obj->pkcs11module = NULL;
+        }
+        return;
     }
 
-    if (obj->pkcs11module != NULL) {
-        dlclose(obj->pkcs11module);
+    /* Library lifecycle is managed by the registry (freed in MSHUTDOWN).
+     * Module dtor only frees the lib_path copy. */
+    if (obj->lib_path != NULL) {
+        pefree(obj->lib_path, 1);
+        obj->lib_path = NULL;
     }
+
+    /* Clear pointers but do NOT call C_Finalize or dlclose —
+     * the library lives until process exit (MSHUTDOWN). */
+    obj->functionList = NULL;
+    obj->pkcs11module = NULL;
+    obj->initialised = false;
 }
 
 
