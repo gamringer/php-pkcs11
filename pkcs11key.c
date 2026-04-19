@@ -88,15 +88,18 @@ PHP_METHOD(Key, initializeSignature) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_SignInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_SignInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize signature");
         return;
     }
+    objval->session->tainted = true;
 
     pkcs11_signaturecontext_object* context_obj;
 
@@ -119,15 +122,18 @@ PHP_METHOD(Key, initializeVerification) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_VerifyInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_VerifyInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize verification");
         return;
     }
+    objval->session->tainted = true;
 
     pkcs11_verificationcontext_object* context_obj;
 
@@ -150,15 +156,18 @@ PHP_METHOD(Key, initializeEncryption) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_EncryptInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_EncryptInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize encryption");
         return;
     }
+    objval->session->tainted = true;
 
     pkcs11_encryptioncontext_object* context_obj;
 
@@ -181,15 +190,18 @@ PHP_METHOD(Key, initializeDecryption) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_DecryptInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DecryptInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize decryption");
         return;
     }
+    objval->session->tainted = true;
 
     pkcs11_decryptioncontext_object* context_obj;
 
@@ -214,38 +226,48 @@ PHP_METHOD(Key, sign) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_SignInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_SignInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to sign");
         return;
     }
+    objval->session->tainted = true;
     
     CK_ULONG signatureLen;
-    rv = objval->session->pkcs11->functionList->C_Sign(
-        objval->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        NULL_PTR,
-        &signatureLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Sign(
+            objval->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            NULL_PTR,
+            &signatureLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to sign");
         return;
     }
 
     CK_BYTE_PTR signature = ecalloc(signatureLen, sizeof(CK_BYTE));
-    rv = objval->session->pkcs11->functionList->C_Sign(
-        objval->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        signature,
-        &signatureLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Sign(
+            objval->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            signature,
+            &signatureLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(signature);
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to sign");
         return;
     }
@@ -259,6 +281,7 @@ PHP_METHOD(Key, sign) {
     );
     efree(signature);
 
+    objval->session->tainted = false;
     RETURN_STR(returnval);
 }
 
@@ -279,34 +302,42 @@ PHP_METHOD(Key, verify) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_VerifyInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_VerifyInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to verify");
         return;
     }
+    objval->session->tainted = true;
 
     CK_ULONG signatureLen;
-    rv = objval->session->pkcs11->functionList->C_Verify(
-        objval->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        ZSTR_VAL(signature),
-        ZSTR_LEN(signature)
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Verify(
+            objval->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            ZSTR_VAL(signature),
+            ZSTR_LEN(signature)
+        )
     );
 
     if (rv == CKR_SIGNATURE_INVALID || rv == CKR_SIGNATURE_LEN_RANGE) {
+        objval->session->tainted = false;
         RETURN_BOOL(false);
     }
 
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to verify");
         return;
     }
 
+    objval->session->tainted = false;
     RETURN_BOOL(true);
 }
 
@@ -325,38 +356,48 @@ PHP_METHOD(Key, encrypt) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_EncryptInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_EncryptInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to encrypt");
         return;
     }
+    objval->session->tainted = true;
 
     CK_ULONG ciphertextLen;
-    rv = objval->session->pkcs11->functionList->C_Encrypt(
-        objval->session->session,
-        ZSTR_VAL(plaintext),
-        ZSTR_LEN(plaintext),
-        NULL_PTR ,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Encrypt(
+            objval->session->session,
+            ZSTR_VAL(plaintext),
+            ZSTR_LEN(plaintext),
+            NULL_PTR ,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to encrypt");
         return;
     }
 
     CK_BYTE_PTR ciphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
-    rv = objval->session->pkcs11->functionList->C_Encrypt(
-        objval->session->session,
-        ZSTR_VAL(plaintext),
-        ZSTR_LEN(plaintext),
-        ciphertext,
-        &ciphertextLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Encrypt(
+            objval->session->session,
+            ZSTR_VAL(plaintext),
+            ZSTR_LEN(plaintext),
+            ciphertext,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(ciphertext);
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to encrypt");
         return;
     }
@@ -370,6 +411,7 @@ PHP_METHOD(Key, encrypt) {
     );
     efree(ciphertext);
 
+    objval->session->tainted = false;
     RETURN_STR(returnval);
 }
 
@@ -388,38 +430,48 @@ PHP_METHOD(Key, decrypt) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_DecryptInit(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DecryptInit(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to decrypt");
         return;
     }
+    objval->session->tainted = true;
 
     CK_ULONG plaintextLen;
-    rv = objval->session->pkcs11->functionList->C_Decrypt(
-        objval->session->session,
-        ZSTR_VAL(ciphertext),
-        ZSTR_LEN(ciphertext),
-        NULL_PTR,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Decrypt(
+            objval->session->session,
+            ZSTR_VAL(ciphertext),
+            ZSTR_LEN(ciphertext),
+            NULL_PTR,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to decrypt");
         return;
     }
 
     CK_BYTE_PTR plaintext = ecalloc(plaintextLen, sizeof(CK_BYTE));
-    rv = objval->session->pkcs11->functionList->C_Decrypt(
-        objval->session->session,
-        ZSTR_VAL(ciphertext),
-        ZSTR_LEN(ciphertext),
-        plaintext,
-        &plaintextLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_Decrypt(
+            objval->session->session,
+            ZSTR_VAL(ciphertext),
+            ZSTR_LEN(ciphertext),
+            plaintext,
+            &plaintextLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(plaintext);
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to decrypt");
         return;
     }
@@ -433,6 +485,7 @@ PHP_METHOD(Key, decrypt) {
     );
     efree(plaintext);
 
+    objval->session->tainted = false;
     RETURN_STR(returnval);
 }
 
@@ -453,13 +506,15 @@ PHP_METHOD(Key, wrap) {
     CK_ULONG ciphertextLen;
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
     pkcs11_key_object *keyobjval = Z_PKCS11_KEY_P(key);
-    rv = objval->session->pkcs11->functionList->C_WrapKey(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key,
-        keyobjval->key,
-        NULL_PTR ,
-        &ciphertextLen
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_WrapKey(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key,
+            keyobjval->key,
+            NULL_PTR ,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to wrap");
@@ -467,13 +522,15 @@ PHP_METHOD(Key, wrap) {
     }
 
     CK_BYTE_PTR ciphertext = ecalloc(ciphertextLen, sizeof(CK_BYTE));
-    rv = objval->session->pkcs11->functionList->C_WrapKey(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key,
-        keyobjval->key,
-        ciphertext,
-        &ciphertextLen
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_WrapKey(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key,
+            keyobjval->key,
+            ciphertext,
+            &ciphertextLen
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to wrap");
@@ -515,15 +572,17 @@ PHP_METHOD(Key, unwrap) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_UnwrapKey(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key,
-        ZSTR_VAL(ciphertext),
-        ZSTR_LEN(ciphertext),
-        templateObj,
-        templateItemCount,
-        &uhKey
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_UnwrapKey(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key,
+            ZSTR_VAL(ciphertext),
+            ZSTR_LEN(ciphertext),
+            templateObj,
+            templateItemCount,
+            &uhKey
+        )
     );
     freeTemplate(templateObj);
     
@@ -562,13 +621,15 @@ PHP_METHOD(Key, derive) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_key_object *objval = Z_PKCS11_KEY_P(ZEND_THIS);
-    rv = objval->session->pkcs11->functionList->C_DeriveKey(
-        objval->session->session,
-        &mechanismObjval->mechanism,
-        objval->key,
-        templateObj,
-        templateItemCount,
-        &phKey
+    PKCS11_SESSION_CALL(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DeriveKey(
+            objval->session->session,
+            &mechanismObjval->mechanism,
+            objval->key,
+            templateObj,
+            templateItemCount,
+            &phKey
+        )
     );
     freeTemplate(templateObj);
 

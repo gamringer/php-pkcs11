@@ -150,7 +150,7 @@ PHP_METHOD(Session, logout) {
     ZEND_PARSE_PARAMETERS_NONE();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_Logout(objval->session);
+    PKCS11_SESSION_CALL(objval, rv, objval->pkcs11->functionList->C_Logout(objval->session));
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to logout");
         return;
@@ -235,7 +235,9 @@ PHP_METHOD(Session, initPin) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_InitPIN(objval->session, ZSTR_VAL(newPin), ZSTR_LEN(newPin));
+    PKCS11_SESSION_CALL(objval, rv,
+        objval->pkcs11->functionList->C_InitPIN(objval->session, ZSTR_VAL(newPin), ZSTR_LEN(newPin))
+    );
 
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to set pin");
@@ -255,12 +257,14 @@ PHP_METHOD(Session, setPin) {
     ZEND_PARSE_PARAMETERS_END();
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_SetPIN(
-        objval->session,
-        ZSTR_VAL(oldPin),
-        ZSTR_LEN(oldPin),
-        ZSTR_VAL(newPin),
-        ZSTR_LEN(newPin)
+    PKCS11_SESSION_CALL(objval, rv,
+        objval->pkcs11->functionList->C_SetPIN(
+            objval->session,
+            ZSTR_VAL(oldPin),
+            ZSTR_LEN(oldPin),
+            ZSTR_VAL(newPin),
+            ZSTR_LEN(newPin)
+        )
     );
 
     if (rv != CKR_OK) {
@@ -419,37 +423,47 @@ PHP_METHOD(Session, digest) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_DigestInit(
-        objval->session,
-        &mechanismObjval->mechanism
+    PKCS11_SESSION_CALL(objval, rv,
+        objval->pkcs11->functionList->C_DigestInit(
+            objval->session,
+            &mechanismObjval->mechanism
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to digest");
         return;
     }
+    objval->tainted = true;
 
     CK_ULONG digestLen;
-    rv = objval->pkcs11->functionList->C_Digest(
-        objval->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        NULL_PTR,
-        &digestLen
+    PKCS11_SESSION_EVICT(objval, rv,
+        objval->pkcs11->functionList->C_Digest(
+            objval->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            NULL_PTR,
+            &digestLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->tainted = false;
         pkcs11_error(rv, "Unable to digest");
         return;
     }
 
     CK_BYTE_PTR digest = ecalloc(digestLen, sizeof(CK_BYTE));
-    rv = objval->pkcs11->functionList->C_Digest(
-        objval->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data),
-        digest,
-        &digestLen
+    PKCS11_SESSION_EVICT(objval, rv,
+        objval->pkcs11->functionList->C_Digest(
+            objval->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data),
+            digest,
+            &digestLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(digest);
+        objval->tainted = false;
         pkcs11_error(rv, "Unable to digest");
         return;
     }
@@ -463,6 +477,7 @@ PHP_METHOD(Session, digest) {
     );
     efree(digest);
 
+    objval->tainted = false;
     RETURN_STR(returnval);
 }
 
@@ -479,14 +494,17 @@ PHP_METHOD(Session, initializeDigest) {
     pkcs11_mechanism_object *mechanismObjval = Z_PKCS11_MECHANISM_P(mechanism);
 
     pkcs11_session_object *objval = Z_PKCS11_SESSION_P(ZEND_THIS);
-    rv = objval->pkcs11->functionList->C_DigestInit(
-        objval->session,
-        &mechanismObjval->mechanism
+    PKCS11_SESSION_CALL(objval, rv,
+        objval->pkcs11->functionList->C_DigestInit(
+            objval->session,
+            &mechanismObjval->mechanism
+        )
     );
     if (rv != CKR_OK) {
         pkcs11_error(rv, "Unable to initialize digest");
         return;
     }
+    objval->tainted = true;
 
     pkcs11_digestcontext_object* context_obj;
 
@@ -691,14 +709,63 @@ PHP_METHOD(Session, __debugInfo) {
     /* TODO: add $module objval->std */
 }
 
+void pkcs11_evict_session(pkcs11_session_object *sobj) {
+    if (sobj->pooled != NULL && !sobj->pooled->dead) {
+        /* Best-effort close — may fail if handle is already invalid */
+        sobj->pkcs11->functionList->C_CloseSession(sobj->session);
+        sobj->pooled->dead = true;
+        sobj->pooled->in_use = false;
+    }
+    sobj->session = 0;
+}
+
+void pkcs11_pool_mark_dead(CK_SESSION_HANDLE handle) {
+    /* Scan the per-thread pool for a matching handle and mark it dead.
+     * Called by Module::C_CloseSession (OASIS method) to prevent
+     * the pool from handing out a closed handle. */
+    pkcs11_pooled_session *entry;
+    ZEND_HASH_FOREACH_PTR(&PKCS11_G(session_pool), entry) {
+        if (entry && entry->handle == handle && !entry->dead) {
+            entry->dead = true;
+            entry->in_use = false;
+            break;
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
 void pkcs11_session_shutdown(pkcs11_session_object *obj) {
-    // called before the pkcs11_session_object is freed
-    // TBC: is it called before pkcs11_shutdown() ? It has to.
-    if (obj->pkcs11->functionList != NULL) {
-        obj->pkcs11->functionList->C_CloseSession(obj->session);
+    if (obj->pooled != NULL) {
+        if (obj->pooled->dead) {
+            /* Already closed/evicted — nothing to do */
+        } else if (obj->tainted) {
+            /* Session has an active C_*Init operation — close it, don't pool */
+            if (!obj->pkcs11->lib->finalized) {
+                obj->pkcs11->functionList->C_CloseSession(obj->session);
+            }
+            obj->pooled->dead = true;
+            obj->pooled->in_use = false;
+        } else {
+            /* Logout before returning to pool.
+             * This is the security boundary: the pool holds only unauthenticated
+             * sessions.  The next caller must supply valid credentials to login().
+             * C_Logout() on an already-logged-out session returns CKR_USER_NOT_LOGGED_IN
+             * which is safe to ignore. */
+            if (!obj->pkcs11->lib->finalized) {
+                obj->pkcs11->functionList->C_Logout(obj->session);
+            }
+            obj->pooled->in_use = false;
+        }
+    } else {
+        /* Ephemeral (not pooled) — close as before */
+        if (obj->session != 0 && obj->pkcs11 && obj->pkcs11->functionList != NULL
+                && !obj->pkcs11->lib->finalized) {
+            obj->pkcs11->functionList->C_CloseSession(obj->session);
+        }
     }
 
-    GC_DELREF(&obj->pkcs11->std);
+    if (obj->pkcs11) {
+        GC_DELREF(&obj->pkcs11->std);
+    }
 }
 
 PHP_METHOD(Session, openUri) {

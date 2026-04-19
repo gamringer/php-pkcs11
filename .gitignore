@@ -37,3 +37,4 @@ tests/*.sh
 example/vendor
 sandbox
 *.dep
+*~

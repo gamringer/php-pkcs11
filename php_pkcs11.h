@@ -35,4 +35,41 @@ ZEND_TSRMLS_CACHE_EXTERN()
 
 #include "oasis/pkcs11.h"
 
+/* --- Phase 2: persistent connections --- */
+
+typedef struct _pkcs11_lib_record {
+    void                *dlhandle;
+    CK_FUNCTION_LIST_PTR functionList;
+    volatile bool        finalized;  /* set by MSHUTDOWN before C_Finalize */
+} pkcs11_lib_record;
+
+typedef struct _pkcs11_pooled_session {
+    CK_SESSION_HANDLE   handle;
+    pkcs11_lib_record  *lib;      /* for C_CloseSession + finalized check in dtor */
+    bool                in_use;   /* true = owned by a live PHP Session object */
+    bool                dead;     /* true = handle already closed / stale */
+} pkcs11_pooled_session;
+
+ZEND_BEGIN_MODULE_GLOBALS(pkcs11)
+    HashTable session_pool;  /* key: "realpath:slotID:flags" -> pkcs11_pooled_session* */
+ZEND_END_MODULE_GLOBALS(pkcs11)
+
+#ifdef ZTS
+# define PKCS11_G(v) ZEND_TSRMG(pkcs11_globals_id, zend_pkcs11_globals *, v)
+#else
+# define PKCS11_G(v) (pkcs11_globals.v)
+#endif
+
+ZEND_EXTERN_MODULE_GLOBALS(pkcs11)
+
+/* Process-wide library registry lock/unlock macros */
+extern pthread_mutex_t pkcs11_lib_mutex;
+#ifdef ZTS
+# define PKCS11_LIB_LOCK()   pthread_mutex_lock(&pkcs11_lib_mutex)
+# define PKCS11_LIB_UNLOCK() pthread_mutex_unlock(&pkcs11_lib_mutex)
+#else
+# define PKCS11_LIB_LOCK()   do { } while(0)
+# define PKCS11_LIB_UNLOCK() do { } while(0)
+#endif
+
 #endif	/* PHP_PKCS11_H */

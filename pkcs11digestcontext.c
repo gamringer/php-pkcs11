@@ -39,12 +39,15 @@ PHP_METHOD(DigestContext, update) {
 
     pkcs11_digestcontext_object *objval = Z_PKCS11_DIGESTCONTEXT_P(ZEND_THIS);
 
-    rv = objval->session->pkcs11->functionList->C_DigestUpdate(
-        objval->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data)
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DigestUpdate(
+            objval->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data)
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to update digest");
         return;
     }
@@ -62,11 +65,14 @@ PHP_METHOD(DigestContext, keyUpdate) {
     pkcs11_digestcontext_object *objval = Z_PKCS11_DIGESTCONTEXT_P(ZEND_THIS);
     pkcs11_key_object *keyobjval = Z_PKCS11_KEY_P(key);
 
-    rv = objval->session->pkcs11->functionList->C_DigestKey(
-        objval->session->session,
-        keyobjval->key
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DigestKey(
+            objval->session->session,
+            keyobjval->key
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to update digest with key");
         return;
     }
@@ -82,23 +88,30 @@ PHP_METHOD(DigestContext, finalize) {
     pkcs11_digestcontext_object *objval = Z_PKCS11_DIGESTCONTEXT_P(ZEND_THIS);
 
     CK_ULONG digestLen;
-    rv = objval->session->pkcs11->functionList->C_DigestFinal(
-        objval->session->session,
-        NULL_PTR,
-        &digestLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DigestFinal(
+            objval->session->session,
+            NULL_PTR,
+            &digestLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize digest");
         return;
     }
 
     CK_BYTE_PTR digest = ecalloc(digestLen, sizeof(CK_BYTE));
-    rv = objval->session->pkcs11->functionList->C_DigestFinal(
-        objval->session->session,
-        digest,
-        &digestLen
+    PKCS11_SESSION_EVICT(objval->session, rv,
+        objval->session->pkcs11->functionList->C_DigestFinal(
+            objval->session->session,
+            digest,
+            &digestLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(digest);
+        objval->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize digest");
         return;
     }
@@ -112,6 +125,7 @@ PHP_METHOD(DigestContext, finalize) {
     );
     efree(digest);
 
+    objval->session->tainted = false;
     RETURN_STR(returnval);
 }
 

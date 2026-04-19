@@ -35,12 +35,15 @@ PHP_METHOD(SignatureContext, update) {
 
     pkcs11_signaturecontext_object *objval = Z_PKCS11_SIGNATURECONTEXT_P(ZEND_THIS);
 
-    rv = objval->key->session->pkcs11->functionList->C_SignUpdate(
-        objval->key->session->session,
-        ZSTR_VAL(data),
-        ZSTR_LEN(data)
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_SignUpdate(
+            objval->key->session->session,
+            ZSTR_VAL(data),
+            ZSTR_LEN(data)
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to update signature");
         return;
     }
@@ -56,23 +59,30 @@ PHP_METHOD(SignatureContext, finalize) {
     pkcs11_signaturecontext_object *objval = Z_PKCS11_SIGNATURECONTEXT_P(ZEND_THIS);
 
     CK_ULONG signatureLen;
-    rv = objval->key->session->pkcs11->functionList->C_SignFinal(
-        objval->key->session->session,
-        NULL_PTR,
-        &signatureLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_SignFinal(
+            objval->key->session->session,
+            NULL_PTR,
+            &signatureLen
+        )
     );
     if (rv != CKR_OK) {
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize signature");
         return;
     }
 
     CK_BYTE_PTR signature = ecalloc(signatureLen, sizeof(CK_BYTE));
-    rv = objval->key->session->pkcs11->functionList->C_SignFinal(
-        objval->key->session->session,
-        signature,
-        &signatureLen
+    PKCS11_SESSION_EVICT(objval->key->session, rv,
+        objval->key->session->pkcs11->functionList->C_SignFinal(
+            objval->key->session->session,
+            signature,
+            &signatureLen
+        )
     );
     if (rv != CKR_OK) {
+        efree(signature);
+        objval->key->session->tainted = false;
         pkcs11_error(rv, "Unable to finalize signature");
         return;
     }
@@ -86,6 +96,7 @@ PHP_METHOD(SignatureContext, finalize) {
     );
     efree(signature);
 
+    objval->key->session->tainted = false;
     RETURN_STR(returnval);
 }
 
